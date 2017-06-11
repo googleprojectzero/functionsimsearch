@@ -157,7 +157,8 @@ uint64_t Flowgraph::CalculateHash(address startnode,
   return hash_result;
 }
 
-Flowgraph* Flowgraph::GetSubgraph(address node, uint32_t distance) {
+Flowgraph* Flowgraph::GetSubgraph(address node, uint32_t distance, uint32_t
+  max_size = 0xFFFFFFFF) {
   Flowgraph* subgraph = new Flowgraph();
 
   // This code proceeds in two iterations: It first identifies all nodes within
@@ -190,6 +191,10 @@ Flowgraph* Flowgraph::GetSubgraph(address node, uint32_t distance) {
             visited.insert(target);
             subgraph->AddNode(target);
             worklist.push(std::make_pair(target, current_distance + 1));
+            if (subgraph->GetSize() > max_size) {
+              delete subgraph;
+              return nullptr;
+            }
           }
         }
       }

@@ -63,20 +63,24 @@ void CalculateFunctionFingerprint(Dyninst::ParseAPI::Function* function,
   // This may be a mistake and could be rectified easily, but it is not yet
   // clear whether it has much of an impact.
   for (const address node : nodes) {
-    std::unique_ptr<Flowgraph> distance_2(graph.GetSubgraph(node, 2));
-    std::unique_ptr<Flowgraph> distance_3(graph.GetSubgraph(node, 3));
+    std::unique_ptr<Flowgraph> distance_2(graph.GetSubgraph(node, 2, 30));
+    std::unique_ptr<Flowgraph> distance_3(graph.GetSubgraph(node, 3, 30));
     // Hash with each of the hash functions and update the entries in the vector.
     for (uint64_t hash_index = 0; hash_index < cfg_hashes; ++hash_index) {
-      (*output)[hash_index] = std::min((*output)[hash_index],
-        TruncateValue(
-          static_cast<uint32_t>(
-            distance_2->CalculateHash(node, k0, k1, hash_index*k2)),
-        bits_per_hash));
-      (*output)[hash_index] = std::min((*output)[hash_index],
-        TruncateValue(
-          static_cast<uint32_t>(
-            distance_3->CalculateHash(node, k0, k1, hash_index*k2)),
-        bits_per_hash));
+      if (distance_2.get() != nullptr) {
+        (*output)[hash_index] = std::min((*output)[hash_index],
+          TruncateValue(
+            static_cast<uint32_t>(
+              distance_2->CalculateHash(node, k0, k1, hash_index*k2)),
+          bits_per_hash));
+      }
+      if (distance_3.get() != nullptr) {
+        (*output)[hash_index] = std::min((*output)[hash_index],
+          TruncateValue(
+            static_cast<uint32_t>(
+              distance_3->CalculateHash(node, k0, k1, hash_index*k2)),
+          bits_per_hash));
+      }
     }
   }
 

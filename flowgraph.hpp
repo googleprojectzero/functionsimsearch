@@ -42,7 +42,7 @@ public:
   const std::vector<address>* GetInEdges(address node);
 
   uint64_t GetSize() const { return out_edges_.size(); };
-  Flowgraph* GetSubgraph(address node, uint32_t distance);
+  Flowgraph* GetSubgraph(address node, uint32_t distance, uint32_t max_size);
   void GetNodes(std::vector<address>* nodes) const;
   // Fills a map with topological distance from the startnode, or -1 for no
   // path found.

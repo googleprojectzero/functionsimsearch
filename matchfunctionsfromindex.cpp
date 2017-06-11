@@ -44,9 +44,9 @@ uint64_t GenerateExecutableID(const std::string& filename) {
 }
 
 int main(int argc, char** argv) {
-  if (argc != 6) {
+  if (argc != 7) {
     printf("Match minhash vectors from a binary against a search index\n");
-    printf("Usage: %s <PE/ELF> <binary path> <index file> <minimum function size> <max_matches>\n", argv[0]);
+    printf("Usage: %s <PE/ELF> <binary path> <index file> <minimum function size> <max_matches> <minimum_percentage>\n", argv[0]);
     return -1;
   }
 
@@ -55,6 +55,7 @@ int main(int argc, char** argv) {
   std::string index_file(argv[3]);
   uint64_t minimum_size = strtoul(argv[4], nullptr, 10);
   uint64_t max_matches = strtoul(argv[5], nullptr, 10);
+  float minimum_percentage = strtod(argv[6], nullptr);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %lx\n", file_id);
@@ -83,26 +84,26 @@ int main(int argc, char** argv) {
     Address function_address = function->addr();
 
     BuildFlowgraph(function, &graph);
-    printf("....");
     if (graph.GetSize() > minimum_size) {
       std::vector<uint32_t> minhash_vector;
-      printf("[!] FileID %lx: Fingerprinting function %lx (%lu nodes)\n",
-        file_id, function_address, graph.GetSize());
 
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
 
-      printf("[!] Searching for matches...\n");
-
       std::vector<std::pair<float, MinHashSearchIndex::FileAndAddress>> results;
+      bool printnewline = false;
       search_index.QueryTopN(
         minhash_vector, max_matches, &results);
       for (const auto& result : results) {
-        printf("[!] %f -- FileID %lx Address %lx\n", result.first,
-          result.second.first, result.second.second);
+        if (result.first > minimum_percentage) {
+          printf("[!] %f - %lx Address %lx matches FileID %lx Address %lx\n",
+            result.first, file_id, function_address, result.second.first,
+            result.second.second);
+          printnewline = true;
+        }
       }
-    } else {
-      printf("[!] FileID %lx: Skipping function %lx, only %lu nodes\n", 
-        file_id, function_address, graph.GetSize());
+      if (printnewline) {
+        printf("[!] =======================================\n");
+      }
     }
   }
 }
