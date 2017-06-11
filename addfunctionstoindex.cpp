@@ -83,13 +83,13 @@ int main(int argc, char** argv) {
 
     if (graph.GetSize() > minimum_size) {
       std::vector<uint32_t> minhash_vector;
-      printf("[!] FileID %lx: Adding function %lx (%lu nodes)\n", file_id,
-        function_address, graph.GetSize());
+      printf("[!] %s FileID %lx: Adding function %lx (%lu nodes)\n",
+        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
       search_index.AddFunction(minhash_vector, file_id, function_address);
     } else {
-      printf("[!] FileID %lx: Skipping function %lx, only %lu nodes\n", 
-        file_id, function_address, graph.GetSize());
+      printf("[!] %s FileID %lx: Skipping function %lx, only %lu nodes\n",
+        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
     }
   }
 }
