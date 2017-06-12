@@ -76,6 +76,7 @@ int main(int argc, char** argv) {
   }
 
   std::mutex search_index_mutex;
+  std::mutex* mutex_pointer = &search_index_mutex;
   threadpool::ThreadPool pool(std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
@@ -83,7 +84,7 @@ int main(int argc, char** argv) {
 
   for (Function* function : functions) {
     pool.Push(
-      [&search_index, &search_index_mutex, &binary_path_string,
+      [&search_index, mutex_pointer, &binary_path_string,
       processed_functions, file_id, function, minimum_size, 
       number_of_functions](int threadid) {
       Flowgraph graph;
@@ -99,7 +100,7 @@ int main(int argc, char** argv) {
  
         CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
         {
-          std::lock_guard<std::mutex> lock(search_index_mutex);
+          std::lock_guard<std::mutex> lock(*mutex_pointer);
           search_index.AddFunction(minhash_vector, file_id, function_address);
         }
       } else {
