@@ -50,7 +50,7 @@ class PersistentVector {
       vector_ = segment_->find<InnerPersistentVector>(vectorname_.c_str()).first;
     }
   }
-  InnerPersistentVector* getSet() { return vector_; };
+  InnerPersistentVector* getVector() const { return vector_; };
 
 private:
   std::string vectorname_;
@@ -129,7 +129,7 @@ public:
     }
   }
 
-  InnerPersistentMap* getMap() const { return map_; };
+  InnerPersistentMap* getMap() const { return map_; }
 
   std::shared_ptr<managed_mapped_file>& getSegment() { return segment_; }
 private:

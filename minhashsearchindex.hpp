@@ -39,6 +39,11 @@ public:
   void AddFunction(const std::vector<uint32_t>& features, FileID file_id,
     Address address);
 
+  // Functions to manage the search index and query information about it.
+  uint64_t GetIndexFileSize();
+  uint64_t GetIndexFileFreeSpace();
+  uint64_t GetIndexSetSize() const;
+  uint64_t GetNumberOfIndexedFunctions() const;
 private:
   PersistentMap<FunctionID, FileAndAddress> id_to_file_and_address_;
   PersistentSet<IndexEntry> search_index_;

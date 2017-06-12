@@ -58,3 +58,24 @@ uint64_t MinHashSearchIndex::QueryTopN(const std::vector<uint32_t>& features,
   results->resize(how_many);
   return candidates;
 }
+
+uint64_t MinHashSearchIndex::GetIndexFileSize() {
+  const std::shared_ptr<managed_mapped_file> segment =
+    id_to_file_and_address_.getSegment();
+  return segment->get_size();
+}
+
+uint64_t MinHashSearchIndex::GetIndexFileFreeSpace() {
+  const std::shared_ptr<managed_mapped_file> segment =
+    id_to_file_and_address_.getSegment();
+  return segment->get_free_memory();
+}
+
+uint64_t MinHashSearchIndex::GetIndexSetSize() const {
+  return search_index_.getSet()->size();
+}
+
+uint64_t MinHashSearchIndex::GetNumberOfIndexedFunctions() const {
+  return id_to_file_and_address_.getMap()->size();
+}
+

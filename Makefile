@@ -8,7 +8,7 @@ OBJ = disassembly.o pecodesource.o flowgraph.o flowgraphutil.o \
       functionminhash.o minhashsearchindex.o
 
 ALL = disassemble dotgraphs graphhashes addfunctionstoindex createfunctionindex\
-      matchfunctionsfromindex
+      matchfunctionsfromindex dumpfunctionindexinfo growfunctionindex
 
 %.o: %.cpp
 	$(CPP) -c -o $@ $< $(CPPFLAGS)
@@ -36,6 +36,15 @@ addfunctionstoindex: addfunctionstoindex.cpp $(OBJ)
 matchfunctionsfromindex: matchfunctionsfromindex.cpp $(OBJ)
 	$(CPP) $(CPPFLAGS) -o matchfunctionsfromindex matchfunctionsfromindex.cpp $(OBJ) \
 	$(LIBDIR) $(LIBS)
+
+dumpfunctionindexinfo: dumpfunctionindexinfo.cpp $(OBJ)
+	$(CPP) $(CPPFLAGS) -o dumpfunctionindexinfo dumpfunctionindexinfo.cpp $(OBJ) \
+	$(LIBDIR) $(LIBS)
+
+growfunctionindex: growfunctionindex.cpp $(OBJ)
+	$(CPP) $(CPPFLAGS) -o growfunctionindex growfunctionindex.cpp $(OBJ) \
+	$(LIBDIR) $(LIBS)
+
 
 clean:
 	rm ./*.o $(ALL)
