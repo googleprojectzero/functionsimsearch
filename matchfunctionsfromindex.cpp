@@ -119,9 +119,9 @@ int main(int argc, char** argv) {
             function_address, result.first, 
             result.second));
 
-            printf("[!] (%lu/%lu) %f: %lx.%lx matches %lx.%lx \n",
+            printf("[!] (%lu/%lu) %f: %lx.%lx (%lu blocks) matches %lx.%lx \n",
               processed_functions->load(), number_of_functions, result.first,
-              file_id, function_address, result.second.first, 
+              file_id, function_address, block_count, result.second.first,
               result.second.second);
         }
       }

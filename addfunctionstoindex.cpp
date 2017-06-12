@@ -26,6 +26,7 @@
 #include "functionminhash.hpp"
 #include "minhashsearchindex.hpp"
 #include "pecodesource.hpp"
+#include "threadpool.hpp"
 
 using namespace std;
 using namespace Dyninst;
@@ -74,26 +75,40 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  uint64_t function_count = 1;
-  Instruction::Ptr instruction;
+  std::mutex search_index_mutex;
+  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+  std::atomic_ulong atomic_processed_functions(0);
+  std::atomic_ulong* processed_functions = &atomic_processed_functions;
+  uint64_t number_of_functions = functions.size();
+
   for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
+    pool.Push(
+      [&search_index, &search_index_mutex, &binary_path_string,
+      processed_functions, file_id, function, minimum_size, 
+      number_of_functions](int threadid) {
+      Flowgraph graph;
+      Address function_address = function->addr();
 
-    BuildFlowgraph(function, &graph);
+      BuildFlowgraph(function, &graph);
 
-    if (graph.GetSize() > minimum_size) {
-      std::vector<uint32_t> minhash_vector;
-      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu nodes)\n",
-        function_count, functions.size(), binary_path_string.c_str(), file_id,
-        function_address, graph.GetSize());
-      CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
-      search_index.AddFunction(minhash_vector, file_id, function_address);
-    } else {
-      printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu nodes\n",
-        function_count, functions.size(), binary_path_string.c_str(), file_id, 
-        function_address, graph.GetSize());
-    }
-    ++function_count;
+      if (graph.GetSize() > minimum_size) {
+        std::vector<uint32_t> minhash_vector;
+        printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu nodes)\n",
+        processed_functions->load(), number_of_functions,
+        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
+ 
+        CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
+        {
+          std::lock_guard<std::mutex> lock(search_index_mutex);
+          search_index.AddFunction(minhash_vector, file_id, function_address);
+        }
+      } else {
+        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu nodes\n",
+          processed_functions->load(), number_of_functions,
+          binary_path_string.c_str(), file_id, function_address, graph.GetSize());
+      }
+      (*processed_functions)++;
+    });
   }
+  pool.Stop(true);
 }
