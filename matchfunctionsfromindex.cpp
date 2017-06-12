@@ -26,6 +26,7 @@
 #include "functionminhash.hpp"
 #include "minhashsearchindex.hpp"
 #include "pecodesource.hpp"
+#include "threadpool.hpp"
 
 using namespace std;
 using namespace Dyninst;
@@ -78,32 +79,57 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  printf("[!] Done disassembling, beginning search.\n");
   Instruction::Ptr instruction;
+
+  threadpool::SynchronizedQueue<
+    std::tuple<Address, float, MinHashSearchIndex::FileAndAddress>> resultqueue;
+  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+  std::atomic_ulong atomic_processed_functions(0);
+  std::atomic_ulong* processed_functions = &atomic_processed_functions;
+  uint64_t number_of_functions = functions.size();
+
+  // Push the consumer thread into the threadpool.
   for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
+    // Push the producer threads into the threadpool.
+    pool.Push(
+      [&resultqueue, &search_index, processed_functions, file_id, function,
+      minimum_size, max_matches, minimum_percentage, number_of_functions]
+        (int threadid) {
+      Flowgraph graph;
+      Address function_address = function->addr();
+      uint64_t block_count = 0;
+      for (const auto& block : function->blocks()) {
+        ++block_count;
+      }
+      if (block_count <= minimum_size) {
+        return;
+      }
 
-    BuildFlowgraph(function, &graph);
-    if (graph.GetSize() > minimum_size) {
+      BuildFlowgraph(function, &graph);
       std::vector<uint32_t> minhash_vector;
-
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
 
       std::vector<std::pair<float, MinHashSearchIndex::FileAndAddress>> results;
-      bool printnewline = false;
       search_index.QueryTopN(
         minhash_vector, max_matches, &results);
       for (const auto& result : results) {
         if (result.first > minimum_percentage) {
-          printf("[!] %f - %lx Address %lx matches FileID %lx Address %lx\n",
-            result.first, file_id, function_address, result.second.first,
-            result.second.second);
-          printnewline = true;
+          resultqueue.Push(std::make_tuple(
+            function_address, result.first, 
+            result.second));
+
+            printf("[!] (%lu/%lu) %f: %lx.%lx matches %lx.%lx \n",
+              processed_functions->load(), number_of_functions, result.first,
+              file_id, function_address, result.second.first, 
+              result.second.second);
         }
       }
-      if (printnewline) {
-        printf("[!] =======================================\n");
-      }
-    }
+      (*processed_functions)++;
+      //printf("[!] Thread %d processed %lu/%lu function\n", threadid,
+      //  processed_functions->load(), number_of_functions);
+    });
   }
+  // Process all the things.
+  pool.Stop(true);
 }

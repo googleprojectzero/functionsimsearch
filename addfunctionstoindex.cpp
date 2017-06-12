@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  uint64_t function_count = 1;
   Instruction::Ptr instruction;
   for (Function* function : functions) {
     Flowgraph graph;
@@ -83,13 +84,16 @@ int main(int argc, char** argv) {
 
     if (graph.GetSize() > minimum_size) {
       std::vector<uint32_t> minhash_vector;
-      printf("[!] %s FileID %lx: Adding function %lx (%lu nodes)\n",
-        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
+      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu nodes)\n",
+        function_count, functions.size(), binary_path_string.c_str(), file_id,
+        function_address, graph.GetSize());
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
       search_index.AddFunction(minhash_vector, file_id, function_address);
     } else {
-      printf("[!] %s FileID %lx: Skipping function %lx, only %lu nodes\n",
-        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
+      printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu nodes\n",
+        function_count, functions.size(), binary_path_string.c_str(), file_id, 
+        function_address, graph.GetSize());
     }
+    ++function_count;
   }
 }
