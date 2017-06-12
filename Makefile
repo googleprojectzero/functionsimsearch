@@ -1,6 +1,6 @@
 CPP = g++
 CPPFLAGS = -ggdb -O3 -std=c++11 
-LIBDIR = -L./third_party/pe-parse/parser-library
+LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library
 
