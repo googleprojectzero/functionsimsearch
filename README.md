@@ -98,12 +98,13 @@ basic blocks to the search index file.
 #### matchfunctionsfromindex
 
 ```
-./matchfunctionsfromindex ELF /bin/tar ./function_search.index 5 10
-./matchfunctionsfromindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5 10
+./matchfunctionsfromindex ELF /bin/tar ./function_search.index 5 10 .90
+./matchfunctionsfromindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5 10 .90
 ```
 
 Disassemble the specified input file, and for each function with more than 5
 basic blocks, retrieve the top-10 most similar functions from the search index.
+Each match must be at least 90% similar.
 
 ## Built With
 
