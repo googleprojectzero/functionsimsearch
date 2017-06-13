@@ -22,7 +22,7 @@ RUN cd /code/dyninst && \
 
 # build functionsimsearch
 RUN cd /code && \
-    git clone https://github.com/williballenthin/functionsimsearch.git && \
+    git clone https://github.com/thomasdullien/functionsimsearch.git && \
     cd functionsimsearch && \
     mkdir third_party && \
     cd third_party && \
