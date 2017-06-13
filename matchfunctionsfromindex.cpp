@@ -98,15 +98,15 @@ int main(int argc, char** argv) {
         (int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
-      uint64_t block_count = 0;
-      for (const auto& block : function->blocks()) {
-        ++block_count;
-      }
-      if (block_count <= minimum_size) {
-        return;
+      BuildFlowgraph(function, &graph);
+      (*processed_functions)++;
+
+      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
+
+      if (graph.GetNumberOfBranchingNodes() <= minimum_size) {
+       return;
       }
 
-      BuildFlowgraph(function, &graph);
       std::vector<uint32_t> minhash_vector;
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
 
@@ -119,15 +119,12 @@ int main(int argc, char** argv) {
             function_address, result.first, 
             result.second));
 
-            printf("[!] (%lu/%lu) %f: %lx.%lx (%lu blocks) matches %lx.%lx \n",
+            printf("[!] (%lu/%lu) %f: %lx.%lx (%lu branching nodes) matches %lx.%lx \n",
               processed_functions->load(), number_of_functions, result.first,
-              file_id, function_address, block_count, result.second.first,
+              file_id, function_address, branching_nodes, result.second.first,
               result.second.second);
         }
       }
-      (*processed_functions)++;
-      //printf("[!] Thread %d processed %lu/%lu function\n", threadid,
-      //  processed_functions->load(), number_of_functions);
     });
   }
   // Process all the things.

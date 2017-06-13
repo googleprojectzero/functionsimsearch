@@ -1,6 +1,6 @@
 // Copyright 2017 Google Inc. All Rights Reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 3.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -228,3 +228,17 @@ const std::vector<address>* Flowgraph::GetInEdges(address node) {
     return &(iter->second);
   }
 }
+
+// Returns the number of nodes that have more than one successor in the graph.
+// Required to measure graph complexity to decide what to index.
+uint64_t Flowgraph::GetNumberOfBranchingNodes() const {
+  uint64_t result = 0;
+  for (const auto& edge : out_edges_) {
+    if (edge.second.size() > 1) {
+      ++result;
+    }
+  }
+  return result;
+}
+
+

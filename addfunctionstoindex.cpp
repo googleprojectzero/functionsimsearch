@@ -89,26 +89,28 @@ int main(int argc, char** argv) {
       number_of_functions](int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
-
       BuildFlowgraph(function, &graph);
-
-      if (graph.GetSize() > minimum_size) {
-        std::vector<uint32_t> minhash_vector;
-        printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu nodes)\n",
-        processed_functions->load(), number_of_functions,
-        binary_path_string.c_str(), file_id, function_address, graph.GetSize());
- 
-        CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
-        {
-          std::lock_guard<std::mutex> lock(*mutex_pointer);
-          search_index.AddFunction(minhash_vector, file_id, function_address);
-        }
-      } else {
-        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu nodes\n",
-          processed_functions->load(), number_of_functions,
-          binary_path_string.c_str(), file_id, function_address, graph.GetSize());
-      }
       (*processed_functions)++;
+
+      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
+
+      if (branching_nodes <= minimum_size) {
+        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu branching nodes\n",
+          processed_functions->load(), number_of_functions,
+          binary_path_string.c_str(), file_id, function_address, branching_nodes);
+        return;
+      }
+
+      std::vector<uint32_t> minhash_vector;
+      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching nodes)\n",
+        processed_functions->load(), number_of_functions,
+        binary_path_string.c_str(), file_id, function_address, branching_nodes);
+ 
+      CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
+      {
+        std::lock_guard<std::mutex> lock(*mutex_pointer);
+        search_index.AddFunction(minhash_vector, file_id, function_address);
+      }
     });
   }
   pool.Stop(true);
