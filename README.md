@@ -29,7 +29,7 @@ git clone https://github.com/trailofbits/pe-parse.git
 cd pe-parse
 cmake ./CMakeLists
 make
-cd ..
+cd ../..
 make
 ```
 This should build the relevant executables to try.
