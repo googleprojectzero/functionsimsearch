@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
   for (Function* function : functions) {
     pool.Push(
       [&search_index, mutex_pointer, &binary_path_string,
-      processed_functions, file_id, function, minimum_size, 
+      processed_functions, file_id, function, minimum_size,
       number_of_functions](int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
@@ -100,16 +100,26 @@ int main(int argc, char** argv) {
           binary_path_string.c_str(), file_id, function_address, branching_nodes);
         return;
       }
+      if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
+        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx. Index file full.\n",
+          processed_functions->load(), number_of_functions,
+          binary_path_string.c_str(), file_id, function_address);
+        return;
+      }
 
       std::vector<uint32_t> minhash_vector;
       printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching nodes)\n",
         processed_functions->load(), number_of_functions,
         binary_path_string.c_str(), file_id, function_address, branching_nodes);
- 
+
       CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
       {
         std::lock_guard<std::mutex> lock(*mutex_pointer);
-        search_index.AddFunction(minhash_vector, file_id, function_address);
+        try {
+          search_index.AddFunction(minhash_vector, file_id, function_address);
+        } catch (boost::interprocess::bad_alloc& out_of_space) {
+          printf("[!] boost::interprocess::bad_alloc - no space in index file left!\n");
+        }
       }
     });
   }
