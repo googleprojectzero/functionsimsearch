@@ -29,15 +29,12 @@ uint32_t TruncateValue(uint32_t value, char bits) {
 typedef std::tuple<std::string, std::string, std::string> MnemTuple;
 typedef std::tuple<MnemTuple, uint64_t, uint64_t> HashableTuple;
 
-uint32_t HashMnemTuple(const MnemTuple& tup, uint64_t occurrence, uint64_t
-  hash_index) {
+uint32_t HashMnemTuple(const MnemTuple& tup, uint64_t hash_index) {
   size_t value1 = std::hash<std::string>{}(std::get<0>(tup));
   value1 = rotl64(value1, 7);
   value1 *= std::hash<std::string>{}(std::get<1>(tup));
   value1 = rotl64(value1, 7);
   value1 *= std::hash<std::string>{}(std::get<2>(tup));
-  value1 = rotl64(value1, 7);
-  value1 *= (k1 * (occurrence+1));
   value1 = rotl64(value1, 7);
   value1 *= (k2 * hash_index);
   return value1;
@@ -107,14 +104,12 @@ void CalculateFunctionFingerprint(Dyninst::ParseAPI::Function* function,
   }
   // Now calculate the minhash entries.
   for (const auto& entry : occurrence) {
-    for (uint64_t count = 0; count < entry.second; ++count) {
-      for (uint64_t hash_index = 0; hash_index < mnem_hashes; ++hash_index) {
-        uint32_t value = TruncateValue(
-          HashMnemTuple(entry.first, count, hash_index), bits_per_hash);
-        uint64_t output_index = hash_index + cfg_hashes;
-        (*output)[output_index] = std::min((*output)[output_index],
-          value);
-      }
+    for (uint64_t hash_index = 0; hash_index < mnem_hashes; ++hash_index) {
+      uint32_t value = TruncateValue(
+        HashMnemTuple(entry.first, hash_index), bits_per_hash);
+      uint64_t output_index = hash_index + cfg_hashes;
+      (*output)[output_index] = std::min((*output)[output_index],
+        value);
     }
   }
 }

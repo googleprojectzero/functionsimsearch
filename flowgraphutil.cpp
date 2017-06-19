@@ -17,27 +17,6 @@
 
 #include "flowgraphutil.hpp"
 
-uint64_t BuildMnemonicNgramMultiset(Dyninst::ParseAPI::Function* function,
-  uint32_t n, std::vector<std::string>* results) {
-  // First generate a map with a sequence of all instructions in the function,
-  // ordered by address.
-  std::map<address, std::string> mnemonic_sequence;
-
-  for (const auto& block : function->blocks()) {
-    Dyninst::ParseAPI::Block::Insns block_instructions;
-    block->getInsns(block_instructions);
-    for (const auto& instruction : block_instructions) {
-      const auto& operation = instruction.second->getOperation();
-      mnemonic_sequence[instruction.first] = instruction.second->format();
-    }
-  }
-
-  for (const auto& addr_mnem : mnemonic_sequence) {
-    printf("%lx %s\n", addr_mnem.first, addr_mnem.second.c_str());
-  }
-  return 0;
-}
-
 uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
   Flowgraph* graph) {
   uint64_t count = 0;
