@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef FUNCTIONMINHASH_HPP
-#define FUNCTIONMINHASH_HPP
+#include <iostream>
+#include <map>
 
-#include <cstdint>
-#include <vector>
-#include "CodeObject.h"
+#include "simhashsearchindex.hpp"
 
-uint32_t TruncateValue(uint32_t value, char bits);
-void CalculateFunctionFingerprint(Dyninst::ParseAPI::Function* function,
-  uint64_t cfg_hashes, uint64_t mnem_hashes, uint32_t bits_per_hash,
-  std::vector<uint32_t>* output);
+using namespace std;
 
-#endif // FUNCTIONMINHASH_HPP
+int main(int argc, char** argv) {
+  if (argc != 2) {
+    printf("Dump contents of a search index file.\n");
+    printf("Usage: %s <index file>\n", argv[0]);
+    return -1;
+  }
+
+  std::string index_file(argv[1]);
+  SimHashSearchIndex search_index(index_file, false);
+  printf("[!] Indexed %lu functions, total index has %lu elements\n",
+    search_index.GetNumberOfIndexedFunctions(),
+    search_index.GetIndexSetSize());
+  search_index.DumpIndexToStdout(false);
+}

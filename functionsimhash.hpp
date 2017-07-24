@@ -1,10 +1,33 @@
+// Copyright 2017 Google Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef FUNCTIONSIMHASH_HPP
 #define FUNCTIONSIMHASH_HPP
 
+#include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <tuple>
 #include <vector>
+
+#include "CodeObject.h"
+#include "flowgraph.hpp"
+#include "flowgraphutil.hpp"
+
+typedef std::tuple<std::string, std::string, std::string> MnemTuple;
 
 // A class to perform per-function SimHash calculation.
 //
@@ -26,27 +49,25 @@ class FunctionSimHasher {
 public:
   // The weight_file is a simple memory-mapped map that maps uint64_t IDs for
   // a feature to float weights.
-  FunctionSimHasher(const std::string& weight_file);
+  FunctionSimHasher(const std::string& weight_file, bool verbose = false);
 
-  // Calculate a simhash value for a given function. Return a vector of floats.
-  // The reason why this does not return the compressed vector of bits is that
-  // returning the floats allows easy sim-hashing of groups of functions, too,
-  // and combining the sim-hash with other tihngs that are not derived from the
-  // function itself.
-  //
-  // simhash_index is an index that allows the calculation of many ent
-  // sim-hashes.
+  // Calculate a simhash value for a given function. Outputs a vector of 64-bit
+  // values.
   void CalculateFunctionSimHash(
     Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-    uint64_t simhash_index, std::vector<float>* output_simhash_floats);
+    std::vector<uint64_t>* output_simhash_values);
 
+  static uint64_t FloatsToBits(const std::vector<float>& floats);
+  static bool FloatsToBits(const std::vector<float>& floats,
+    std::vector<uint64_t>* outputs);
 private:
   // Process one subgraph and hash it into the output vector.
   void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, address node,
-    uint64_t bits, std::vector<float>* output_simhash_floats) const;
+    uint64_t bits, uint64_t simhash_index,
+    std::vector<float>* output_simhash_floats) const;
 
   // Process one mnemonic n-gram and hash it into the output vector.
-  void ProcessMnemTuple(const MnmemTuple tup&, uint64_t bits,
+  void ProcessMnemTuple(const MnemTuple &tup, uint64_t bits,
     uint64_t hash_index, std::vector<float>* output_simhash_floats) const;
 
   // Given an n-bit hash and a weight, hash the weight into the output vector
@@ -75,8 +96,8 @@ private:
     uint64_t hash_index, std::vector<uint64_t>* output) const;
 
   // Return a weight for a given key.
-  float GetWeight(uint64_t key) const;
-  float GetGraphWeight(std::unique_ptr<Flowgraph>& graph, address node) const;
+  float GetWeight(uint64_t key, float standard) const;
+  float GetGraphletWeight(std::unique_ptr<Flowgraph>& graph, address node) const;
   float GetMnemTupleWeight(const MnemTuple& tup) const;
 
   inline bool GetNthBit(const std::vector<uint64_t>& nbit_hash,
@@ -84,14 +105,17 @@ private:
 
   // Given a Dyninst function, create the set of instruction 3-grams.
   void BuildMnemonicNgrams(Dyninst::ParseAPI::Function* function,
-    int64_t HashMnemTuple(const MnemTuple& tup, uint64_t hash_index) const;
+    std::vector<MnemTuple>* tuples) const;
+
+  void DumpFloatState(std::vector<float>* output_floats);
 
   std::map<uint64_t, float> weights_;
-
+  bool verbose_ = false;
+  mutable std::mutex mutex_;
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;
   static constexpr uint64_t seed1_ = 0xb492b66fbe98f273ULL;
   static constexpr uint64_t seed2_ = 0x9ae16a3b2f90404fULL;
-}
+};
 
-#endif FUNCTIONSIMHASH_HPP
+#endif // FUNCTIONSIMHASH_HPP

@@ -1,51 +1,39 @@
 CPP = g++
-CPPFLAGS = -ggdb -O3 -std=c++11 
+CPPFLAGS = -ggdb -O3 -std=c++11
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library
 
-OBJ = disassembly.o pecodesource.o flowgraph.o flowgraphutil.o \
-      functionminhash.o minhashsearchindex.o
+OBJ = build/disassembly.o build/pecodesource.o build/flowgraph.o \
+      build/flowgraphutil.o build/functionsimhash.o \
+      build/simhashsearchindex.o build/bitpermutation.o
 
-ALL = disassemble dotgraphs graphhashes addfunctionstoindex createfunctionindex\
-      matchfunctionsfromindex dumpfunctionindexinfo growfunctionindex
+ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
+      bin/createfunctionindex bin/functionfingerprints \
+      bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
+      bin/growfunctionindex bin/dumpfunctionindex
 
-%.o: %.cpp
+TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o
+
+DIRECTORIES = directory/build directory/bin directory/tests
+
+TEST = runtests
+
+directory/%:
+	mkdir -p $(@F)
+
+build/%.o: %.cpp $(DIRECTORIES)
 	$(CPP) -c -o $@ $< $(CPPFLAGS)
 
 all: $(ALL)
 
-disassemble: $(OBJ)
-	$(CPP) $(CPPFLAGS) -o disassemble disassemble.cpp $(OBJ) \
-		$(LIBDIR) $(LIBS)
+tests: $(OBJ) $(TESTS)
+	$(CPP) $(CPPFLAGS) -o tests/runtests runtests.cpp $(OBJ) $(TESTS) $(LIBDIR) \
+		$(LIBS) -lgtest
 
-dotgraphs: dotgraphs.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o dotgraphs dotgraphs.cpp $(OBJ) $(LIBDIR) $(LIBS)
-
-graphhashes: graphhashes.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o graphhashes graphhashes.cpp $(OBJ) $(LIBDIR) $(LIBS)
-
-createfunctionindex: createfunctionindex.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o createfunctionindex createfunctionindex.cpp $(OBJ) \
-	$(LIBDIR) $(LIBS)
-
-addfunctionstoindex: addfunctionstoindex.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o addfunctionstoindex addfunctionstoindex.cpp $(OBJ) \
-	$(LIBDIR) $(LIBS)
-
-matchfunctionsfromindex: matchfunctionsfromindex.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o matchfunctionsfromindex matchfunctionsfromindex.cpp $(OBJ) \
-	$(LIBDIR) $(LIBS)
-
-dumpfunctionindexinfo: dumpfunctionindexinfo.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o dumpfunctionindexinfo dumpfunctionindexinfo.cpp $(OBJ) \
-	$(LIBDIR) $(LIBS)
-
-growfunctionindex: growfunctionindex.cpp $(OBJ)
-	$(CPP) $(CPPFLAGS) -o growfunctionindex growfunctionindex.cpp $(OBJ) \
-	$(LIBDIR) $(LIBS)
-
+bin/%: $(OBJ)
+	$(CPP) $(CPPFLAGS) -o $@ $(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
 
 clean:
-	rm ./*.o $(ALL)
+	rm ./build/*.o $(ALL)
 

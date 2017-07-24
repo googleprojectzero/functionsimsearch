@@ -27,7 +27,12 @@ static constexpr uint64_t k2 = 0x9ae16a3b2f90404fULL;
 uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function, Flowgraph* graph);
 
 inline uint64_t rotl64 ( uint64_t x, int8_t r ) {
-    return (x << r) | (x >> (64 - r));
+  return (x << r) | (x >> (64 - r));
+}
+
+// GCC supports 128-bit integers.
+inline __uint128_t rotl128 ( __uint128_t x, int8_t r ) {
+  return (x << r) | (x >> (128 - r));
 }
 
 #endif

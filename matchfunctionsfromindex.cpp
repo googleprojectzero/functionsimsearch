@@ -23,8 +23,8 @@
 #include "disassembly.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
-#include "functionminhash.hpp"
-#include "minhashsearchindex.hpp"
+#include "functionsimhash.hpp"
+#include "simhashsearchindex.hpp"
 #include "pecodesource.hpp"
 #include "threadpool.hpp"
 
@@ -46,7 +46,7 @@ uint64_t GenerateExecutableID(const std::string& filename) {
 
 int main(int argc, char** argv) {
   if (argc != 7) {
-    printf("Match minhash vectors from a binary against a search index\n");
+    printf("Match simhashes from a binary against a search index\n");
     printf("Usage: %s <PE/ELF> <binary path> <index file> <minimum function size> <max_matches> <minimum_percentage>\n", argv[0]);
     return -1;
   }
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
   printf("[!] Executable id is %lx\n", file_id);
 
   // Load the search index.
-  MinHashSearchIndex search_index(index_file, false);
+  SimHashSearchIndex search_index(index_file, false);
 
   printf("[!] Loaded search index, starting disassembly.\n");
 
@@ -83,18 +83,20 @@ int main(int argc, char** argv) {
   Instruction::Ptr instruction;
 
   threadpool::SynchronizedQueue<
-    std::tuple<Address, float, MinHashSearchIndex::FileAndAddress>> resultqueue;
-  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+    std::tuple<Address, float, SimHashSearchIndex::FileAndAddress>> resultqueue;
+  threadpool::ThreadPool pool(1);//std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
+  FunctionSimHasher hasher("weights.txt");
 
   // Push the consumer thread into the threadpool.
   for (Function* function : functions) {
     // Push the producer threads into the threadpool.
     pool.Push(
       [&resultqueue, &search_index, processed_functions, file_id, function,
-      minimum_size, max_matches, minimum_percentage, number_of_functions]
+      minimum_size, max_matches, minimum_percentage, number_of_functions,
+      &hasher]
         (int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
@@ -107,16 +109,18 @@ int main(int argc, char** argv) {
        return;
       }
 
-      std::vector<uint32_t> minhash_vector;
-      CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
+      std::vector<uint64_t> hashes;
+      hasher.CalculateFunctionSimHash(function, 128, &hashes);
+      uint64_t hash_A = hashes[0];
+      uint64_t hash_B = hashes[1];
 
-      std::vector<std::pair<float, MinHashSearchIndex::FileAndAddress>> results;
+      std::vector<std::pair<float, SimHashSearchIndex::FileAndAddress>> results;
       search_index.QueryTopN(
-        minhash_vector, max_matches, &results);
+        hash_A, hash_B, max_matches, &results);
       for (const auto& result : results) {
         if (result.first > minimum_percentage) {
           resultqueue.Push(std::make_tuple(
-            function_address, result.first, 
+            function_address, result.first,
             result.second));
 
             printf("[!] (%lu/%lu) %f: %lx.%lx (%lu branching nodes) matches %lx.%lx \n",

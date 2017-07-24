@@ -15,7 +15,7 @@
 #include <iostream>
 #include <map>
 
-#include "minhashsearchindex.hpp"
+#include "simhashsearchindex.hpp"
 
 using namespace std;
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   }
 
   std::string index_file(argv[1]);
-  MinHashSearchIndex search_index(index_file, false);
+  SimHashSearchIndex search_index(index_file, false);
   printf("[!] FileSize: %lu bytes, FreeSpace: %lu bytes\n",
     search_index.GetIndexFileSize(), search_index.GetIndexFileFreeSpace());
   printf("[!] Indexed %lu functions, total index has %lu elements\n",

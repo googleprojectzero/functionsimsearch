@@ -1,16 +1,66 @@
+#include "InstructionDecoder.h"
 
-typedef std::tuple<std::string, std::string, std::string> MnemTuple;
+#include "functionsimhash.hpp"
+
+uint64_t FunctionSimHasher::FloatsToBits(const std::vector<float>& floats) {
+  std::vector<uint64_t> temp;
+  FloatsToBits(floats, &temp);
+  return temp[0];
+}
+
+bool FunctionSimHasher::FloatsToBits(const std::vector<float>& floats,
+  std::vector<uint64_t>* outputs) {
+  uint64_t index = 0;
+  outputs->resize((floats.size() / 64) + 1);
+  for (float entry : floats) {
+    uint64_t vector_index = index / 64;
+    uint64_t bit_index = index % 64;
+    if (entry >= 0) {
+      (*outputs)[vector_index] |= (1ULL << bit_index);
+    }
+    ++index;
+  }
+}
+
+void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {
+  for (float value : *output_floats) {
+    printf("%03.02f ", value);
+  }
+  printf("\n");
+  std::vector<uint64_t> outputs;
+  FloatsToBits(*output_floats, &outputs);
+  for (uint64_t hash : outputs) {
+    printf("%16.16lx ", hash);
+  }
+  printf("\n");
+}
 
 // Calculates an output vector of floats from the underlying function.
 // SimHash works by hashing individual elements, and adding up weights in
-// vectors with the same bits.
+// vectors with the same bits. Unfortunately, the construction of SimHash is
+// such that repeated entries in a multiset will "overwhelm" the hash, so
+// care has to be taken to add cardinalities into the construction.
 void FunctionSimHasher::CalculateFunctionSimHash(
   Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-  uint64_t simhash_index, std::vector<float>* output_simhash_floats) {
+  std::vector<uint64_t>* output_simhash_values) {
+
+  std::vector<float> output_simhash_floats;
   output_simhash_floats.resize(number_of_outputs);
 
   Flowgraph graph;
-  BuildFlowgraph(function, &graph);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    BuildFlowgraph(function, &graph);
+  }
+
+  std::vector<address> nodes;
+  graph.GetNodes(&nodes);
+
+  // A map to keep track of how often each feature has been seen during the
+  // calculation of this SimHash. Needed to deal with multisets -- if one simply
+  // adds the same per-feature-hash into the calculation the resulting SimHash
+  // will with high likelihood end up being just the per-feature hash.
+  std::map<uint64_t, uint64_t> feature_cardinalities;
 
   // Process subgraphs.
   for (const address node : nodes) {
@@ -18,23 +68,61 @@ void FunctionSimHasher::CalculateFunctionSimHash(
     std::unique_ptr<Flowgraph> distance_2(graph.GetSubgraph(node, 2, 30));
     std::unique_ptr<Flowgraph> distance_3(graph.GetSubgraph(node, 3, 30));
 
-    ProcessSubgraph(distance_2, node, number_of_outputs, simhash_index,
-      output_simhash_floats);
-    ProcessSubgraph(distance_3, node, number_of_outputs, simhash_index,
-      output_simhash_floats);
+    if (distance_2) {
+      if (verbose_) {
+        printf("g2.");
+      }
+
+     // Calculate IDs for the graphs.
+     uint64_t distance_2_graph_id = HashGraph(distance_2, node, 0, 0);
+
+     // Increment cardinality for how often this feature has been seen.
+     uint64_t cardinality = feature_cardinalities[distance_2_graph_id]++;
+
+     ProcessSubgraph(distance_2, node, number_of_outputs, cardinality,
+       &output_simhash_floats);
+    }
+    if (distance_3) {
+      if (verbose_) {
+        printf("g3.");
+      }
+
+     // Calculate IDs for the graphs.
+     uint64_t distance_3_graph_id = HashGraph(distance_3, node, 0, 0);
+
+     // Increment cardinality for how often this feature has been seen.
+     uint64_t cardinality = feature_cardinalities[distance_3_graph_id]++;
+
+     ProcessSubgraph(distance_3, node, number_of_outputs, cardinality,
+       &output_simhash_floats);
+    }
   }
 
   // Process mnemonic n-grams.
   std::vector<MnemTuple> tuples;
   BuildMnemonicNgrams(function, &tuples);
   for (const MnemTuple& tuple : tuples) {
-    ProcessTuple(tuple, number_of_outputs, output_simhash_floats);
+    if (verbose_) {
+      printf("mn.");
+    }
+    uint64_t tuple_id = HashMnemTuple(tuple, 0);
+    uint64_t cardinality = feature_cardinalities[tuple_id]++;
+
+    ProcessMnemTuple(tuple, number_of_outputs, cardinality,
+      &output_simhash_floats);
   }
+
+  if (verbose_) {
+    printf("\n");
+  }
+
+  FloatsToBits(output_simhash_floats, output_simhash_values);
 }
 
 // Add a given subgraph into the vector of floats.
 void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
-  address node, uint64_t bits, std::vector<float>* output_simhash_floats) {
+  address node, uint64_t bits, uint64_t hash_index,
+  std::vector<float>* output_simhash_floats) const {
   // Retrieve the saved weight of the subgraph graphlet.
   float graphlet_weight = GetGraphletWeight(graph, node);
 
@@ -47,22 +135,27 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
 }
 
 // Add a given mnemonic tuple into the vector of floats.
-void FunctionSimHasher::ProcessMnemTuple(const MnmemTuple tup&, uint64_t bits,
-  uint64_t hash_index, std::vector<float>* output_simhash_floats) {
+void FunctionSimHasher::ProcessMnemTuple(const MnemTuple &tup, uint64_t bits,
+  uint64_t hash_index, std::vector<float>* output_simhash_floats) const {
   float mnem_tuple_weight = GetMnemTupleWeight(tup);
 
   std::vector<uint64_t> hash;
-  CalculateNBitMnemTupleHash(tup, bits, hash_index, output_simhash_floats);
+  CalculateNBitMnemTupleHash(tup, bits, hash_index, &hash);
 
-  AddWeightsInHashToOutput(hash, bits, mnem_tuple_weight, hash_index,
-    output_simhash_floats);
+  AddWeightsInHashToOutput(hash, bits, mnem_tuple_weight, output_simhash_floats);
 }
 
 // Iterate over an n-bit hash; add weights into the vector for each one,
 // subtract the weights from the vector for each zero.
 void FunctionSimHasher::AddWeightsInHashToOutput(
   const std::vector<uint64_t>& hash, uint64_t bits, float weight,
-  std::vector<float>* output_simhash_floats) {
+  std::vector<float>* output_simhash_floats) const {
+
+  if (verbose_) {
+    for (const uint64_t hash_value : hash) {
+      printf("%16.16lx ", hash_value);
+    }
+  }
 
   for (uint64_t bit_index = 0; bit_index < bits; ++bit_index) {
     if (GetNthBit(hash, bit_index)) {
@@ -78,17 +171,17 @@ void FunctionSimHasher::AddWeightsInHashToOutput(
 inline uint64_t FunctionSimHasher::SeedXForHashY(uint64_t seed_index,
   uint64_t hash_index) const {
   if (seed_index == 0) {
-    return rotl64(seed0_, hash_index % 7);
+    return rotl64(seed0_, hash_index % 7) * (hash_index + 1);
   } else if (seed_index == 1) {
-    return rotl64(seed1_, hash_index % 11);
+    return rotl64(seed1_, hash_index % 11) * (hash_index + 1);
   } else if (seed_index == 2) {
-    return rotl64(seed2_, hash_index % 13);
+    return rotl64(seed2_, hash_index % 13) * (hash_index + 1);
   }
 }
 
 // Hash a tuple of mnemonics into a 64-bit value, using a hash family index.
 uint64_t FunctionSimHasher::HashMnemTuple(const MnemTuple& tup,
-  uint64_t hash_index) {
+  uint64_t hash_index) const {
   size_t value1 = SeedXForHashY(0, hash_index) ^ SeedXForHashY(1, hash_index) ^
     SeedXForHashY(2, hash_index);
   value1 *= std::hash<std::string>{}(std::get<0>(tup));
@@ -101,9 +194,11 @@ uint64_t FunctionSimHasher::HashMnemTuple(const MnemTuple& tup,
   return value1;
 }
 
-// Hash a graph into a 64-bit value, using a hash family index.
+// Hash a graph into a 64-bit value, using a hash family index and a counter.
+// The hash family index is used for choosing a hash family (clearly ;), the
+// counter is used for generating multi-word hash outputs.
 uint64_t FunctionSimHasher::HashGraph(std::unique_ptr<Flowgraph>& graph,
-  address node, uint64_t hash_index, uint64_t counter) {
+  address node, uint64_t hash_index, uint64_t counter) const {
   return graph->CalculateHash(node,
     SeedXForHashY(0, hash_index) * (counter + 1),
     SeedXForHashY(1, hash_index) * (counter + 1),
@@ -114,7 +209,7 @@ uint64_t FunctionSimHasher::HashGraph(std::unique_ptr<Flowgraph>& graph,
 // the hash function index.
 void FunctionSimHasher::CalculateNBitGraphHash(
   std::unique_ptr<Flowgraph>& graph, address node, uint64_t bits,
-  uint64_t hash_index, std::vector<uint64_t>* output) {
+  uint64_t hash_index, std::vector<uint64_t>* output) const {
   output->clear();
 
   for (uint64_t counter = 0; counter < bits; counter += 64) {
@@ -126,7 +221,7 @@ void FunctionSimHasher::CalculateNBitGraphHash(
 // increasing the hash function index.
 void FunctionSimHasher::CalculateNBitMnemTupleHash(
   const MnemTuple& tup, uint64_t bits, uint64_t hash_index,
-  std::vector<uint64_t>* output) {
+  std::vector<uint64_t>* output) const {
   output->clear();
 
   for (uint64_t counter = 0; counter < bits; counter += 64) {
@@ -135,28 +230,30 @@ void FunctionSimHasher::CalculateNBitMnemTupleHash(
 }
 
 // Return a weight for a given key, default to 1.0.
-float FunctionSimHasher::GetWeight(uint64_t key) {
+float FunctionSimHasher::GetWeight(uint64_t key, float standard = 1.0) const {
   const auto& iter = weights_.find(key);
-  return (iter == weights_.end()) ? 1.0 : *iter;
+  return (iter == weights_.end()) ? standard : iter->second;
 }
 
 // Hash the graph under the first hash function of the family, then see if a
 // pre-computed weight is loaded.
-float FunctionSimHasher::GetGraphWeight(std::unique_ptr<Flowgraph>& graph,
-  address node) {
+float FunctionSimHasher::GetGraphletWeight(std::unique_ptr<Flowgraph>& graph,
+  address node) const {
   uint64_t graphlet_id = graph->CalculateHash(node,
     SeedXForHashY(0, 0), SeedXForHashY(0, 1), SeedXForHashY(0, 2));
-  return GetWeight(graphlet_id);
+  return GetWeight(graphlet_id, 1.0);
 }
 
-float FunctionSimHasher::GetMnemTupleWeight(const MnemTuple& tup) {
-  uint64_t mnem_id = HashMnemTuple(tup, hash_index);
-  return GetWeight(mnem_id);
+float FunctionSimHasher::GetMnemTupleWeight(const MnemTuple& tup) const {
+  uint64_t mnem_id = HashMnemTuple(tup, 0);
+  // In the absence of proper weight learning, use 1/20th the weight of
+  // a graphlet.
+  return GetWeight(mnem_id, 0.05);
 }
 
 // Given a vector of 64-bit values, retrieve the n-th bit.
 inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
-  uint64_t bitindex) {
+  uint64_t bitindex) const {
   uint64_t index = bitindex / 64;
   uint64_t value = nbit_hash[index];
   uint64_t sub_word_index = bitindex % 64;
@@ -165,15 +262,19 @@ inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
 
 // Given a Dyninst function, create the set of instruction 3-grams.
 void FunctionSimHasher::BuildMnemonicNgrams(Dyninst::ParseAPI::Function* function,
-  std::vector<MnemTuple>* tuples) {
-  // Perform the calculation of the mnemonic-n-gram-hashes.
+  std::vector<MnemTuple>* tuples) const {
   std::vector<std::pair<address, std::string>> sequence;
-  for (const auto& block : function->blocks()) {
-    Dyninst::ParseAPI::Block::Insns block_instructions;
-    block->getInsns(block_instructions);
-    for (const auto& instruction : block_instructions) {
-      auto& op = instruction.second->getOperation();
-      sequence.push_back(std::make_pair(instruction.first, op.format()));
+  // Make sure that reading the mnemonics from Dyninst is synchronized.
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    // Perform the calculation of the mnemonic-n-gram-hashes.
+    for (const auto& block : function->blocks()) {
+      Dyninst::ParseAPI::Block::Insns block_instructions;
+      block->getInsns(block_instructions);
+      for (const auto& instruction : block_instructions) {
+        auto& op = instruction.second->getOperation();
+        sequence.push_back(std::make_pair(instruction.first, op.format()));
+      }
     }
   }
   // Sort instructions by address;
@@ -187,7 +288,8 @@ void FunctionSimHasher::BuildMnemonicNgrams(Dyninst::ParseAPI::Function* functio
   }
 }
 
-FunctionSimHasher::FunctionSimHasher(const std::string& weight_file) {
-
+FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
+  bool verbose) : verbose_(verbose) {
+  // TODO: Implement loading of weights.
 
 }

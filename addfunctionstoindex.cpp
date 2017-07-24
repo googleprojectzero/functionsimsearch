@@ -23,8 +23,8 @@
 #include "disassembly.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
-#include "functionminhash.hpp"
-#include "minhashsearchindex.hpp"
+#include "functionsimhash.hpp"
+#include "simhashsearchindex.hpp"
 #include "pecodesource.hpp"
 #include "threadpool.hpp"
 
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
   printf("[!] Executable id is %lx\n", file_id);
 
   // Load the search index.
-  MinHashSearchIndex search_index(index_file, false);
+  SimHashSearchIndex search_index(index_file, false);
 
   Disassembly disassembly(mode, binary_path_string);
   if (!disassembly.Load()) {
@@ -81,10 +81,11 @@ int main(int argc, char** argv) {
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
+  FunctionSimHasher hasher("weights.txt");
 
   for (Function* function : functions) {
     pool.Push(
-      [&search_index, mutex_pointer, &binary_path_string,
+      [&search_index, mutex_pointer, &binary_path_string, &hasher,
       processed_functions, file_id, function, minimum_size,
       number_of_functions](int threadid) {
       Flowgraph graph;
@@ -107,16 +108,18 @@ int main(int argc, char** argv) {
         return;
       }
 
-      std::vector<uint32_t> minhash_vector;
       printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching nodes)\n",
         processed_functions->load(), number_of_functions,
         binary_path_string.c_str(), file_id, function_address, branching_nodes);
 
-      CalculateFunctionFingerprint(function, 200, 200, 32, &minhash_vector);
+      std::vector<uint64_t> hashes;
+      hasher.CalculateFunctionSimHash(function, 128, &hashes);
+      uint64_t hash_A = hashes[0];
+      uint64_t hash_B = hashes[1];
       {
         std::lock_guard<std::mutex> lock(*mutex_pointer);
         try {
-          search_index.AddFunction(minhash_vector, file_id, function_address);
+          search_index.AddFunction(hash_A, hash_B, file_id, function_address);
         } catch (boost::interprocess::bad_alloc& out_of_space) {
           printf("[!] boost::interprocess::bad_alloc - no space in index file left!\n");
         }

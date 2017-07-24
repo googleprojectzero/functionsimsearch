@@ -59,7 +59,6 @@ private:
   vector<ValueType, PersistentVectorAllocator>* vector_;
 };
 
-
 template <typename ValueType>
 class PersistentSet {
   typedef allocator<ValueType, managed_mapped_file::segment_manager>
@@ -105,7 +104,7 @@ public:
   PersistentMap(const std::string& filename, bool create) :
     filename_(filename),
     mapname_("map"),
-    segment_(new managed_mapped_file(open_or_create, filename.c_str(), 1ul << 30)),
+    segment_(new managed_mapped_file(open_or_create, filename.c_str(), 1ul << 20)),
     allocator_(segment_->get_segment_manager()) {
     Init(create);
   }

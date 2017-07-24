@@ -21,7 +21,7 @@
 #include "disassembly.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
-#include "minhashsearchindex.hpp"
+#include "simhashsearchindex.hpp"
 #include "pecodesource.hpp"
 
 using namespace std;
@@ -37,5 +37,5 @@ int main(int argc, char** argv) {
   }
 
   std::string index_file(argv[1]);
-  MinHashSearchIndex(index_file, true);
+  SimHashSearchIndex(index_file, true);
 }

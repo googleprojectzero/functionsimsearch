@@ -1,6 +1,6 @@
 # FunctionSimSearch
 
-FunctionSimSearch - Example C++ code to demonstrate how to do MinHash-based
+FunctionSimSearch - Example C++ code to demonstrate how to do SimHash-based
 similarity search over CFGs extracted from disassemblies.
 
 ## Getting Started
