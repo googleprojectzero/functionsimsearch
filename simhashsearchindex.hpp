@@ -117,6 +117,7 @@ public:
 
   void DumpIndexToStdout(bool all) const;
 private:
+
   // TODO(thomasdullien): As soon as the codebase is ported to C++14,
   // replace the following mutex with a shared_mutex to allow concurrent
   // reading from the index.

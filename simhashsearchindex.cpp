@@ -17,6 +17,7 @@
 
 #include "bitpermutation.hpp"
 #include "simhashsearchindex.hpp"
+#include "threadtimer.hpp"
 
 SimHashSearchIndex::SimHashSearchIndex(const std::string& indexname,
   bool create, uint8_t buckets) :
@@ -33,19 +34,13 @@ SimHashSearchIndex::SimHashSearchIndex(const std::string& indexname,
 
 uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
   uint32_t how_many, std::vector<std::pair<float, FileAndAddress>>* results) {
+  std::chrono::time_point<std::chrono::high_resolution_clock> timepoint;
   std::map<FunctionID, uint64_t> candidate_and_distance;
 
   // Get the full hash for the query.
   uint128_t full_hash = to128(hash_A, hash_B);
   std::vector<uint128_t> permuted_values;
   get_n_permutations(full_hash, buckets_, &permuted_values);
-
-  /*
-  printf("Dumping permuted values:\n");
-  for (uint128_t permuted_value : permuted_values) {
-    printf("%16.16lx %16.16lx\n", getHigh64(permuted_value),
-      getLow64(permuted_value));
-  }*/
 
   // Identify the N different buckets that need to be checked.
   for (uint8_t bucket_count = 0; bucket_count < buckets_; ++bucket_count) {
@@ -67,11 +62,14 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
       // the codebase is moved to C++14.
       std::lock_guard<std::mutex> lock(mutex_);
 
+      profile::ResetClock();
       // Find the relevant index entry.
       auto iter = std::lower_bound(search_index_.getSet()->begin(),
         search_index_.getSet()->end(), search_entry);
+      profile::ClockCheckpoint("Searched lower_bound for bucket %d\n",
+        bucket_count);
 
-      // Run through all entries until the end of the 'hash bucket' (really 
+      // Run through all entries until the end of the 'hash bucket' (really
       // just a range of elements in the set) is reached.
       while (iter != search_index_.getSet()->end()) {
         IndexEntry current_entry = *iter;
@@ -92,16 +90,25 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
         candidate_and_distance[std::get<3>(current_entry)] = distance;
         ++iter;
       }
+      profile::ClockCheckpoint("Obtained candidates\n");
     }
   }
+
+  profile::ResetClock();
   // Convert the candidate map to a vector.
   std::vector<std::pair<uint64_t, FunctionID>> distance_and_candidate;
   for (const auto& element : candidate_and_distance) {
     distance_and_candidate.push_back(std::make_pair(element.second,
       element.first));
   }
+  profile::ClockCheckpoint("Converted map to vector with %d elements\n",
+    distance_and_candidate.size());
+
   // Sort the candidate vector to provide the top-N results.
   std::sort(distance_and_candidate.begin(), distance_and_candidate.end());
+
+  profile::ClockCheckpoint("Sorted the vector.\n");
+
   uint64_t counter = 0;
   const auto& innermap = id_to_file_and_address_.getMap();
 
@@ -115,6 +122,8 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
       break;
     }
   }
+
+  profile::ClockCheckpoint("Returning with results.\n");
   return counter;
 }
 
