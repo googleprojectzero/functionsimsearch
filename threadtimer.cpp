@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
+#include <thread>
 #include "threadtimer.hpp"
 
 namespace profile {
@@ -18,7 +19,8 @@ void ClockCheckpoint(const char* format, ...) {
   auto microseconds = std::chrono::duration_cast<
     std::chrono::microseconds>(std::chrono::high_resolution_clock::now() -
       timepoint);
-  printf("[Profiling: %ld microseconds] ", microseconds);
+  printf("[Thread %d Profiling: %ld microseconds] ",
+    std::this_thread::get_id(), microseconds);
   va_start(args, format);
   vprintf(format, args);
   timepoint = std::chrono::high_resolution_clock::now();
