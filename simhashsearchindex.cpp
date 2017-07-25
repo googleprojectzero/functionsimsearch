@@ -56,18 +56,17 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
     IndexEntry search_entry = std::make_tuple(
       bucket_count, hash_component_A_masked, 0ULL, 0);
 
-    // Make sure nobody is modifying while we read.
+    profile::ResetClock();
+    // Find the relevant index entry.
+    auto iter = std::lower_bound(search_index_.getSet()->begin(),
+      search_index_.getSet()->end(), search_entry);
+    profile::ClockCheckpoint("Searched lower_bound for bucket %d\n",
+      bucket_count);
     {
       // TODO(thomasdullien): Replace this with a shared_lock as soon as
       // the codebase is moved to C++14.
       std::lock_guard<std::mutex> lock(mutex_);
-
       profile::ResetClock();
-      // Find the relevant index entry.
-      auto iter = std::lower_bound(search_index_.getSet()->begin(),
-        search_index_.getSet()->end(), search_entry);
-      profile::ClockCheckpoint("Searched lower_bound for bucket %d\n",
-        bucket_count);
 
       // Run through all entries until the end of the 'hash bucket' (really
       // just a range of elements in the set) is reached.
