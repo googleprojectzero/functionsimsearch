@@ -58,10 +58,10 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
 
     profile::ResetClock();
     // Find the relevant index entry.
-    auto iter = std::lower_bound(search_index_.getSet()->begin(),
-      search_index_.getSet()->end(), search_entry);
+    auto iter = search_index_.getSet()->lower_bound(search_entry);
     profile::ClockCheckpoint("Searched lower_bound for bucket %d\n",
       bucket_count);
+
     {
       // TODO(thomasdullien): Replace this with a shared_lock as soon as
       // the codebase is moved to C++14.
