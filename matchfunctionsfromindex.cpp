@@ -24,6 +24,7 @@
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
+#include "functionmetadata.hpp"
 #include "simhashsearchindex.hpp"
 #include "pecodesource.hpp"
 #include "threadpool.hpp"
@@ -61,6 +62,9 @@ int main(int argc, char** argv) {
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %lx\n", file_id);
 
+  // Load the metadata file.
+  FunctionMetadataStore metadata(index_file + ".meta");
+
   // Load the search index.
   SimHashSearchIndex search_index(index_file, false);
 
@@ -83,7 +87,8 @@ int main(int argc, char** argv) {
   Instruction::Ptr instruction;
 
   threadpool::SynchronizedQueue<
-    std::tuple<Address, float, SimHashSearchIndex::FileAndAddress>> resultqueue;
+    std::tuple<Address, float, SimHashSearchIndex::FileAndAddress>>
+      resultqueue;
   threadpool::ThreadPool pool(1);//std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
@@ -94,9 +99,9 @@ int main(int argc, char** argv) {
   for (Function* function : functions) {
     // Push the producer threads into the threadpool.
     pool.Push(
-      [&resultqueue, &search_index, processed_functions, file_id, function,
-      minimum_size, max_matches, minimum_percentage, number_of_functions,
-      &hasher]
+      [&resultqueue, &search_index, &metadata, processed_functions, file_id,
+      function, minimum_size, max_matches, minimum_percentage,
+      number_of_functions, &hasher]
         (int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
@@ -123,10 +128,21 @@ int main(int argc, char** argv) {
             function_address, result.first,
             result.second));
 
-            printf("[!] (%lu/%lu) %f: %lx.%lx (%lu branching nodes) matches %lx.%lx \n",
-              processed_functions->load(), number_of_functions, result.first,
-              file_id, function_address, branching_nodes, result.second.first,
-              result.second.second);
+          printf("[!] (%lu/%lu) %f: %lx.%lx (%lu branching nodes) matches %lx.%lx ",
+            processed_functions->load(), number_of_functions, result.first,
+            file_id, function_address, branching_nodes, result.second.first,
+            result.second.second);
+
+          std::string function_name;
+          std::string file_name;
+          if (metadata.GetFileName(result.second.first, &file_name)) {
+            printf("%s ", file_name.c_str());
+          }
+          if (metadata.GetFunctionName(result.second.first,
+            result.second.second, &function_name)) {
+            printf("%s ", function_name.c_str());
+          }
+          printf("\n");
         }
       }
     });
