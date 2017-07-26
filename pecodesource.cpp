@@ -47,9 +47,6 @@ PECodeSource::PECodeSource(const std::string& filename) {
     std::string& section_name, peparse::image_section_header s,
     peparse::bounded_buffer* data) -> int {
 
-    printf("[!] Adding new code region at address %lx (name %s, size %d)\n",
-      section_base, section_name.c_str(), data->bufLen);
-
     PECodeRegion* new_region =  new PECodeRegion(
       data->buf, data->bufLen, static_cast<Dyninst::Address>(section_base),
       section_name);
