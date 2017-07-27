@@ -54,6 +54,8 @@ class ThreadPool {
     ~ThreadPool() {Stop(true);};
     size_t GetNumberOfThreads() { return threads_.size(); };
     size_t GetNumberOfIdleThreads() { return waiting_; };
+    bool AllIdle() { return waiting_ == threads_.size(); };
+
     std::thread& GetThread(uint32_t index) { return *threads_[index]; };
 
     void Resize(uint32_t new_threads) {
