@@ -29,7 +29,9 @@ public:
   virtual ~Disassembly();
 
   bool Load();
+  void DisassembleFromAddress(uint64_t address, bool recursive);
   Dyninst::ParseAPI::CodeObject* getCodeObject() { return code_object_; };
+
 private:
   const std::string type_;
   const std::string inputfile_;

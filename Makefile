@@ -10,6 +10,7 @@ OBJ = build/disassembly.o build/pecodesource.o build/flowgraph.o \
       build/threadtimer.o build/functionmetadata.o
 
 ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
+      bin/addsinglefunctiontoindex \
       bin/createfunctionindex bin/functionfingerprints \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
       bin/growfunctionindex bin/dumpfunctionindex

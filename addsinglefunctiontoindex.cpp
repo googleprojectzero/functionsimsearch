@@ -46,16 +46,16 @@ uint64_t GenerateExecutableID(const std::string& filename) {
 
 int main(int argc, char** argv) {
   if (argc != 5) {
-    printf("Adds simhash vectors from a binary to a search index\n");
+    printf("Add simhash vector from a binary to a search index\n");
     printf("Usage: %s <PE/ELF> <binary path> <index file> "
-      "<minimum function size>\n", argv[0]);
+      "<function_address>\n", argv[0]);
     return -1;
   }
 
   std::string mode(argv[1]);
   std::string binary_path_string(argv[2]);
   std::string index_file(argv[3]);
-  uint64_t minimum_size = strtoul(argv[4], nullptr, 10);
+  uint64_t target_address = strtoul(argv[4], nullptr, 10);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %lx\n", file_id);
@@ -67,9 +67,10 @@ int main(int argc, char** argv) {
   if (!disassembly.Load()) {
     exit(1);
   }
+  // Make sure the function-to-index is in fact getting indexed.
+  disassembly.DisassembleFromAddress(target_address, true);
   CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
   const CodeObject::funclist &functions = code_object->funcs();
   if (functions.size() == 0) {
     printf("No functions found.\n");
@@ -84,22 +85,19 @@ int main(int argc, char** argv) {
   uint64_t number_of_functions = functions.size();
   FunctionSimHasher hasher("weights.txt");
 
+  // Given that we are only indexing one function, the following code is clearly
+  // overkill.
   for (Function* function : functions) {
     pool.Push(
       [&search_index, mutex_pointer, &binary_path_string, &hasher,
-      processed_functions, file_id, function, minimum_size,
-      number_of_functions](int threadid) {
+      processed_functions, file_id, function, number_of_functions, 
+      target_address](int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
       BuildFlowgraph(function, &graph);
       (*processed_functions)++;
 
-      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
-
-      if (branching_nodes <= minimum_size) {
-        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu branching nodes\n",
-          processed_functions->load(), number_of_functions,
-          binary_path_string.c_str(), file_id, function_address, branching_nodes);
+      if (function_address != target_address) {
         return;
       }
       if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
@@ -108,6 +106,7 @@ int main(int argc, char** argv) {
           binary_path_string.c_str(), file_id, function_address);
         return;
       }
+      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
 
       printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching nodes)\n",
         processed_functions->load(), number_of_functions,

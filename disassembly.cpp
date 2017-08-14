@@ -79,3 +79,8 @@ bool Disassembly::Load() {
   }
   return true;
 }
+
+void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
+  code_object_->parse(address, recursive);
+}
+
