@@ -34,7 +34,9 @@ make
 cd ../..
 make
 ```
-This should build the relevant executables to try.
+This should build the relevant executables to try. On Debian stretch and later,
+you may have to add '-fPIC' into the pe-parse CMakeLists.txt to make sure your
+generated library supports being relocated.
 
 ## Running the tests
 
