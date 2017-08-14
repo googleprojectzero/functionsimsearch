@@ -19,7 +19,9 @@ This code has a few external dependencies. The dependencies are:
 
 You should be able to build the code by doing the following:
 
-1. Download, build and install DynInst 9.3
+1. Download, build and install DynInst 9.3. This may involve building boost from
+   source inside the DynInst directory tree (at least it did for me), and building
+   libdwarf from scratch.
 2. Get the dependencies:
 ```bash
 mkdir third_party
