@@ -13,14 +13,17 @@
 // limitations under the License.
 
 #include "third_party/pe-parse/parser-library/parse.h"
+#include "third_party/pe-parse/parser-library/nt-headers.h"
 
 #include "pecodesource.hpp"
 
 PECodeRegion::PECodeRegion(uint8_t* buffer, size_t length, Dyninst::Address
-  section_base, const std::string& name) : base_(section_base), size_(length) {
+  section_base, const std::string& name, bool is_amd64) : base_(section_base),
+  size_(length) {
   data_ = static_cast<uint8_t*>(malloc(length));
   memcpy(data_, buffer, length);
   is_code_ = true;
+  is_64_bit_ = is_amd64;
 }
 
 PECodeRegion::~PECodeRegion() {
@@ -43,20 +46,33 @@ PECodeSource::PECodeSource(const std::string& filename) {
     printf("[!] Failure to parse PE file!\n");
     return;
   }
-  peparse::iterSec section_callback = [](void* N, peparse::VA section_base,
-    std::string& section_name, peparse::image_section_header s,
-    peparse::bounded_buffer* data) -> int {
+
+  // Determine if this is a AMD64 or i386 file.
+  uint32_t machine = parsed_file->peHeader.nt.FileHeader.Machine;
+  if (machine == peparse::IMAGE_FILE_MACHINE_AMD64) {
+    is_amd64_ = true;
+  } else if (machine != peparse::IMAGE_FILE_MACHINE_I386) {
+    printf("[!] PE file is neither i386 nor AMD64, aborting!\n");
+    peparse::DestructParsedPE(parsed_file);
+    return;
+  }
+
+  peparse::iterSec section_callback = [](void* N,
+    peparse::VA section_base, std::string& section_name,
+    peparse::image_section_header s, peparse::bounded_buffer* data) -> int {
+    PECodeSource* pe_code_source = static_cast<PECodeSource*>(N);
 
     PECodeRegion* new_region =  new PECodeRegion(
       data->buf, data->bufLen, static_cast<Dyninst::Address>(section_base),
-      section_name);
-    PECodeSource* pe_code_source = static_cast<PECodeSource*>(N);
+      section_name, pe_code_source->isAmd64());
     // Debug print the new section?
     pe_code_source->_regions.push_back(new_region);
     pe_code_source->_region_tree.insert(new_region);
   };
   peparse::IterSec( parsed_file, section_callback, static_cast<void*>(this) );
   parsed_ = true;
+
+  peparse::DestructParsedPE(parsed_file);
 }
 
 Dyninst::ParseAPI::CodeRegion* PECodeSource::getRegion(
@@ -112,6 +128,7 @@ Dyninst::Address PECodeSource::offset() const {
 Dyninst::Address PECodeSource::length() const {
   return 0;
 }
+
 Dyninst::Architecture PECodeSource::getArch() const {
   return _regions[0]->getArch();
 }
