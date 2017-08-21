@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
   float minimum_percentage = strtod(argv[6], nullptr);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
-  printf("[!] Executable id is %lx\n", file_id);
+  printf("[!] Executable id is %16.16lx\n", file_id);
 
   // Load the metadata file.
   FunctionMetadataStore metadata(index_file + ".meta");

@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   uint64_t minimum_size = strtoul(argv[4], nullptr, 10);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
-  printf("[!] Executable id is %lx\n", file_id);
+  printf("[!] Executable id is %16.16lx\n", file_id);
 
   // Load the search index.
   SimHashSearchIndex search_index(index_file, false);
