@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   std::string mode(argv[1]);
   std::string binary_path_string(argv[2]);
   std::string index_file(argv[3]);
-  uint64_t target_address = strtoul(argv[4], nullptr, 10);
+  uint64_t target_address = strtoul(argv[4], nullptr, 16);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %16.16lx\n", file_id);
