@@ -114,7 +114,7 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
   for (const auto& element : distance_and_candidate) {
     const FileAndAddress& file_address = innermap->at(element.second);
     results->push_back(std::make_pair(
-      1.0 - (static_cast<float>(element.first) / 128.0),
+      128.0 - (static_cast<float>(element.first)),
       file_address));
     ++counter;
     if (counter >= how_many) {

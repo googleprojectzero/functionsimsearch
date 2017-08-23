@@ -95,7 +95,8 @@ public:
   typedef uint64_t HashValueB;
   // Unique ID for the function.
   typedef uint64_t FunctionID;
-  typedef std::tuple<PermutationIndex, HashValueA, HashValueB, FunctionID> IndexEntry;
+  typedef std::tuple<PermutationIndex, HashValueA, HashValueB, FunctionID> 
+    IndexEntry;
 
   typedef uint64_t FileID;
   typedef uint64_t Address;

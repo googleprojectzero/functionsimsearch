@@ -110,6 +110,15 @@ Disassemble the specified input file, and for each function with more than 5
 basic blocks, retrieve the top-10 most similar functions from the search index.
 Each match must be at least 90% similar.
 
+### addsinglefunctiontoindex
+
+```
+./addsinglefunctiontoindex ELF /bin/tar ./function_search.index 0x494949443
+```
+
+## End-to-end tutorial: How to build an index of vulnerable functions to scan for
+
+
 ## Built With
 
 * [DynInst](http://www.dyninst.org/downloads/dyninst-9.x) - Used to generate disassemblies

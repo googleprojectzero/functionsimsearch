@@ -28,7 +28,7 @@ public:
   Disassembly(const std::string& filetype, const std::string& inputfile);
   virtual ~Disassembly();
 
-  bool Load();
+  bool Load(bool perform_parsing = true);
   void DisassembleFromAddress(uint64_t address, bool recursive);
   Dyninst::ParseAPI::CodeObject* getCodeObject() { return code_object_; };
 

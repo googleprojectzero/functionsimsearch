@@ -28,17 +28,29 @@ using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 4) {
+  if ((argc < 4) || (argc > 5)) {
     printf("Dumps all CFGs in the target binary as .dot files\n");
-    printf("Usage: %s <PE/ELF> <binary path> <output dir>\n", argv[0]);
+    printf("Usage: %s <PE/ELF> <binary path> <output dir> "
+      "<optional: function_address>\n", argv[0]);
     return -1;
   }
   std::string mode(argv[1]);
   std::string binary_path_string(argv[2]);
+  // Optional argument: A single function that should be explicitly disassembled
+  // to make sure it is in the disassembly.
+  uint64_t function_address = 0;
+  if (argc == 4) {
+    function_address = strtoul(argv[4], nullptr, 16);
+  }
+
   Disassembly disassembly(mode, binary_path_string);
-  if (!disassembly.Load()) {
+  if (!disassembly.Load(function_address == 0)) {
     exit(1);
   }
+  if (function_address) {
+    disassembly.DisassembleFromAddress(function_address, true);
+  }
+
   std::string output_path_string(argv[3]);
 
   CodeObject* code_object = disassembly.getCodeObject();

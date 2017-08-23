@@ -43,7 +43,7 @@ Disassembly::~Disassembly() {
   }
 }
 
-bool Disassembly::Load() {
+bool Disassembly::Load(bool perform_parsing) {
   Instruction::Ptr instruction;
 
   if (type_ == "ELF") {
@@ -69,13 +69,15 @@ bool Disassembly::Load() {
 
   code_object_ = new CodeObject(code_source_);
 
-  // Parse the obvious function entries.
-  code_object_->parse();
+  if (perform_parsing) {
+    // Parse the obvious function entries.
+    code_object_->parse();
 
-  // Parse the gaps.
-  for (CodeRegion* region : code_source_->regions()) {
-    code_object_->parseGaps(region, GapParsingType::IdiomMatching);
-    code_object_->parseGaps(region, GapParsingType::PreambleMatching);
+    // Parse the gaps.
+    for (CodeRegion* region : code_source_->regions()) {
+      code_object_->parseGaps(region, GapParsingType::IdiomMatching);
+      code_object_->parseGaps(region, GapParsingType::PreambleMatching);
+    }
   }
   return true;
 }

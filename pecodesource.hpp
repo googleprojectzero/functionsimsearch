@@ -72,7 +72,7 @@ public:
 private:
   bool is_code_ = true;
   bool is_data_ = false;
-  bool is_read_only_ = false;
+  bool is_read_only_ = true;
   bool is_64_bit_ = false;
   uint64_t base_;
   size_t size_;
