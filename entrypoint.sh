@@ -2,22 +2,22 @@
 
 case "$1" in
   disassemble)
-    /code/functionsimsearch/disassemble "${@:2}";
+    /code/functionsimsearch/bin/disassemble "${@:2}";
     ;;
   dotgraphs)
-    /code/functionsimsearch/dotgraphs "${@:2}";
+    /code/functionsimsearch/bin/dotgraphs "${@:2}";
     ;;
   graphhashes)
-    /code/functionsimsearch/graphhashes "${@:2}";
+    /code/functionsimsearch/bin/graphhashes "${@:2}";
     ;;
   createfunctionindex)
-    /code/functionsimsearch/createfunctionindex "${@:2}";
+    /code/functionsimsearch/bin/createfunctionindex "${@:2}";
     ;;
   addfunctionstoindex)
-    /code/functionsimsearch/addfunctionstoindex "${@:2}";
+    /code/functionsimsearch/bin/addfunctionstoindex "${@:2}";
     ;;
   matchfunctionsfromindex)
-    /code/functionsimsearch/matchfunctionsfromindex "${@:2}";
+    /code/functionsimsearch/bin/matchfunctionsfromindex "${@:2}";
     ;;
   *)
     echo "Unsupported command: $1";
