@@ -65,6 +65,9 @@ bool Disassembly::Load(bool perform_parsing) {
       return false;
     }
     code_source_ = static_cast<CodeSource*>(pe_code_source);
+  } else {
+    printf("Error: Unknown filetype specified.\n");
+    return false;
   }
 
   code_object_ = new CodeObject(code_source_);
