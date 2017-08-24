@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   // Optional argument: A single function that should be explicitly disassembled
   // to make sure it is in the disassembly.
   uint64_t function_address = 0;
-  if (argc == 4) {
+  if (argc == 5) {
     function_address = strtoul(argv[4], nullptr, 16);
   }
 
