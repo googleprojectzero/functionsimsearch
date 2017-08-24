@@ -37,7 +37,7 @@ Disassembly::~Disassembly() {
     SymtabCodeSource* symtab_code_source =
       static_cast<SymtabCodeSource*>(code_source_);
     delete symtab_code_source;
-  } else {
+  } else if (type_ == "PE") {
     PECodeSource* pe_code_source = static_cast<PECodeSource*>(code_source_);
     delete pe_code_source;
   }
