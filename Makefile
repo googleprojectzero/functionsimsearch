@@ -1,6 +1,7 @@
 CPP = g++
 CPPFLAGS += -ggdb -O3 -std=c++11
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
+INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library
 
@@ -13,7 +14,8 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/addsinglefunctiontoindex \
       bin/createfunctionindex bin/functionfingerprints \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
-      bin/growfunctionindex bin/dumpfunctionindex
+      bin/growfunctionindex bin/dumpfunctionindex \
+      bin/trainsimhashweights
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o
 
@@ -25,7 +27,7 @@ directory/%:
 	mkdir -p $(@F)
 
 build/%.o: %.cpp $(DIRECTORIES)
-	$(CPP) -c -o $@ $< $(CPPFLAGS)
+	$(CPP) $(INCLUDEDIR) -c -o $@ $< $(CPPFLAGS)
 
 all: $(ALL)
 
@@ -34,7 +36,7 @@ tests: $(OBJ) $(TESTS)
 		$(LIBS) -lgtest
 
 bin/%: $(OBJ)
-	$(CPP) $(CPPFLAGS) -o $@ $(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
+	$(CPP) $(INCLUDEDIR) $(CPPFLAGS) -o $@ $(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
 
 clean:
 	rm ./build/*.o $(ALL)

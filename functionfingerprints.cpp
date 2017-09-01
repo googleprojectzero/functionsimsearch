@@ -86,12 +86,22 @@ int main(int argc, char** argv) {
     if (branching_nodes <= minimum_size) {
       continue;
     }
+
+    // Dump out the file ID and address.
+    printf("%16.16lx:%16.16lx ", file_id, function_address);
+
+    // If we are in verbose mode, the following lines will dump out the
+    // individual feature hashes.
     std::vector<uint64_t> hashes;
     sim_hasher.CalculateFunctionSimHash(function, 128, &hashes);
 
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
-    printf("%16.16lx %16.16lx %16.16lx:%16.16lx\n", hash1, hash2, file_id,
-      function_address);
+
+    // Dump out the final simhash of the function only if we are in non-verbose
+    // mode.
+    if (!verbose) {
+      printf("%16.16lx%16.16lx\n", hash1, hash2);
+    }
   }
 }

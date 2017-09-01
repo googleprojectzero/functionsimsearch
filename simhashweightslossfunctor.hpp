@@ -1,3 +1,17 @@
+// Copyright 2017 Google Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef SIMHASHWEIGHTSLOSSFUNCTOR_HPP
 #define SIMHASHWEIGHTSLOSSFUNCTOR_HPP
 
@@ -5,7 +19,6 @@
 #include <map>
 #include <vector>
 
-//
 // The functor that calculates the loss function for the SimHash weights. This
 // is somewhat mathematically involved, hence the lengthy explanation below:
 //
@@ -36,7 +49,7 @@ typedef std::pair<uint64_t, uint64_t> FeatureHash;
 // A vector of indices into a FeatureHash vector represents a function.
 typedef std::vector<uint32_t> FunctionFeatures;
 
-class SimHashWeightLossFunction {
+class SimHashWeightsLossFunction {
 public:
   SimHashWeightsLossFunction(
     std::vector<FeatureHash>* all_features,
@@ -106,7 +119,7 @@ public:
         }
       }
     }
-    loss /= pairs.size();
+    loss /= pairs->size();
     return loss;
   }
 
@@ -144,7 +157,6 @@ private:
   std::vector<std::pair<uint32_t, uint32_t>>* attractionset_;
   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset_;
   std::vector<uint32_t>* unlabeledset_;
-}
-
+};
 
 #endif // SIMHASHWEIGHTSLOSSFUNCTOR_HPP

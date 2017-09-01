@@ -54,15 +54,9 @@ public:
   // Calculate a simhash value for a given function. Outputs a vector of 64-bit
   // values, number_of_outputs describes how many bits of SimHash should be
   // calculated. Reasonable use is usually 128.
-  //
-  // Passing the all_features parameter as non-null will make sure that all
-  // intermediate feature-hashes used in the calculation of the SimHash will be
-  // provided to the caller. This is primarily useful to extract data that is
-  // used for training weights.
   void CalculateFunctionSimHash(
     Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-    std::vector<uint64_t>* output_simhash_values, std::vector<uint64_t>*
-    all_features = nullptr);
+    std::vector<uint64_t>* output_simhash_values);
 
   static uint64_t FloatsToBits(const std::vector<float>& floats);
   static bool FloatsToBits(const std::vector<float>& floats,
@@ -71,13 +65,11 @@ private:
   // Process one subgraph and hash it into the output vector.
   void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, address node,
     uint64_t bits, uint64_t simhash_index,
-    std::vector<float>* output_simhash_floats,
-    std::vector<uint64_t>* all_features = nullptr) const;
+    std::vector<float>* output_simhash_floats) const;
 
   // Process one mnemonic n-gram and hash it into the output vector.
   void ProcessMnemTuple(const MnemTuple &tup, uint64_t bits,
-    uint64_t hash_index, std::vector<float>* output_simhash_floats,
-    std::vector<uint64_t>* all_features = nullptr) const;
+    uint64_t hash_index, std::vector<float>* output_simhash_floats) const;
 
   // Given an n-bit hash and a weight, hash the weight into the output vector
   // with positive sign for 1's and negative sign for 0's.
