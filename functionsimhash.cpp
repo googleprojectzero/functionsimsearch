@@ -56,7 +56,8 @@ void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {
 // care has to be taken to add cardinalities into the construction.
 void FunctionSimHasher::CalculateFunctionSimHash(
   Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-  std::vector<uint64_t>* output_simhash_values) {
+  std::vector<uint64_t>* output_simhash_values,
+  std::vector<uint64_t>* all_features) {
 
   std::vector<float> output_simhash_floats;
   output_simhash_floats.resize(number_of_outputs);
@@ -143,6 +144,11 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
   // Calculate n-bit hash of the subgraph.
   std::vector<uint64_t> hash;
   CalculateNBitGraphHash(graph, node, bits, hash_index, &hash);
+  if (all_features) {
+    for (uint64_t value : hash) {
+      all_features.push_back(value);
+    }
+  }
 
   // Iterate over the bits in the hash.
   AddWeightsInHashToOutput(hash, bits, graphlet_weight, output_simhash_floats);
@@ -150,11 +156,17 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
 
 // Add a given mnemonic tuple into the vector of floats.
 void FunctionSimHasher::ProcessMnemTuple(const MnemTuple &tup, uint64_t bits,
-  uint64_t hash_index, std::vector<float>* output_simhash_floats) const {
+  uint64_t hash_index, std::vector<float>* output_simhash_floats, 
+  std::vector<uint64_t>* all_features) const {
   float mnem_tuple_weight = GetMnemTupleWeight(tup);
 
   std::vector<uint64_t> hash;
   CalculateNBitMnemTupleHash(tup, bits, hash_index, &hash);
+  if (all_features) {
+    for (uint64_t value : hash) {
+      all_features.push_back(value);
+    }
+  }
 
   AddWeightsInHashToOutput(hash, bits, mnem_tuple_weight, output_simhash_floats);
 }
