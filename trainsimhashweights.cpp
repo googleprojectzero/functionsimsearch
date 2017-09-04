@@ -47,7 +47,7 @@ bool FileToLineTokens(const std::string& filename,
   uint32_t line_index = 0;
   // We want features sorted and de-duplicated in the end, so use a set.
   std::string line;
-  while (std::getline(functionsfile, line)) {
+  while (std::getline(inputfile, line)) {
     std::vector<std::string> tokens;
     split(line, ' ', std::back_inserter(tokens));
     tokenized_lines->push_back(tokens);
@@ -60,7 +60,7 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   std::string first_half_string;
   std::string second_half_string;
   if (token.c_str()[2] == '.') {
-    std::string first_half_string = token.substr(3, 16+3);
+    std::string first_half_string = token.substr(3, 16);
     std::string second_half_string = token.substr(16+3, string::npos);
   } else {
      std::string first_half_string = token.substr(0, 16);
@@ -68,6 +68,8 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   }
   const char* first_half = first_half_string.c_str();
   const char* second_half = second_half_string.c_str();
+  printf("-- %s --\n", token.c_str());
+  printf("%16.16lx::%16.16lx\n", first_half, second_half);
   uint64_t hashA = strtoull(first_half, nullptr, 16);
   uint64_t hashB = strtoull(second_half, nullptr, 16);
   return std::make_pair(hashA, hashB);
@@ -77,7 +79,9 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
   std::set<FeatureHash>* result) {
   for (const std::vector<std::string>& line : inputlines) {
     for (uint32_t index = 1; index < line.size(); ++index) {
-      result->insert(StringToFeatureHash(tokens[index]);
+      FeatureHash foo = StringToFeatureHash(line[index]);
+      printf("%16.16lx-%16.16lx\n", foo.first, foo.second);
+      result->insert(StringToFeatureHash(line[index]));
     }
   }
 }
@@ -103,6 +107,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  std::string directory(argv[1]);
   // Read the contents of functions.txt.
   std::string functionsfilename = directory + "/functions.txt";
   std::vector<std::vector<std::string>> file_contents;
@@ -112,13 +117,13 @@ int main(int argc, char** argv) {
 
   // Read all the features, place them in a vector, and populate a map that maps
   // FeatureHash to vector index.
-  std::set<FeatureHash> result;
-  ReadFeatureSet(file_contents, &result);
+  std::set<FeatureHash> all_features;
+  ReadFeatureSet(file_contents, &all_features);
   std::vector<FeatureHash> all_features_vector;
   std::map<FeatureHash, uint32_t> feature_to_vector_index;
   uint32_t index = 0;
   for (const FeatureHash& feature : all_features) {
-    all_features_vector.push_back(feauture);
+    all_features_vector.push_back(feature);
     feature_to_vector_index[feature] = index;
     ++index;
   }
@@ -144,7 +149,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<std::vector<std::string>> repulse_file_contents;
-  if (!FileToLineTokens(directory + "/repulse.txt", &attract_file_contents)) {
+  if (!FileToLineTokens(directory + "/repulse.txt", &repulse_file_contents)) {
     return -1;
   }
 
@@ -155,10 +160,17 @@ int main(int argc, char** argv) {
       function_to_index[line[1]]));
   }
 
+  std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
   for (const std::vector<std::string>& line : repulse_file_contents) {
     repulsionset.push_back(std::make_pair(
       function_to_index[line[0]],
       function_to_index[line[1]]));
   }
+
+  printf("[!] Loaded %ld functions (%ld unique features)\n",
+    all_functions.size(), all_features_vector.size());
+  printf("[!] Attraction-Set: %ld pairs\n", attractionset.size());
+  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset.size());
+
 }
 
