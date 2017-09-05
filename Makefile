@@ -1,9 +1,9 @@
 CPP = g++
-CPPFLAGS += -ggdb -O3 -std=c++11
+CPPFLAGS += -ggdb -O3 -std=c++11 -fstack-check
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
-       -lcommon -lelf -ldwarf -lpthread -lpe-parser-library
+       -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii
 
 OBJ = build/disassembly.o build/pecodesource.o build/flowgraph.o \
       build/flowgraphutil.o build/functionsimhash.o \

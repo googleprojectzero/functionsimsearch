@@ -49,114 +49,100 @@ typedef std::pair<uint64_t, uint64_t> FeatureHash;
 // A vector of indices into a FeatureHash vector represents a function.
 typedef std::vector<uint32_t> FunctionFeatures;
 
-class SimHashWeightsLossFunction {
+bool GetBit(const FeatureHash& hash, uint32_t bit) {
+  uint64_t value = (bit > 63) ? hash.second : hash.first;
+  bit = bit % 64;
+  return (1ULL << bit) & value;
+}
+
+template <typename R>
+void calculateSimHashFloats(const FunctionFeatures& features,
+  const std::vector<FeatureHash>* all_features,
+  std::vector<R>& out, const R* weights) {
+  for (uint32_t i = 0; i < 128; ++i) {
+    for (uint32_t feature_index : features) {
+      bool bit = GetBit((*all_features)[feature_index], i);
+      if (bit) {
+        out[i] += weights[feature_index];
+      } else {
+        out[i] -= weights[feature_index];
+      }
+    }
+  }
+}
+
+template <typename R>
+R piecewise_linear(R argument) {
+  if (argument > 1.0) {
+    return 1.0;
+  } else if (argument < -1.0) {
+    return -1.0;
+  }
+  return argument;
+}
+
+template <typename R>
+R calculatePairLoss(
+  const std::vector<std::pair<uint32_t, uint32_t>>* pairs,
+  const std::vector<FunctionFeatures>* all_functions,
+  const std::vector<FeatureHash>* all_features, uint32_t pair_index,
+  const R* weights, bool attract=true) {
+  R loss = 0.0;
+  // Load the relevant pair.
+  std::pair<uint32_t, uint32_t> pair = pairs->at(pair_index);
+  // Initialize the two vectors of double/float/sums of weights.
+  std::vector<R> functionA(128);
+  std::vector<R> functionB(128);
+  // Obtain the set of features for each function in the pair.
+  const FunctionFeatures& first_function = all_functions->at(pair.first);
+  const FunctionFeatures& second_function = all_functions->at(pair.second);
+  // Sum the features with their weights into the relevant vector.
+  calculateSimHashFloats(first_function, all_features, functionA, weights);
+  calculateSimHashFloats(second_function, all_features, functionB, weights);
+
+  // Calculate (functionA[i] * functionB[i]) and feed the result through
+  // a piecewise linear function. If both entries have the same sign
+  // (which is desired), the result will be positive, otherwise negative.
+  // Invert the sign of the product, then feed through a piecewise linear
+  // function.
+  for (uint32_t i = 0; i < 128; ++i) {
+    if (attract) {
+      loss += -piecewise_linear(functionA[i] * functionB[i]);
+    } else {
+      loss += piecewise_linear(functionA[i] * functionB[i]);
+    }
+  }
+  loss /= pairs->size();
+  return loss;
+}
+
+class SimHashPairLossTerm {
 public:
-  SimHashWeightsLossFunction(
+  SimHashPairLossTerm(
     std::vector<FeatureHash>* all_features,
     std::vector<FunctionFeatures>* all_functions,
     std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
-    std::vector<std::pair<uint32_t, uint32_t>>* repulsionset,
-    std::vector<uint32_t>* unlabeledset) :
+    uint32_t relevant_pair_index, bool attract) :
       all_features_(all_features),
-      attractionset_(attractionset),
-      repulsionset_(repulsionset),
-      unlabeledset_(unlabeledset) {};
-
-  bool GetBit(const FeatureHash& hash, uint32_t bit) {
-    uint64_t value = (bit > 63) ? hash.second : hash.first;
-    bit = bit % 64;
-    return (1ULL << bit) & value;
-  }
-
-  template <typename R>
-  void calculateSimHashFloats(const FunctionFeatures& features,
-    std::vector<R>& out, const R* weights) {
-    for (uint32_t i = 0; i < 128; ++i) {
-      for (uint32_t feature_index : features) {
-        bool bit = GetBit((*all_features_)[feature_index], i);
-        if (bit) {
-          out[feature_index] += weights[feature_index];
-        } else {
-          out[feature_index] -= weights[feature_index];
-        }
-      }
-    }
-  }
-
-  template <typename R>
-  R piecewise_linear(R argument) {
-    if (argument > 1.0) {
-      return 1.0;
-    } else if (argument < -1.0) {
-      return -1.0;
-    }
-    return argument;
-  }
-
-  template <typename R>
-  R calculatePairLoss(const std::vector<std::pair<uint32_t, uint32_t>>* pairs,
-    const R* weights, bool attract=true) {
-    R loss = 0.0;
-
-    for (std::pair<uint32_t, uint32_t> pair : *pairs) {
-      std::vector<R> functionA(128);
-      std::vector<R> functionB(128);
-      const FunctionFeatures& first_function = all_functions_->at(pair.first);
-      const FunctionFeatures& second_function = all_functions_->at(pair.second);
-      calculateSimHashFloats(first_function, functionA, weights);
-      calculateSimHashFloats(second_function, functionB, weights);
-
-      // Calculate (functionA[i] * functionB[i]) and feed the result through
-      // a piecewise linear function. If both entries have the same sign
-      // (which is desired), the result will be positive, otherwise negative.
-      // Invert the sign of the product, then feed through a piecewise linear
-      // function.
-      for (uint32_t i = 0; i < 128; ++i) {
-        if (attract) {
-          loss += -piecewise_linear(functionA[i] * functionB[i]);
-        } else {
-          loss += piecewise_linear(functionA[i] * functionB[i]);
-        }
-      }
-    }
-    loss /= pairs->size();
-    return loss;
-  }
+      all_functions_(all_functions),
+      pairset_(attractionset),
+      relevant_pair_index_(relevant_pair_index),
+      attract_(attract) {};
 
   template <typename R>
   R operator()(const R* weights) const {
-    R attraction_loss = calculatePairLoss(attractionset_, weights, true);
-    R repulsion_loss = calculatePairLoss(repulsionset_, weights, false);
-
-    // The last thing we wish to do is to maximize entropy on the unlabeled
-    // set. Since maximizing the entropy directly seems cumbersome, it should
-    // be enough to ask for the hash function being nearly balanced on the
-    // unlabeled set.
-    R entropy_loss = 0.0;
-    std::vector<R> sum_of_floats(128);
-    for (uint32_t function_index : *unlabeledset_) {
-      const FunctionFeatures& function = all_functions_->at(function_index);
-      std::vector<R> function_floats(128);
-      calculateSimHashFloats(function, function_floats, weights);
-      for (uint32_t i = 0; i < 128; ++i) {
-        sum_of_floats[i] += piecewise_linear(function_floats[i]);
-      }
-    }
-    // Calculate the L2 norm.
-    for (uint32_t i = 0; i < 128; ++i) {
-      entropy_loss += sum_of_floats[i] * sum_of_floats[i];
-    }
-    entropy_loss = std::sqrt(entropy_loss);
-    return attraction_loss + repulsion_loss + entropy_loss;
+    R pair_loss = calculatePairLoss(
+      pairset_, all_functions_, all_features_, relevant_pair_index_,
+      weights, attract_);
+    return pair_loss;
   }
+
 private:
-  // A pointer to a vector containing all features that can be encountered.
   std::vector<FeatureHash>* all_features_;
-  // A pointer to a vector containing all
   std::vector<FunctionFeatures>* all_functions_;
-  std::vector<std::pair<uint32_t, uint32_t>>* attractionset_;
-  std::vector<std::pair<uint32_t, uint32_t>>* repulsionset_;
-  std::vector<uint32_t>* unlabeledset_;
+  std::vector<std::pair<uint32_t, uint32_t>>* pairset_;
+  uint32_t relevant_pair_index_;
+  bool attract_;
 };
 
 #endif // SIMHASHWEIGHTSLOSSFUNCTOR_HPP

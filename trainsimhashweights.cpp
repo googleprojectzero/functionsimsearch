@@ -17,6 +17,7 @@
 #include <map>
 
 #include <spii/auto_diff_term.h>
+#include <spii/dynamic_auto_diff_term.h>
 #include <spii/function.h>
 #include <spii/solver.h>
 #include <spii/term.h>
@@ -60,18 +61,17 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   std::string first_half_string;
   std::string second_half_string;
   if (token.c_str()[2] == '.') {
-    std::string first_half_string = token.substr(3, 16);
-    std::string second_half_string = token.substr(16+3, string::npos);
+    first_half_string = token.substr(3, 16);
+    second_half_string = token.substr(16+3, string::npos);
   } else {
-     std::string first_half_string = token.substr(0, 16);
-     std::string second_half_string = token.substr(16, string::npos);
+    first_half_string = token.substr(0, 16);
+    second_half_string = token.substr(16, string::npos);
   }
   const char* first_half = first_half_string.c_str();
   const char* second_half = second_half_string.c_str();
-  printf("-- %s --\n", token.c_str());
-  printf("%16.16lx::%16.16lx\n", first_half, second_half);
   uint64_t hashA = strtoull(first_half, nullptr, 16);
   uint64_t hashB = strtoull(second_half, nullptr, 16);
+
   return std::make_pair(hashA, hashB);
 }
 
@@ -80,7 +80,6 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
   for (const std::vector<std::string>& line : inputlines) {
     for (uint32_t index = 1; index < line.size(); ++index) {
       FeatureHash foo = StringToFeatureHash(line[index]);
-      printf("%16.16lx-%16.16lx\n", foo.first, foo.second);
       result->insert(StringToFeatureHash(line[index]));
     }
   }
@@ -107,6 +106,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  printf("[!] Parsing training data.\n");
   std::string directory(argv[1]);
   // Read the contents of functions.txt.
   std::string functionsfilename = directory + "/functions.txt";
@@ -171,6 +171,54 @@ int main(int argc, char** argv) {
     all_functions.size(), all_features_vector.size());
   printf("[!] Attraction-Set: %ld pairs\n", attractionset.size());
   printf("[!] Repulsion-Set: %ld pairs\n", repulsionset.size());
+
+  printf("[!] Training data parsed, beginning the training process.\n");
+
+  spii::Function function;
+
+  std::vector<uint32_t> unlabeledset;
+
+  size_t number_of_features = all_features_vector.size();
+  // Hard-code an upper limit of 400k unique features for the moment. This will
+  // almost certainly need to be raised.
+
+  std::vector<double> weights(number_of_features, 1.0);
+
+  // Add a term for each example in the attraction set.
+  for (uint32_t pair_index = 0; pair_index < attractionset.size(); ++pair_index) {
+    printf("[!] Adding term for similar pair %d (%d, %d) to the loss function.\n",
+      pair_index, attractionset[pair_index].first,
+      attractionset[pair_index].second);
+    function.add_term(std::make_shared<
+      spii::AutoDiffTerm<SimHashPairLossTerm, spii::Dynamic>>(
+        number_of_features,
+        &all_features_vector,
+        &all_functions,
+        &attractionset,
+        pair_index,
+        true), weights.data());
+  }
+
+  // Add a term for each example in the repulsionset.
+  for (uint32_t pair_index = 0; pair_index < repulsionset.size(); ++pair_index) {
+    printf("[!] Adding term for dissimilar pair %d (%d, %d) to the loss function.\n",
+      pair_index, repulsionset[pair_index].first,
+      repulsionset[pair_index].second);
+    function.add_term(
+      std::make_shared<spii::AutoDiffTerm<SimHashPairLossTerm, spii::Dynamic>>(
+        number_of_features,
+        &all_features_vector,
+        &all_functions,
+        &repulsionset,
+        pair_index,
+        true), weights.data());
+  }
+
+  spii::LBFGSSolver solver;
+  solver.maximum_iterations = 50;
+  spii::SolverResults results;
+  solver.solve(function, &results);
+  cout << results << std::endl << std::endl;
 
 }
 
