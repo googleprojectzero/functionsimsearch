@@ -295,7 +295,7 @@ void FunctionSimHasher::BuildMnemonicNgrams(Dyninst::ParseAPI::Function* functio
   // Sort instructions by address;
   std::sort(sequence.begin(), sequence.end());
   // Construct the 3-tuples.
-  for (uint64_t index = 0; index + 3 < sequence.size(); ++index) {
+  for (uint64_t index = 0; index + 2 < sequence.size(); ++index) {
     tuples->emplace_back(std::make_tuple(
       sequence[index].second,
       sequence[index+1].second,
