@@ -205,7 +205,7 @@ uint64_t FunctionSimHasher::HashMnemTuple(const MnemTuple& tup,
   value1 = rotl64(value1, 7);
   value1 *= std::hash<std::string>{}(std::get<2>(tup));
   value1 = rotl64(value1, 7);
-  value1 *= (k2 * hash_index);
+  value1 *= (k2 * (hash_index + 1));
   return value1;
 }
 
