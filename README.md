@@ -14,7 +14,7 @@ This code has a few external dependencies. The dependencies are:
   - (In order to build DynInst, you may need to build libdwarf from scratch with --enable-shared)
   - PE-parse, a C++ PE parser: https://github.com/trailofbits/pe-parse.git
   - PicoSHA2, a C++ SHA256 hash library: https://github.com/okdshin/PicoSHA2.git
-  - SPII, a C++ library for automatic differentiation & optimization
+  - SPII, a C++ library for automatic differentiation & optimization: https://github.com/PetterS/spii.git
 
 ### Installing
 
