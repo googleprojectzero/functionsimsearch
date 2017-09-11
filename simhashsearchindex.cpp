@@ -18,6 +18,7 @@
 #include "bitpermutation.hpp"
 #include "simhashsearchindex.hpp"
 #include "threadtimer.hpp"
+#include "util.hpp"
 
 SimHashSearchIndex::SimHashSearchIndex(const std::string& indexname,
   bool create, uint8_t buckets) :
@@ -83,9 +84,9 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
         // Retrieve the second component of the full hash.
         uint64_t entry_component_B = std::get<2>(current_entry);
         // Compute the hamming distance of the full hash.
-        uint64_t distance =
-          __builtin_popcountl(hash_component_A ^ entry_component_A) +
-          __builtin_popcountl(hash_component_B ^ entry_component_B);
+        uint64_t distance = HammingDistance(
+          hash_component_A, hash_component_B, entry_component_A,
+          entry_component_B);
         candidate_and_distance[std::get<3>(current_entry)] = distance;
         ++iter;
       }

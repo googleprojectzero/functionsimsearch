@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "InstructionDecoder.h"
-
+#include "util.hpp"
 #include "functionsimhash.hpp"
 
 uint64_t FunctionSimHasher::FloatsToBits(const std::vector<float>& floats) {
@@ -131,6 +131,17 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   }
 
   FloatsToBits(output_simhash_floats, output_simhash_values);
+}
+
+void FunctionSimHasher::CalculateFunctionSimHash(
+  std::vector<FeatureHash>* features, std::vector<uint64_t>* output) {
+  std::vector<float> floats(128);
+  for (const auto& feature : *features) {
+    std::vector<uint64_t> hash = { feature.first, feature.second };
+    double weight = weights_.at(feature.first);
+    AddWeightsInHashToOutput(hash, 128, weight, &floats);
+  }
+  FloatsToBits(floats, output);
 }
 
 // Add a given subgraph into the vector of floats.
@@ -256,14 +267,14 @@ float FunctionSimHasher::GetGraphletWeight(std::unique_ptr<Flowgraph>& graph,
   address node) const {
   uint64_t graphlet_id = graph->CalculateHash(node,
     SeedXForHashY(0, 0), SeedXForHashY(0, 1), SeedXForHashY(0, 2));
-  return GetWeight(graphlet_id, 1.0);
+  return GetWeight(graphlet_id, default_graphlet_weight_);
 }
 
 float FunctionSimHasher::GetMnemTupleWeight(const MnemTuple& tup) const {
   uint64_t mnem_id = HashMnemTuple(tup, 0);
   // In the absence of proper weight learning, use 1/20th the weight of
   // a graphlet.
-  return GetWeight(mnem_id, 0.05);
+  return GetWeight(mnem_id, default_mnemonic_weight_);
 }
 
 // Given a vector of 64-bit values, retrieve the n-th bit.
@@ -304,7 +315,19 @@ void FunctionSimHasher::BuildMnemonicNgrams(Dyninst::ParseAPI::Function* functio
 }
 
 FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
-  bool verbose) : verbose_(verbose) {
-  // TODO: Implement loading of weights.
+  bool verbose, double default_mnemonic_weight, double default_graphlet_weight) :
+    verbose_(verbose), default_mnemonic_weight_(default_mnemonic_weight),
+    default_graphlet_weight_(default_graphlet_weight) {
+  std::vector<std::vector<std::string>> tokenized_lines;
 
+  if (weight_file == "") {
+    return;
+  }
+  if (FileToLineTokens(weight_file, &tokenized_lines)) {
+    for (const std::vector<std::string>& line : tokenized_lines) {
+      FeatureHash hash = StringToFeatureHash(line[0]);
+      double weight = strtod(line[1].c_str(), nullptr);
+      weights_[hash.first] = weight;
+    }
+  }
 }

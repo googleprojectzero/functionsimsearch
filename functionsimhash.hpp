@@ -26,6 +26,7 @@
 #include "CodeObject.h"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
+#include "util.hpp"
 
 typedef std::tuple<std::string, std::string, std::string> MnemTuple;
 
@@ -42,14 +43,15 @@ typedef std::tuple<std::string, std::string, std::string> MnemTuple;
 //      at the right index, for each 0-bit, subtract the weight.
 //   5) Convert the vector of floats to a vector of zeroes and ones again.
 //
-// The weights themselves are given in a persistent std::map. The keys in this
+// The weights themselves are given in a flat text file. The keys in this
 // map are the hash values of the feature using the first hash function of the
 // hash family (subsequent hash functions are used for the calculations).
 class FunctionSimHasher {
 public:
   // The weight_file is a simple memory-mapped map that maps uint64_t IDs for
   // a feature to float weights.
-  FunctionSimHasher(const std::string& weight_file, bool verbose = false);
+  FunctionSimHasher(const std::string& weight_file, bool verbose = false,
+    double default_mnemomic_weight = 0.05, double default_graphlet_weight = 1.0);
 
   // Calculate a simhash value for a given function. Outputs a vector of 64-bit
   // values, number_of_outputs describes how many bits of SimHash should be
@@ -57,6 +59,9 @@ public:
   void CalculateFunctionSimHash(
     Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
     std::vector<uint64_t>* output_simhash_values);
+
+  void CalculateFunctionSimHash(
+    std::vector<FeatureHash>* features, std::vector<uint64_t>* output);
 
   static uint64_t FloatsToBits(const std::vector<float>& floats);
   static bool FloatsToBits(const std::vector<float>& floats,
@@ -113,6 +118,9 @@ private:
   std::map<uint64_t, float> weights_;
   bool verbose_ = false;
   mutable std::mutex mutex_;
+
+  double default_mnemonic_weight_;
+  double default_graphlet_weight_;
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;
   static constexpr uint64_t seed1_ = 0xb492b66fbe98f273ULL;

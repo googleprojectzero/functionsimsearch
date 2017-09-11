@@ -18,72 +18,15 @@
 
 #include <spii/auto_diff_term.h>
 #include <spii/dynamic_auto_diff_term.h>
+#include <spii/large_auto_diff_term.h>
 #include <spii/function.h>
 #include <spii/solver.h>
 #include <spii/term.h>
 
-#include "simhashweightslossfunctor.hpp"
+#include "util.hpp"
+#include "simhashtrainer.hpp"
 
 using namespace std;
-
-// String split functionality.
-template<typename Out>
-void split(const std::string &s, char delim, Out result) {
-  std::stringstream ss;
-  ss.str(s);
-  std::string item;
-  while (std::getline(ss, item, delim)) {
-    *(result++) = item;
-  }
-}
-
-bool FileToLineTokens(const std::string& filename,
-  std::vector<std::vector<std::string>>* tokenized_lines) {
-  std::ifstream inputfile(filename);
-  if (!inputfile) {
-    printf("Failed to open inputfile %s.\n", filename.c_str());
-    return false;
-  }
-
-  uint32_t line_index = 0;
-  // We want features sorted and de-duplicated in the end, so use a set.
-  std::string line;
-  while (std::getline(inputfile, line)) {
-    std::vector<std::string> tokens;
-    split(line, ' ', std::back_inserter(tokens));
-    tokenized_lines->push_back(tokens);
-  }
-  return true;
-}
-
-FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
-  const std::string& token = hash_as_string;
-  std::string first_half_string;
-  std::string second_half_string;
-  if (token.c_str()[2] == '.') {
-    first_half_string = token.substr(3, 16);
-    second_half_string = token.substr(16+3, string::npos);
-  } else {
-    first_half_string = token.substr(0, 16);
-    second_half_string = token.substr(16, string::npos);
-  }
-  const char* first_half = first_half_string.c_str();
-  const char* second_half = second_half_string.c_str();
-  uint64_t hashA = strtoull(first_half, nullptr, 16);
-  uint64_t hashB = strtoull(second_half, nullptr, 16);
-
-  return std::make_pair(hashA, hashB);
-}
-
-void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
-  std::set<FeatureHash>* result) {
-  for (const std::vector<std::string>& line : inputlines) {
-    for (uint32_t index = 1; index < line.size(); ++index) {
-      FeatureHash foo = StringToFeatureHash(line[index]);
-      result->insert(StringToFeatureHash(line[index]));
-    }
-  }
-}
 
 // The code expects the following files to be present inside the data directory
 // (which is passed in as first argument):
@@ -99,15 +42,16 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
 //
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
+  if (argc != 3) {
     printf("Use labelled and unlablled data to train a weights.txt file.\n");
-    printf("Usage: %s <data directory>\n", argv[0]);
+    printf("Usage: %s <data directory> <weights file>\n", argv[0]);
     printf("Refer to the source code of this utility for detailed usage.\n");
     return -1;
   }
 
   printf("[!] Parsing training data.\n");
   std::string directory(argv[1]);
+  std::string outputfile(argv[2]);
   // Read the contents of functions.txt.
   std::string functionsfilename = directory + "/functions.txt";
   std::vector<std::vector<std::string>> file_contents;
@@ -174,51 +118,54 @@ int main(int argc, char** argv) {
 
   printf("[!] Training data parsed, beginning the training process.\n");
 
-  spii::Function function;
+  SimHashTrainer trainer(
+    &all_functions,
+    &all_features_vector,
+    &attractionset,
+    &repulsionset);
+  std::vector<double> weights;
+  trainer.Train(&weights);
 
-  std::vector<uint32_t> unlabeledset;
-
-  size_t number_of_features = all_features_vector.size();
-  // Hard-code an upper limit of 400k unique features for the moment. This will
-  // almost certainly need to be raised.
-
-  std::vector<double> weights(number_of_features, 1.0);
-
-  // Add a term for each example in the attraction set.
-  for (uint32_t pair_index = 0; pair_index < attractionset.size(); ++pair_index) {
-    printf("[!] Adding term for similar pair %d (%d, %d) to the loss function.\n",
-      pair_index, attractionset[pair_index].first,
-      attractionset[pair_index].second);
-    function.add_term(std::make_shared<
-      spii::AutoDiffTerm<SimHashPairLossTerm, spii::Dynamic>>(
-        number_of_features,
-        &all_features_vector,
-        &all_functions,
-        &attractionset,
-        pair_index,
-        true), weights.data());
+  // Write the weights file.
+  {
+    std::ofstream outfile(outputfile);
+    if (!outfile) {
+      printf("Failed to open outputfile %s.\n", outputfile.c_str());
+      return false;
+    }
+    for (uint32_t i = 0; i < all_features_vector.size(); ++i) {
+      char buf[512];
+      FeatureHash& hash = all_features_vector[i];
+      sprintf(buf, "%16.16lx%16.16lx %f", hash.first, hash.second,
+        weights[i]);
+      outfile << buf << std::endl;
+    }
   }
 
-  // Add a term for each example in the repulsionset.
-  for (uint32_t pair_index = 0; pair_index < repulsionset.size(); ++pair_index) {
-    printf("[!] Adding term for dissimilar pair %d (%d, %d) to the loss function.\n",
-      pair_index, repulsionset[pair_index].first,
-      repulsionset[pair_index].second);
-    function.add_term(
-      std::make_shared<spii::AutoDiffTerm<SimHashPairLossTerm, spii::Dynamic>>(
-        number_of_features,
-        &all_features_vector,
-        &all_functions,
-        &repulsionset,
-        pair_index,
-        true), weights.data());
-  }
+  /*
+  // Training has been performed. Instantiate two FunctionSimHasher, one with
+  // the new weights, one without.
+  FunctionSimHasher hash_no_weight("", false);
+  FunctionSimHasher hash_weights(outputfile, false);
 
-  spii::LBFGSSolver solver;
-  solver.maximum_iterations = 50;
-  spii::SolverResults results;
-  solver.solve(function, &results);
-  cout << results << std::endl << std::endl;
+  for (const auto& pair : attractionset) {
+    std::vector<FeatureHash> features_A;
+    std::vector<FeatureHash> features_B;
+    for (uint32_t index : all_functions[pair.first]) {
+      features_A.push_back(all_features_vector[index]);
+    }
+    for (uint32_t index : all_functions[pair.second]) {
+      features_B.push_back(all_features_vector[index]);
+    }
+    std::vector<uint64_t> function_A_hash;
+    std::vector<uint64_t> function_B_hash;
+    hash_no_weight.CalculateFunctionSimHash(
+      &features_A, &function_A_hash);
+    hash_no_weight.CalculateFunctionSimHash(
+      &features_B, &function_B_hash);
+    
+    FunctionFeaturesi* functionA = &all_functions[pair.first];
 
+  }*/
 }
 

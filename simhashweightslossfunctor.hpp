@@ -19,6 +19,8 @@
 #include <map>
 #include <vector>
 
+#include "util.hpp"
+
 // The functor that calculates the loss function for the SimHash weights. This
 // is somewhat mathematically involved, hence the lengthy explanation below:
 //
@@ -44,11 +46,6 @@
 //    sum_{(f1, f2) in attractionset} SimHash(f1)
 //
 
-// The hash of an individual feature.
-typedef std::pair<uint64_t, uint64_t> FeatureHash;
-// A vector of indices into a FeatureHash vector represents a function.
-typedef std::vector<uint32_t> FunctionFeatures;
-
 bool GetBit(const FeatureHash& hash, uint32_t bit) {
   uint64_t value = (bit > 63) ? hash.second : hash.first;
   bit = bit % 64;
@@ -56,16 +53,20 @@ bool GetBit(const FeatureHash& hash, uint32_t bit) {
 }
 
 template <typename R>
-void calculateSimHashFloats(const FunctionFeatures& features,
+void calculateSimHashFloats(
+  const FunctionFeatures& features,
   const std::vector<FeatureHash>* all_features,
-  std::vector<R>& out, const R* weights) {
+  std::vector<R>& out,
+  const R* const* const weights,
+  const std::map<uint32_t, uint32_t>* global_to_local) {
   for (uint32_t i = 0; i < 128; ++i) {
     for (uint32_t feature_index : features) {
       bool bit = GetBit((*all_features)[feature_index], i);
+      uint32_t weight_index = global_to_local->at(feature_index);
       if (bit) {
-        out[i] += weights[feature_index];
+        out[i] += weights[weight_index][0];
       } else {
-        out[i] -= weights[feature_index];
+        out[i] -= weights[weight_index][0];
       }
     }
   }
@@ -83,22 +84,21 @@ R piecewise_linear(R argument) {
 
 template <typename R>
 R calculatePairLoss(
-  const std::vector<std::pair<uint32_t, uint32_t>>* pairs,
-  const std::vector<FunctionFeatures>* all_functions,
-  const std::vector<FeatureHash>* all_features, uint32_t pair_index,
-  const R* weights, bool attract=true) {
+  const std::vector<FeatureHash>* all_features,
+  const FunctionFeatures* first_function,
+  const FunctionFeatures* second_function,
+  const R* const* const weights,
+  const std::map<uint32_t, uint32_t>* global_to_local,
+  bool attract=true) {
   R loss = 0.0;
-  // Load the relevant pair.
-  std::pair<uint32_t, uint32_t> pair = pairs->at(pair_index);
   // Initialize the two vectors of double/float/sums of weights.
   std::vector<R> functionA(128);
   std::vector<R> functionB(128);
-  // Obtain the set of features for each function in the pair.
-  const FunctionFeatures& first_function = all_functions->at(pair.first);
-  const FunctionFeatures& second_function = all_functions->at(pair.second);
   // Sum the features with their weights into the relevant vector.
-  calculateSimHashFloats(first_function, all_features, functionA, weights);
-  calculateSimHashFloats(second_function, all_features, functionB, weights);
+  calculateSimHashFloats(*first_function, all_features, functionA, weights,
+    global_to_local);
+  calculateSimHashFloats(*second_function, all_features, functionB, weights,
+    global_to_local);
 
   // Calculate (functionA[i] * functionB[i]) and feed the result through
   // a piecewise linear function. If both entries have the same sign
@@ -107,41 +107,50 @@ R calculatePairLoss(
   // function.
   for (uint32_t i = 0; i < 128; ++i) {
     if (attract) {
-      loss += -piecewise_linear(functionA[i] * functionB[i]);
+      loss -= piecewise_linear(functionA[i] * functionB[i]);
     } else {
       loss += piecewise_linear(functionA[i] * functionB[i]);
     }
   }
-  loss /= pairs->size();
   return loss;
 }
 
 class SimHashPairLossTerm {
 public:
   SimHashPairLossTerm(
-    std::vector<FeatureHash>* all_features,
-    std::vector<FunctionFeatures>* all_functions,
-    std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
-    uint32_t relevant_pair_index, bool attract) :
+    const std::vector<FeatureHash>* all_features,
+    const FunctionFeatures* functionA,
+    const FunctionFeatures* functionB,
+    bool attract,
+    uint32_t number_of_pairs,
+    const std::map<uint32_t, uint32_t> global_to_local_index) :
       all_features_(all_features),
-      all_functions_(all_functions),
-      pairset_(attractionset),
-      relevant_pair_index_(relevant_pair_index),
-      attract_(attract) {};
+      functionA_(functionA),
+      functionB_(functionB),
+      number_of_pairs_(number_of_pairs),
+      attract_(attract),
+      global_to_local_(global_to_local_index) {};
 
   template <typename R>
-  R operator()(const R* weights) const {
-    R pair_loss = calculatePairLoss(
-      pairset_, all_functions_, all_features_, relevant_pair_index_,
-      weights, attract_);
-    return pair_loss;
+  R operator()(const std::vector<int>& dimensions,
+    const R* const* const weights) const {
+    R result = calculatePairLoss(
+      all_features_,
+      functionA_,
+      functionB_,
+      weights,
+      &global_to_local_,
+      attract_);
+    R temp = number_of_pairs_;
+    return result / temp;
   }
 
 private:
-  std::vector<FeatureHash>* all_features_;
-  std::vector<FunctionFeatures>* all_functions_;
-  std::vector<std::pair<uint32_t, uint32_t>>* pairset_;
-  uint32_t relevant_pair_index_;
+  const std::vector<FeatureHash>* all_features_;
+  const FunctionFeatures* functionA_;
+  const FunctionFeatures* functionB_;
+  std::map<uint32_t, uint32_t> global_to_local_;
+  uint32_t number_of_pairs_;
   bool attract_;
 };
 
