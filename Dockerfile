@@ -22,22 +22,26 @@ RUN cd /code/dyninst && \
 
 # build functionsimsearch
 RUN cd /code && \
-    git clone https://github.com/thomasdullien/functionsimsearch.git && \
+    git clone https://github.com/google/functionsimsearch.git && \
     cd functionsimsearch && \
     mkdir third_party && \
     cd third_party && \
     git clone https://github.com/okdshin/PicoSHA2.git && \
     git clone https://github.com/trailofbits/pe-parse.git && \
+    git clone https://github.com/PetterS/spii.git && \
     cd pe-parse && \
+    cmake . && \
+    make && \
+    cd ../spii && \
     cmake . && \
     make && \
     cd ../.. && \
     make
 
 # dispatch via entrypoint script
-# recommend mapping the /data volume, probably like:
+# recommend mapping the /pwd volume, probably like (for ELF file):
 #
-#    docker run -it --rm -v $(pwd):/pwd:z functionsimsearch disassemble /pwd/someexe
+#    docker run -it --rm -v $(pwd):/pwd functionsimsearch disassemble ELF /pwd/someexe
 VOLUME /pwd
 WORKDIR /code/functionsimsearch
 ADD ./entrypoint.sh /root/entrypoint.sh
