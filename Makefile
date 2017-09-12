@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS += -ggdb -O0 -std=c++11 -fstack-check
+CPPFLAGS += -ggdb -O3 -std=c++11 -fstack-check
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \

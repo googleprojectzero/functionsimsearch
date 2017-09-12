@@ -4,6 +4,17 @@
 #include "util.hpp"
 #include <array>
 
+// A test to ensure that two extremely simple functions, each only consisting of
+// 5 features, and with 3-feature overlap, can be successfully used for training.
+// The expected behavior is that the features common to both are weighed high,
+// and those not common to both are weighed low.
+TEST(simhashtrainer, simpleattraction) {
+  // Train weights on the testing data, and save them to the temp directory.
+  ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_simple",
+    "/tmp/simple_weights.txt"), true);
+
+}
+
 // A test to validate that two functions from an attractionset will indeed have
 // their distance reduced by the training procedure.
 TEST(simhashtrainer, attractionset) {
