@@ -54,6 +54,10 @@ void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {
 // vectors with the same bits. Unfortunately, the construction of SimHash is
 // such that repeated entries in a multiset will "overwhelm" the hash, so
 // care has to be taken to add cardinalities into the construction.
+//
+// TODO(thomasdullien): Refactor this code to get rid of the Dyninst dependency
+// in the function prototype -- the function should be callable with anything
+// that allows iteration over features.
 void FunctionSimHasher::CalculateFunctionSimHash(
   Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
   std::vector<uint64_t>* output_simhash_values) {
@@ -133,6 +137,9 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   FloatsToBits(output_simhash_floats, output_simhash_values);
 }
 
+// TODO(thomasdullien): When the refactoring of the main implementation (above)
+// is complete, remove this code - if arbitrary iterators can be used as input,
+// this code will serve no purpose any more.
 void FunctionSimHasher::CalculateFunctionSimHash(
   std::vector<FeatureHash>* features, std::vector<uint64_t>* output) {
   std::vector<float> floats(128);

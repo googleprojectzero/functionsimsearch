@@ -63,10 +63,10 @@ TEST(simhashtrainer, simple_attraction) {
   // should be close to zero, and the weight of the last two features (which
   // are shared) should be close to one.
 
-  EXPECT_TRUE(weights[0] < 0.01);
-  EXPECT_TRUE(weights[1] < 0.01);
-  EXPECT_TRUE(weights[2] > 0.90);
-  EXPECT_TRUE(weights[3] > 0.90);
+  ASSERT_LE(weights[0], 0.01);
+  ASSERT_LE(weights[1], 0.01);
+  ASSERT_GE(weights[2], 0.90);
+  ASSERT_GE(weights[3], 0.90);
 
   std::map<uint64_t, float> hash_to_weight;
 
@@ -75,45 +75,49 @@ TEST(simhashtrainer, simple_attraction) {
       all_features_vector[index].second, weights[index]);
     hash_to_weight[all_features_vector[index].first] = weights[index];
   }
- 
+
   // Instantiate two simhashers - one without the trained weights and one with
   // the trained weights - to ensure that the hamming distance between the
   // hashes is reduced by the training procedure.
   FunctionSimHasher hasher_untrained("");
   FunctionSimHasher hasher_trained(&hash_to_weight);
 
-  uint64_t fileA = 0x396063026eaac371ULL;
-  uint64_t addressA = 0x000000000805e910ULL;
-  uint64_t fileB = 0x51f3962ff93c1c1eULL;
-  uint64_t addressB = 0x0000000000416f60ULL;
+  std::vector<FeatureHash> functionA;
+  for (uint32_t index : all_functions[0]) {
+    functionA.push_back(all_features_vector[index]);
+  }
+  std::vector<FeatureHash> functionB;
+  for (uint32_t index : all_functions[1]) {
+    functionB.push_back(all_features_vector[index]);
+  }
 
-  FeatureHash untrainedA = GetHashForFileAndFunction(hasher_untrained,
-    id_to_filename[fileA], id_to_mode[fileA], addressA);
-  FeatureHash trainedA = GetHashForFileAndFunction(hasher_trained,
-      id_to_filename[fileA], id_to_mode[fileA], addressA);
+  std::vector<uint64_t> hash_untrained_A;
+  hasher_untrained.CalculateFunctionSimHash(&functionA, &hash_untrained_A);
+  std::vector<uint64_t> hash_trained_A;
+  hasher_trained.CalculateFunctionSimHash(&functionA, &hash_trained_A);
 
-  FeatureHash untrainedB = GetHashForFileAndFunction(hasher_untrained,
-    id_to_filename[fileB], id_to_mode[fileB], addressB);
-  FeatureHash trainedB = GetHashForFileAndFunction(hasher_trained,
-      id_to_filename[fileB], id_to_mode[fileB], addressB);
+  std::vector<uint64_t> hash_untrained_B;
+  hasher_untrained.CalculateFunctionSimHash(&functionB, &hash_untrained_B);
+  std::vector<uint64_t> hash_trained_B;
+  hasher_trained.CalculateFunctionSimHash(&functionB, &hash_trained_B);
 
-  printf("Hash of A is %16.16lx%16.16lx untrained\n", untrainedA.first,
-    untrainedA.second);
+  printf("Hash of A is %16.16lx%16.16lx untrained\n", hash_untrained_A[0],
+    hash_untrained_A[1]);
+  printf("Hash of B is %16.16lx%16.16lx untrained\n", hash_untrained_B[0],
+    hash_untrained_B[1]);
 
-  printf("Hash of B is %16.16lx%16.16lx untrained\n", untrainedB.first,
-    untrainedB.second);
+  printf("Untrained Hamming distance is %d\n", HammingDistance(
+    hash_untrained_A[0], hash_untrained_A[1], hash_untrained_B[0],
+    hash_untrained_B[1]));
 
-  printf("Hamming distance is %d\n", HammingDistance(untrainedA, untrainedB));
+  printf("Hash of A is %16.16lx%16.16lx trained\n", hash_trained_A[0],
+    hash_trained_A[1]);
+  printf("Hash of B is %16.16lx%16.16lx trained\n", hash_trained_B[0],
+    hash_trained_B[1]);
 
-  printf("Hash of A is %16.16lx%16.16lx trained\n", trainedA.first,
-    trainedA.second);
-
-  printf("Hash of B is %16.16lx%16.16lx trained\n", trainedB.first,
-    trainedB.second);
-
-  printf("Hamming distance is %d\n", HammingDistance(trainedA, trainedB));
-
-
+  printf("Trained Hamming distance is %d\n", HammingDistance(
+    hash_trained_A[0], hash_trained_A[1], hash_trained_B[0],
+    hash_trained_B[1]));
 }
 
 
