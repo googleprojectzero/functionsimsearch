@@ -103,8 +103,11 @@ void SimHashTrainer::Train(std::vector<double>* output_weights) {
   }
 }
 
-bool TrainSimHashFromDataDirectory(const std::string& directory, const
-  std::string& outputfile) {
+bool LoadTrainingData(const std::string& directory,
+   std::vector<FunctionFeatures>* all_functions,
+   std::vector<FeatureHash>* all_features_vector,
+   std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
+   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
 
   // Read the contents of functions.txt.
   std::string functionsfilename = directory + "/functions.txt";
@@ -117,25 +120,23 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   // FeatureHash to vector index.
   std::set<FeatureHash> all_features;
   ReadFeatureSet(file_contents, &all_features);
-  std::vector<FeatureHash> all_features_vector;
   std::map<FeatureHash, uint32_t> feature_to_vector_index;
   uint32_t index = 0;
   for (const FeatureHash& feature : all_features) {
-    all_features_vector.push_back(feature);
+    all_features_vector->push_back(feature);
     feature_to_vector_index[feature] = index;
     ++index;
   }
 
   // FunctionFeatures are a vector of uint32_t.
-  std::vector<FunctionFeatures> all_functions;
   std::map<std::string, uint32_t> function_to_index;
   index = 0;
-  all_functions.resize(file_contents.size());
+  all_functions->resize(file_contents.size());
   for (const std::vector<std::string>& line : file_contents) {
     function_to_index[line[0]] = index;
     for (uint32_t i = 1; i < line.size(); ++i) {
       FeatureHash hash = StringToFeatureHash(line[i]);
-      all_functions[index].push_back(feature_to_vector_index[hash]);
+      (*all_functions)[index].push_back(feature_to_vector_index[hash]);
     }
     ++index;
   }
@@ -151,24 +152,38 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
     return false;
   }
 
-  std::vector<std::pair<uint32_t, uint32_t>> attractionset;
   for (const std::vector<std::string>& line : attract_file_contents) {
-    attractionset.push_back(std::make_pair(
+    attractionset->push_back(std::make_pair(
       function_to_index[line[0]],
       function_to_index[line[1]]));
   }
 
-  std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
   for (const std::vector<std::string>& line : repulse_file_contents) {
-    repulsionset.push_back(std::make_pair(
+    repulsionset->push_back(std::make_pair(
       function_to_index[line[0]],
       function_to_index[line[1]]));
   }
 
   printf("[!] Loaded %ld functions (%ld unique features)\n",
-    all_functions.size(), all_features_vector.size());
-  printf("[!] Attraction-Set: %ld pairs\n", attractionset.size());
-  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset.size());
+    all_functions->size(), all_features_vector->size());
+  printf("[!] Attraction-Set: %ld pairs\n", attractionset->size());
+  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset->size());
+
+  return true;
+}
+
+
+bool TrainSimHashFromDataDirectory(const std::string& directory, const
+  std::string& outputfile) {
+  std::vector<FunctionFeatures> all_functions;
+  std::vector<FeatureHash> all_features_vector;
+  std::vector<std::pair<uint32_t, uint32_t>> attractionset;
+  std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
+
+  if(!LoadTrainingData(directory, &all_functions, &all_features_vector, 
+    &attractionset, &repulsionset)) {
+    return false;
+  }
 
   printf("[!] Training data parsed, beginning the training process.\n");
 

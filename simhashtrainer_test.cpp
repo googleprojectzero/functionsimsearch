@@ -4,7 +4,30 @@
 #include "util.hpp"
 #include <array>
 
-// A test to validate that two functions from an attractionset will indeed have
+TEST(simhashtrainer, simple_attraction) {
+  std::vector<FunctionFeatures> all_functions;
+  std::vector<FeatureHash> all_features_vector;
+  std::vector<std::pair<uint32_t, uint32_t>> attractionset;
+  std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
+
+  ASSERT_TRUE(LoadTrainingData("../testdata/train_simple_attraction",
+    &all_functions, &all_features_vector, &attractionset, &repulsionset));
+
+  SimHashTrainer trainer(
+    &all_functions,
+    &all_features_vector,
+    &attractionset,
+    &repulsionset);
+  std::vector<double> weights;
+  trainer.Train(&weights);
+
+  for (uint32_t index = 0; index < all_features_vector.size(); ++index) {
+    printf("Feature %16lx%16lx weight %f\n", all_features_vector[index].first,
+      all_features_vector[index].second, weights[index]);
+
+  }
+}
+
 // their distance reduced by the training procedure.
 TEST(simhashtrainer, attractionset) {
   // This test calculates the similarity between RarVM::ExecuteStandardFilter
