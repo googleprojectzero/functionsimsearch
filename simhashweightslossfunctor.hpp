@@ -106,11 +106,12 @@ R calculatePairLoss(
   // Invert the sign of the product, then feed through a piecewise linear
   // function.
   for (uint32_t i = 0; i < 128; ++i) {
-    if (attract) {
-      loss -= piecewise_linear(functionA[i] * functionB[i]);
-    } else {
-      loss += piecewise_linear(functionA[i] * functionB[i]);
-    }
+//    if (attract) {
+      loss += piecewise_linear(
+          (functionA[i] - functionB[i]) * (functionA[i] - functionB[i]));
+//    } else {
+//      loss -= piecewise_linear(functionA[i] - functionB[i]);
+//    }
   }
   return loss;
 }

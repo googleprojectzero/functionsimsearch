@@ -104,10 +104,17 @@ void SimHashTrainer::Train(std::vector<double>* output_weights) {
 }
 
 bool LoadTrainingData(const std::string& directory,
+<<<<<<< HEAD
    std::vector<FunctionFeatures>* all_functions,
    std::vector<FeatureHash>* all_features_vector,
    std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
    std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
+=======
+  std::vector<FunctionFeatures>* all_functions,
+  std::vector<FeatureHash>* all_features_vector,
+  std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
+  std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
+>>>>>>> a55564ba66bec889980d6ad9be49b564438a7c39
 
   // Read the contents of functions.txt.
   std::string functionsfilename = directory + "/functions.txt";
@@ -168,11 +175,16 @@ bool LoadTrainingData(const std::string& directory,
     all_functions->size(), all_features_vector->size());
   printf("[!] Attraction-Set: %ld pairs\n", attractionset->size());
   printf("[!] Repulsion-Set: %ld pairs\n", repulsionset->size());
+<<<<<<< HEAD
 
   return true;
 }
 
 
+=======
+}
+
+>>>>>>> a55564ba66bec889980d6ad9be49b564438a7c39
 bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::string& outputfile) {
   std::vector<FunctionFeatures> all_functions;
@@ -180,8 +192,16 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::vector<std::pair<uint32_t, uint32_t>> attractionset;
   std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
 
+<<<<<<< HEAD
   if(!LoadTrainingData(directory, &all_functions, &all_features_vector, 
     &attractionset, &repulsionset)) {
+=======
+  if (!LoadTrainingData(directory,
+    &all_functions,
+    &all_features_vector,
+    &attractionset,
+    &repulsionset)) {
+>>>>>>> a55564ba66bec889980d6ad9be49b564438a7c39
     return false;
   }
 

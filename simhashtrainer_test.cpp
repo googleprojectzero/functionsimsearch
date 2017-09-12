@@ -4,6 +4,7 @@
 #include "util.hpp"
 #include <array>
 
+<<<<<<< HEAD
 TEST(simhashtrainer, simple_attraction) {
   std::vector<FunctionFeatures> all_functions;
   std::vector<FeatureHash> all_features_vector;
@@ -28,6 +29,20 @@ TEST(simhashtrainer, simple_attraction) {
   }
 }
 
+=======
+// A test to ensure that two extremely simple functions, each only consisting of
+// 5 features, and with 3-feature overlap, can be successfully used for training.
+// The expected behavior is that the features common to both are weighed high,
+// and those not common to both are weighed low.
+TEST(simhashtrainer, simpleattraction) {
+  // Train weights on the testing data, and save them to the temp directory.
+  ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_simple",
+    "/tmp/simple_weights.txt"), true);
+
+}
+
+// A test to validate that two functions from an attractionset will indeed have
+>>>>>>> a55564ba66bec889980d6ad9be49b564438a7c39
 // their distance reduced by the training procedure.
 TEST(simhashtrainer, attractionset) {
   // This test calculates the similarity between RarVM::ExecuteStandardFilter

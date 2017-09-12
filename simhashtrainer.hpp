@@ -16,8 +16,14 @@
 //                  indicating which functions should be the same.
 //  repulse.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
 //                  indicating which functions should NOT be the same
-//
-// The function will create a textfile with the corresponding weights.
+bool LoadTrainingData(const std::string& directory,
+   std::vector<FunctionFeatures>* all_functions,
+   std::vector<FeatureHash>* all_features_vector,
+   std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
+   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset);
+
+// Convenience function. Expects the data described in LoadTrainingData, outputs
+// a file full of weights.
 bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::string& weights_filename);
 
