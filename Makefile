@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS += -ggdb -O3 -std=c++11 -fstack-check
+CPPFLAGS += -ggdb -O0 -std=c++11 -fstack-check
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
@@ -23,7 +23,7 @@ TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
 
 DIRECTORIES = directory/build directory/bin directory/tests directory/profile
 
-TEST = runtests
+TEST = tests/runtests
 
 directory/%:
 	mkdir -p $(@F)
@@ -31,9 +31,11 @@ directory/%:
 build/%.o: %.cpp $(DIRECTORIES)
 	$(CPP) $(INCLUDEDIR) -c -o $@ $< $(CPPFLAGS)
 
-all: $(ALL)
+all: $(ALL) $(TESTS) $(TEST)
 
-tests: $(OBJ) $(TESTS)
+tests/runtests: $(TESTS) tests
+
+tests: $(ALL) $(OBJ) $(TESTS)
 	$(CPP) $(CPPFLAGS) -o tests/runtests runtests.cpp $(OBJ) $(TESTS) $(LIBDIR) \
 		$(LIBS) -lgtest
 
@@ -41,5 +43,5 @@ bin/%: $(OBJ)
 	$(CPP) $(INCLUDEDIR) $(CPPFLAGS) -o $@ $(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
 
 clean:
-	rm ./build/*.o $(ALL)
+	rm -f ./build/*.o ./tests/* $(ALL)
 
