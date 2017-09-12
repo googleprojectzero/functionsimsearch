@@ -331,3 +331,11 @@ FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
     }
   }
 }
+
+FunctionSimHasher::FunctionSimHasher(std::map<uint64_t, float>* weights) :
+  weights_(*weights), verbose_(true), default_mnemonic_weight_(0.05),
+  default_graphlet_weight_(1.0) {
+
+}
+
+

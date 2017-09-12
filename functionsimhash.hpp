@@ -53,6 +53,8 @@ public:
   FunctionSimHasher(const std::string& weight_file, bool verbose = false,
     double default_mnemomic_weight = 0.05, double default_graphlet_weight = 1.0);
 
+  FunctionSimHasher(std::map<uint64_t, float>* weights);
+
   // Calculate a simhash value for a given function. Outputs a vector of 64-bit
   // values, number_of_outputs describes how many bits of SimHash should be
   // calculated. Reasonable use is usually 128.
