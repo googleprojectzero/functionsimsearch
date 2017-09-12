@@ -1,4 +1,5 @@
 #include <map>
+#include <random>
 #include <vector>
 
 #include <spii/auto_diff_term.h>
@@ -73,9 +74,14 @@ void SimHashTrainer::Train(std::vector<double>* output_weights) {
   std::vector<std::vector<double>> weights(number_of_weights, {0.0});
   output_weights->resize(number_of_weights);
 
+  // We need some random numbers to perturb the initial problem randomly.
+  std::mt19937 rng(std::random_device{}());
+  std::normal_distribution<float> normal(0, 0.001);
+
   for (int index = 0; index < number_of_weights; ++index) {
     function.add_variable(weights[index].data(), 1);
-    weights[index][0] = 1.0; // Initialize all weights to 1.
+    // Initialize the weights to 1.0 + random epsilon.
+    weights[index][0] = 1.0 + normal(rng);
   }
 
   // Create a loss term for each pair from the attraction set.
