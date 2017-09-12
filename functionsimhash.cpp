@@ -142,10 +142,14 @@ void FunctionSimHasher::CalculateFunctionSimHash(
 // this code will serve no purpose any more.
 void FunctionSimHasher::CalculateFunctionSimHash(
   std::vector<FeatureHash>* features, std::vector<uint64_t>* output) {
+
   std::vector<float> floats(128);
   for (const auto& feature : *features) {
     std::vector<uint64_t> hash = { feature.first, feature.second };
-    double weight = weights_.at(feature.first);
+    double weight = 1.0;
+    if (weights_.find(feature.first) != weights_.end()) {
+      weight = weights_.at(feature.first);
+    }
     AddWeightsInHashToOutput(hash, 128, weight, &floats);
   }
   FloatsToBits(floats, output);
@@ -340,9 +344,9 @@ FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
 }
 
 FunctionSimHasher::FunctionSimHasher(std::map<uint64_t, float>* weights) :
-  weights_(*weights), verbose_(true), default_mnemonic_weight_(0.05),
+  weights_(*weights), verbose_(false), default_mnemonic_weight_(0.05),
   default_graphlet_weight_(1.0) {
-
+  weights_ = *weights;
 }
 
 

@@ -59,15 +59,6 @@ TEST(simhashtrainer, simple_attraction) {
   // The total feature set contains 4 elements.
   ASSERT_EQ(all_features_vector.size(), 4);
 
-  // We expect that the weight of the first two features (which are not shared)
-  // should be close to zero, and the weight of the last two features (which
-  // are shared) should be close to one.
-
-  ASSERT_LE(weights[0], 0.01);
-  ASSERT_LE(weights[1], 0.01);
-  ASSERT_GE(weights[2], 0.90);
-  ASSERT_GE(weights[3], 0.90);
-
   std::map<uint64_t, float> hash_to_weight;
 
   for (uint32_t index = 0; index < all_features_vector.size(); ++index) {
@@ -75,6 +66,12 @@ TEST(simhashtrainer, simple_attraction) {
       all_features_vector[index].second, weights[index]);
     hash_to_weight[all_features_vector[index].first] = weights[index];
   }
+
+  // We expect that the weight of the first two features (which are not shared)
+  // should be close to zero, and the weight of the last two features (which
+  // are shared) should be close to one.
+
+  EXPECT_GE(weights[2]-weights[0], 0.9);
 
   // Instantiate two simhashers - one without the trained weights and one with
   // the trained weights - to ensure that the hamming distance between the
