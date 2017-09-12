@@ -74,12 +74,17 @@ void calculateSimHashFloats(
 
 template <typename R>
 R piecewise_linear(R argument) {
-  if (argument > 1.0) {
-    return 1.0;
-  } else if (argument < -1.0) {
-    return -1.0;
+  if (argument > 1.01) {
+    return 1.01;
+  } else if (argument < -1.01) {
+    return -1.01;
   }
   return argument;
+}
+
+template <typename R>
+R sigmoid_shifted(R argument) {
+  return ((1.0 / (1 + exp(-argument))) - 0.5) * 2;
 }
 
 template <typename R>
