@@ -87,6 +87,25 @@ R sigmoid_shifted(R argument) {
   return ((1.0 / (1 + exp(-argument))) - 0.5) * 2;
 }
 
+// A function that returns 1 if the sign of x is different than the sign of
+// y, and 0 otherwise.
+template <typename R>
+R hard_edged_sign_punish(R x, R y) {
+  R x_times_y = x * y;
+  R x_square = x * x;
+  R y_square = y * y;
+  return 0.5*(-(x_times_y / sqrt(x_square * y_square))+1);
+}
+
+template <typename R>
+R punish_wrong_sign(R x, R y) {
+  R x_times_y = x * y;
+  R x_square = x * x;
+  R y_square = y * y;
+  return (-(x_times_y / sqrt(x_square * y_square)));
+}
+
+
 template <typename R>
 R calculatePairLoss(
   const std::vector<FeatureHash>* all_features,
@@ -105,18 +124,15 @@ R calculatePairLoss(
   calculateSimHashFloats(*second_function, all_features, functionB, weights,
     global_to_local);
 
-  // Calculate (functionA[i] * functionB[i]) and feed the result through
-  // a piecewise linear function. If both entries have the same sign
-  // (which is desired), the result will be positive, otherwise negative.
-  // Invert the sign of the product, then feed through a piecewise linear
-  // function.
+  // Calculate the component-wise loss. We want the component-wise loss to have
+  // the following properties... (TODO: Explain the loss function choice).
   for (uint32_t i = 0; i < 128; ++i) {
-//    if (attract) {
-      loss += piecewise_linear(
-          (functionA[i] - functionB[i]) * (functionA[i] - functionB[i]));
-//    } else {
-//      loss -= piecewise_linear(functionA[i] - functionB[i]);
-//    }
+    if (attract) {
+      R x = functionA[i];
+      R y = functionB[i];
+      R absolute_distance = sqrt((x-y)*(x-y));
+      loss += 10*((x-y)*(x-y)) + (x-1)*(x-1) + (y-1)*(y-1);
+    }
   }
   return loss;
 }

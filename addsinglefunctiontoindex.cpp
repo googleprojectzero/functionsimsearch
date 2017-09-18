@@ -21,6 +21,7 @@
 #include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly.hpp"
+#include "dyninstfeaturegenerator.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
@@ -101,19 +102,23 @@ int main(int argc, char** argv) {
         return;
       }
       if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
-        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx. Index file full.\n",
-          processed_functions->load(), number_of_functions,
+        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx. Index file "
+          "full.\n", processed_functions->load(), number_of_functions,
           binary_path_string.c_str(), file_id, function_address);
         return;
       }
       uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
 
-      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching nodes)\n",
-        processed_functions->load(), number_of_functions,
+      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching "
+        "nodes)\n", processed_functions->load(), number_of_functions,
         binary_path_string.c_str(), file_id, function_address, branching_nodes);
 
       std::vector<uint64_t> hashes;
-      hasher.CalculateFunctionSimHash(function, 128, &hashes);
+      mutex_pointer->lock();
+      DyninstFeatureGenerator generator(function);
+      mutex_pointer->unlock();
+
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       {

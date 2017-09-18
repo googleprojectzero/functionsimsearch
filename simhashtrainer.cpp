@@ -9,6 +9,7 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
+#include "sgdsolver.hpp"
 #include "simhashweightslossfunctor.hpp"
 #include "util.hpp"
 #include "simhashtrainer.hpp"
@@ -65,7 +66,8 @@ void SimHashTrainer::AddPairLossTerm(const std::pair<uint32_t, uint32_t>& pair,
       weights_in_this_pair);
 }
 
-void SimHashTrainer::Train(std::vector<double>* output_weights) {
+void SimHashTrainer::Train(std::vector<double>* output_weights,
+  spii::Solver* solver) {
   // Begin constructing the loss function for the training.
   spii::Function function;
 
@@ -98,10 +100,8 @@ void SimHashTrainer::Train(std::vector<double>* output_weights) {
       repulsionset_->size(), false);
   }
 
-  spii::LBFGSSolver solver;
-  solver.maximum_iterations = 50;
   spii::SolverResults results;
-  solver.solve(function, &results);
+  solver->solve(function, &results);
   std::cout << results << std::endl << std::endl;
 
   for (uint32_t index = 0; index < number_of_weights; ++index) {
@@ -179,7 +179,7 @@ bool LoadTrainingData(const std::string& directory,
 }
 
 bool TrainSimHashFromDataDirectory(const std::string& directory, const
-  std::string& outputfile) {
+  std::string& outputfile, bool use_lbfgs) {
   std::vector<FunctionFeatures> all_functions;
   std::vector<FeatureHash> all_features_vector;
   std::vector<std::pair<uint32_t, uint32_t>> attractionset;
@@ -200,8 +200,15 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
     &all_features_vector,
     &attractionset,
     &repulsionset);
+
+  std::unique_ptr<spii::Solver> solver;
+  if (use_lbfgs) {
+    solver.reset(new spii::LBFGSSolver);
+  } else {
+    solver.reset(new spii::SGDSolver);
+  }
   std::vector<double> weights;
-  trainer.Train(&weights);
+  trainer.Train(&weights, solver.get());
 
   // Write the weights file.
   {

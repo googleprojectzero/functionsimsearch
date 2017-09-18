@@ -24,6 +24,7 @@
 #include <spii/term.h>
 
 #include "util.hpp"
+#include "sgdsolver.hpp"
 #include "simhashtrainer.hpp"
 
 using namespace std;
@@ -43,7 +44,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
   if (argc != 3) {
-    printf("Use labelled and unlablled data to train a weights.txt file.\n");
+    printf("Use labelled and unlabelled data to train a weights.txt file.\n");
     printf("Usage: %s <data directory> <weights file>\n", argv[0]);
     printf("Refer to the source code of this utility for detailed usage.\n");
     return -1;
@@ -124,7 +125,15 @@ int main(int argc, char** argv) {
     &attractionset,
     &repulsionset);
   std::vector<double> weights;
-  trainer.Train(&weights);
+
+  std::unique_ptr<spii::Solver> solver;
+  bool use_lbfgs = true;
+  if (use_lbfgs) {
+    solver.reset(new spii::LBFGSSolver);
+  } else {
+    solver.reset(new spii::SGDSolver);
+  }
+  trainer.Train(&weights, solver.get());
 
   // Write the weights file.
   {

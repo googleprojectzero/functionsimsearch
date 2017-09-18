@@ -22,6 +22,7 @@
 #include "InstructionDecoder.h"
 
 #include "disassembly.hpp"
+#include "dyninstfeaturegenerator.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
@@ -45,7 +46,9 @@ uint64_t GenerateExecutableID(const std::string& filename) {
 
 int main(int argc, char** argv) {
   if (argc != 5) {
-    printf("Dump simhash values from a binary to stdout.\n");
+    printf("Dump simhash values from a binary to stdout. If verbose is true,\n");
+    printf("dump the feature IDs for the simhash values. This is used to curate\n");
+    printf("training data for training feature weights.\n");
     printf("Usage: %s <PE/ELF> <binary path> <minimum function size> "
       "<true/false for verbose>\n", argv[0]);
     return -1;
@@ -93,7 +96,8 @@ int main(int argc, char** argv) {
     // If we are in verbose mode, the following lines will dump out the
     // individual feature hashes.
     std::vector<uint64_t> hashes;
-    sim_hasher.CalculateFunctionSimHash(function, 128, &hashes);
+    DyninstFeatureGenerator generator(function);
+    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
 
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];

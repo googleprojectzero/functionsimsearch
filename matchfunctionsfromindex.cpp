@@ -21,6 +21,7 @@
 #include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly.hpp"
+#include "dyninstfeaturegenerator.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
@@ -136,7 +137,11 @@ int main(int argc, char** argv) {
       }
 
       std::vector<uint64_t> hashes;
-      hasher.CalculateFunctionSimHash(function, 128, &hashes);
+
+      // TODO(thomasdullien): Investigate if we need locking for the constructor
+      // of the DyninstFeatureGenerator.
+      DyninstFeatureGenerator generator(function);
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
 

@@ -24,8 +24,8 @@ bool LoadTrainingData(const std::string& directory,
 
 // Convenience function. Expects the data described in LoadTrainingData, outputs
 // a file full of weights.
-bool TrainSimHashFromDataDirectory(const std::string& directory, const
-  std::string& weights_filename);
+bool TrainSimHashFromDataDirectory(const std::string& directory,
+  const std::string& weights_filename, bool use_lbfgs=true);
 
 class SimHashTrainer {
 public:
@@ -35,7 +35,7 @@ public:
     const std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
     const std::vector<std::pair<uint32_t, uint32_t>>* repulsionset);
 
-  void Train(std::vector<double>* weights);
+  void Train(std::vector<double>* weights, spii::Solver* solver);
 private:
   void AddPairLossTerm(const std::pair<uint32_t, uint32_t>& pair,
     spii::Function* function,

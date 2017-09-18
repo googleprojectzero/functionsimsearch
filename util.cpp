@@ -6,6 +6,7 @@
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
+#include "dyninstfeaturegenerator.hpp"
 #include "util.hpp"
 
 uint32_t HammingDistance(uint64_t A1, uint64_t A2, uint64_t B1, uint64_t B2) {
@@ -90,7 +91,8 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
       BuildFlowgraph(function, &graph);
 
       std::vector<uint64_t> hashes;
-      hasher.CalculateFunctionSimHash(function, 128, &hashes);
+      DyninstFeatureGenerator generator(function);
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       return std::make_pair(hash_A, hash_B);

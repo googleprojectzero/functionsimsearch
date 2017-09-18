@@ -26,9 +26,8 @@
 #include "CodeObject.h"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
+#include "functionfeaturegenerator.hpp"
 #include "util.hpp"
-
-typedef std::tuple<std::string, std::string, std::string> MnemTuple;
 
 // A class to perform per-function SimHash calculation.
 //
@@ -63,19 +62,24 @@ public:
     std::vector<uint64_t>* output_simhash_values);
 
   void CalculateFunctionSimHash(
-    std::vector<FeatureHash>* features, std::vector<uint64_t>* output);
+    FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
+    std::vector<uint64_t>* output_simhash_values);
+
+  void CalculateFunctionSimHash(
+    std::vector<FeatureHash>* features, std::vector<uint64_t>* output,
+    std::vector<float>* optional_state = nullptr);
 
   static uint64_t FloatsToBits(const std::vector<float>& floats);
   static bool FloatsToBits(const std::vector<float>& floats,
     std::vector<uint64_t>* outputs);
 private:
   // Process one subgraph and hash it into the output vector.
-  void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, address node,
-    uint64_t bits, uint64_t simhash_index,
+  void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, float graphlet_weight,
+    address node, uint64_t bits, uint64_t cardinality,
     std::vector<float>* output_simhash_floats) const;
 
   // Process one mnemonic n-gram and hash it into the output vector.
-  void ProcessMnemTuple(const MnemTuple &tup, uint64_t bits,
+  void ProcessMnemTuple(const MnemTuple &tup, float weight, uint64_t bits,
     uint64_t hash_index, std::vector<float>* output_simhash_floats) const;
 
   // Given an n-bit hash and a weight, hash the weight into the output vector
@@ -105,21 +109,23 @@ private:
 
   // Return a weight for a given key.
   float GetWeight(uint64_t key, float standard) const;
-  float GetGraphletWeight(std::unique_ptr<Flowgraph>& graph, address node) const;
-  float GetMnemTupleWeight(const MnemTuple& tup) const;
+
+  // Obtain graphlet or mnemonic IDs with or without occurrence.
+  uint64_t GetGraphletIdOccurrence(std::unique_ptr<Flowgraph>& graph,
+    uint32_t occurrence, address node) const;
+  uint64_t GetGraphletIdNoOccurrence(std::unique_ptr<Flowgraph>& graph,
+    address node) const;
+  uint64_t GetMnemonicIdOccurrence(const MnemTuple& tuple,
+    uint32_t occurrence) const;
+  uint64_t GetMnemonicIdNoOccurrence(const MnemTuple& tuple) const;
 
   inline bool GetNthBit(const std::vector<uint64_t>& nbit_hash,
     uint64_t bitindex) const;
-
-  // Given a Dyninst function, create the set of instruction 3-grams.
-  void BuildMnemonicNgrams(Dyninst::ParseAPI::Function* function,
-    std::vector<MnemTuple>* tuples) const;
 
   void DumpFloatState(std::vector<float>* output_floats);
 
   std::map<uint64_t, float> weights_;
   bool verbose_ = false;
-  mutable std::mutex mutex_;
 
   double default_mnemonic_weight_;
   double default_graphlet_weight_;
