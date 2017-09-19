@@ -53,6 +53,11 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   const std::string& token = hash_as_string;
   std::string first_half_string;
   std::string second_half_string;
+  if ((token.size() != 32) && (token.size() != 35)) {
+    printf("[E] Broken token: %s\n", token.c_str());
+    return std::make_pair(0, 0);
+  }
+
   if (token.c_str()[2] == '.') {
     first_half_string = token.substr(3, 16);
     second_half_string = token.substr(16+3, std::string::npos);

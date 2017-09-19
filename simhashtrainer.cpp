@@ -78,7 +78,7 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
 
   // We need some random numbers to perturb the initial problem randomly.
   std::mt19937 rng(std::random_device{}());
-  std::normal_distribution<float> normal(0, 0.001);
+  std::normal_distribution<float> normal(0, 0.01);
 
   for (int index = 0; index < number_of_weights; ++index) {
     function.add_variable(weights[index].data(), 1);
@@ -207,6 +207,7 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   } else {
     solver.reset(new spii::SGDSolver);
   }
+
   std::vector<double> weights;
   trainer.Train(&weights, solver.get());
 

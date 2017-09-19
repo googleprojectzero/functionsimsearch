@@ -130,8 +130,9 @@ R calculatePairLoss(
     if (attract) {
       R x = functionA[i];
       R y = functionB[i];
-      R absolute_distance = sqrt((x-y)*(x-y));
-      loss += 10*((x-y)*(x-y)) + (x-1)*(x-1) + (y-1)*(y-1);
+
+      loss += sqrt((x-y)*(x-y));
+      //loss += 5*((x-y)*(x-y)) + (x-1)*(x-1) + (y-1)*(y-1);
     }
   }
   return loss;

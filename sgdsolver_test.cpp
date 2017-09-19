@@ -20,8 +20,8 @@ public:
 TEST(sgdsolver, basic_test) {
   spii::Function function;
 
-  double x = 0.0;
-  double y = 0.0;
+  double x = 6.0;
+  double y = -5.0;
 
   function.add_variable(&x, 1);
   function.add_variable(&y, 1);

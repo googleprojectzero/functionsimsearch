@@ -96,8 +96,9 @@ void FunctionSimHasher::CalculateFunctionSimHash(
 
     uint64_t mnemonic_id_with_cardinality = GetMnemonicIdOccurrence(tuple,
       cardinality);
-    float mnemonic_tuple_weight= GetWeight(mnemonic_id_with_cardinality,
+    float mnemonic_tuple_weight = GetWeight(mnemonic_id_with_cardinality,
       default_mnemonic_weight_);
+
     ProcessMnemTuple(tuple, mnemonic_tuple_weight, number_of_outputs, cardinality,
       &output_simhash_floats);
   }
@@ -265,12 +266,16 @@ uint64_t FunctionSimHasher::GetGraphletIdNoOccurrence(
 
 uint64_t FunctionSimHasher::GetMnemonicIdNoOccurrence(const MnemTuple& tuple)
   const {
-  return HashMnemTuple(tuple, 0);
+  std::vector<uint64_t> hash;
+  CalculateNBitMnemTupleHash(tuple, 128, 0, &hash);
+  return hash[0];
 }
 
 uint64_t FunctionSimHasher::GetMnemonicIdOccurrence(const MnemTuple& tuple,
   uint32_t occurrence) const {
-  return HashMnemTuple(tuple, occurrence);
+  std::vector<uint64_t> hash;
+  CalculateNBitMnemTupleHash(tuple, 128, 0, &hash);
+  return hash[0];
 }
 
 // Given a vector of 64-bit values, retrieve the n-th bit.

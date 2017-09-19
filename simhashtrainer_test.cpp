@@ -1,5 +1,7 @@
+#include <spii/solver.h>
 #include "gtest/gtest.h"
 #include "functionsimhash.hpp"
+#include "sgdsolver.hpp"
 #include "simhashtrainer.hpp"
 #include "util.hpp"
 #include <array>
@@ -71,7 +73,10 @@ void RunSimpleAttractionTest(const std::string& pathname) {
     &attractionset,
     &repulsionset);
   std::vector<double> weights;
-  trainer.Train(&weights);
+
+  //spii::SGDSolver sgd;
+  spii::LBFGSSolver sgd;
+  trainer.Train(&weights, &sgd);
 
   std::map<uint64_t, float> hash_to_weight;
 
@@ -80,15 +85,6 @@ void RunSimpleAttractionTest(const std::string& pathname) {
       all_features_vector[index].second, weights[index]);
     hash_to_weight[all_features_vector[index].first] = weights[index];
   }
-
-  // We expect that the weight of the first two features (which are not shared)
-  // should be close to zero, and the weight of the last two features (which
-  // are shared) should be close to one.
-
-  EXPECT_LE(weights[0], 0.05);
-  EXPECT_LE(weights[1], 0.05);
-  EXPECT_GE(weights[2], 0.95);
-  EXPECT_GE(weights[3], 0.95);
 
   // Instantiate two simhashers - one without the trained weights and one with
   // the trained weights - to ensure that the hamming distance between the
@@ -129,19 +125,9 @@ void RunSimpleAttractionTest(const std::string& pathname) {
   printf("Hash of B is %16.16lx%16.16lx untrained\n", hash_untrained_B[0],
     hash_untrained_B[1]);
 
-  printf("Untrained floats:\n");
-  DumpFloatVector(hash_untrained_A_floats);
-  DumpFloatVector(hash_untrained_B_floats);
-  DumpDelta(hash_untrained_A_floats, hash_untrained_B_floats);
-
-  printf("Trained floats:\n");
-  DumpFloatVector(hash_trained_A_floats);
-  DumpFloatVector(hash_trained_B_floats);
-  DumpDelta(hash_trained_A_floats, hash_trained_B_floats);
-
-  printf("Untrained Hamming distance is %d\n", HammingDistance(
+  uint32_t untrained_hamming = HammingDistance(
     hash_untrained_A[0], hash_untrained_A[1], hash_untrained_B[0],
-    hash_untrained_B[1]));
+    hash_untrained_B[1]);
 
   printf("Hash of A is %16.16lx%16.16lx trained\n", hash_trained_A[0],
     hash_trained_A[1]);
@@ -152,9 +138,11 @@ void RunSimpleAttractionTest(const std::string& pathname) {
     hash_trained_A[0], hash_trained_A[1], hash_trained_B[0],
     hash_trained_B[1]);
 
+  printf("Untrained hamming distance is %d\n", untrained_hamming);
   printf("Trained hamming distance is %d\n", trained_hamming);
 
-  EXPECT_EQ(trained_hamming, 0);
+  // Expect a significant improvement in the hamming distance.
+  EXPECT_GT(untrained_hamming - trained_hamming, 10);
 }
 
 TEST(simhashtrainer, simple_attraction) {
@@ -169,6 +157,38 @@ TEST(simhashtrainer, simple_attraction3) {
   RunSimpleAttractionTest("../testdata/train_simple_attraction3");
 }
 
+// Test whether loading and using weights from an input text file works. This
+// is done by loading a bunch of zero-weights, which should lead to all functions
+// having hashes of hamming distance zero.
+TEST(simhashtrainer, zero_weight_hasher) {
+  FunctionSimHasher hasher_trained(
+    "../testdata/train_zero_weights/weights.txt", false);
+
+  // Get the hashes for all functions above, with both hashers.
+  std::map<std::pair<uint64_t, uint64_t>, FeatureHash> hashes_trained;
+
+  for (const auto& hash_addr : id_to_address_function_1) {
+    uint64_t file_hash = hash_addr.first;
+    uint64_t address = hash_addr.second;
+
+    FeatureHash trained = GetHashForFileAndFunction(hasher_trained,
+      id_to_filename[file_hash], id_to_mode[file_hash], address);
+
+    ASSERT_TRUE((trained.first != 0) || (trained.second !=0));
+
+    hashes_trained[hash_addr] = trained;
+  }
+
+  for (const auto& hash_addr_A : hashes_trained) {
+    for (const auto& hash_addr_B : hashes_trained) {
+      FeatureHash hash_A = hash_addr_A.second;
+      FeatureHash hash_B = hash_addr_B.second;
+
+      uint32_t hamming = HammingDistance(hash_A, hash_B);
+      ASSERT_EQ(hamming, 0);
+    }
+  }
+}
 
 // A test to validate that two functions from an attractionset will indeed have
 // their distance reduced by the training procedure.
@@ -178,7 +198,7 @@ TEST(simhashtrainer, attractionset) {
 
   // Train weights on the testing data, and save them to the temp directory.
   ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_attraction_only",
-    "/tmp/attraction_weights.txt"), true);
+    "/tmp/attraction_weights.txt", false), true);
 
   // Initialize a trained hasher.
   FunctionSimHasher hasher_trained("/tmp/attraction_weights.txt");
@@ -214,7 +234,7 @@ TEST(simhashtrainer, attractionset) {
       FeatureHash hash_A = hash_addr_A.second;
       FeatureHash hash_B = hash_addr_B.second;
 
-      printf("%d ", HammingDistance(hash_A, hash_B));
+      printf("%02.02d ", HammingDistance(hash_A, hash_B));
     }
     printf("\n");
   }
@@ -224,7 +244,7 @@ TEST(simhashtrainer, attractionset) {
       FeatureHash hash_A = hash_addr_A.second;
       FeatureHash hash_B = hash_addr_B.second;
 
-      printf("%d ", HammingDistance(hash_A, hash_B));
+      printf("%02.02d ", HammingDistance(hash_A, hash_B));
     }
     printf("\n");
   }

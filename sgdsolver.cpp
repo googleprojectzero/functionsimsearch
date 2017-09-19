@@ -68,7 +68,7 @@ void SGDSolver::solve(const Function& function, SolverResults* results) const {
           iteration, gain, stepsize * gradient_norm);
         stepsize = stepsize / 100.0;
       } else {
-        printf("[%d:] Loss decreased by %+.17e to %+.17e\n", iteration,
+        printf("[%d:] gain is %+.17e reducing loss to %+.17e\n", iteration,
           gain, next_function_value);
         current_point = next_point;
         gradient = next_point_gradient;
