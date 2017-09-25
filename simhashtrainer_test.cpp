@@ -40,7 +40,6 @@ std::map<uint64_t, uint64_t> id_to_address_function_1 = {
   { 0x396063026eaac371, 0x000000000805e910 },
   { 0x924daa0b17c6ae64, 0x00000000080566fc } };
 
-
 void DumpFloatVector(const std::vector<float>& vector) {
   printf("(");
   for (float value : vector) {
@@ -74,8 +73,8 @@ void RunSimpleAttractionTest(const std::string& pathname) {
     &repulsionset);
   std::vector<double> weights;
 
-  //spii::SGDSolver sgd;
   spii::LBFGSSolver sgd;
+  //spii::SGDSolver sgd;
   trainer.Train(&weights, &sgd);
 
   std::map<uint64_t, float> hash_to_weight;
@@ -145,12 +144,12 @@ void RunSimpleAttractionTest(const std::string& pathname) {
   EXPECT_GT(untrained_hamming - trained_hamming, 10);
 }
 
-TEST(simhashtrainer, simple_attraction) {
-  RunSimpleAttractionTest("../testdata/train_simple_attraction");
-}
-
 TEST(simhashtrainer, simple_attraction2) {
   RunSimpleAttractionTest("../testdata/train_simple_attraction2");
+}
+
+TEST(simhashtrainer, simple_attraction) {
+  RunSimpleAttractionTest("../testdata/train_simple_attraction");
 }
 
 TEST(simhashtrainer, simple_attraction3) {
@@ -198,7 +197,7 @@ TEST(simhashtrainer, attractionset) {
 
   // Train weights on the testing data, and save them to the temp directory.
   ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_attraction_only",
-    "/tmp/attraction_weights.txt", false), true);
+    "/tmp/attraction_weights.txt", true), true);
 
   // Initialize a trained hasher.
   FunctionSimHasher hasher_trained("/tmp/attraction_weights.txt");

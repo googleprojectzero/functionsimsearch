@@ -17,9 +17,18 @@
 
 #include <cmath>
 #include <map>
+#include <typeinfo>
 #include <vector>
 
 #include "util.hpp"
+
+double toDouble(double d) {
+  return d;
+}
+
+double toDouble(const fadbad::B<double>& d) {
+  return d.val();
+}
 
 // The functor that calculates the loss function for the SimHash weights. This
 // is somewhat mathematically involved, hence the lengthy explanation below:
@@ -63,10 +72,19 @@ void calculateSimHashFloats(
     for (uint32_t feature_index : features) {
       bool bit = GetBit((*all_features)[feature_index], i);
       uint32_t weight_index = global_to_local->at(feature_index);
+
       if (bit) {
+//        printf("out[%d]: %.10e\n", i, toDouble(out[i]));
+//        printf("weights[%d][0]: %.10e\n", weight_index, toDouble(
+//          weights[weight_index][0]));
         out[i] += weights[weight_index][0];
+//        printf("out[%d] + weight: %.10e\n", i, toDouble(out[i]));
       } else {
+//        printf("out[%d]: %.10e\n", i, toDouble(out[i]));
+//        printf("weights[%d][0]: %.10e\n", weight_index, toDouble(
+//          weights[weight_index][0]));
         out[i] -= weights[weight_index][0];
+//        printf("out[%d] - weight: %.10e\n", i, toDouble(out[i]));
       }
     }
   }
@@ -105,7 +123,6 @@ R punish_wrong_sign(R x, R y) {
   return (-(x_times_y / sqrt(x_square * y_square)));
 }
 
-
 template <typename R>
 R calculatePairLoss(
   const std::vector<FeatureHash>* all_features,
@@ -115,25 +132,109 @@ R calculatePairLoss(
   const std::map<uint32_t, uint32_t>* global_to_local,
   bool attract=true) {
   R loss = 0.0;
-  // Initialize the two vectors of double/float/sums of weights.
+
+  // Initialize the two vectors of double/float/sums of weights. Normally, this
+  // is done automatically, but after losing 2 weeks debugging FADBAD++ (which
+  // at the time did not auto-initialize the entries) this code will be extra-
+  // prudent.
   std::vector<R> functionA(128);
   std::vector<R> functionB(128);
+
+  for (int i = 0; i < 128; ++i) {
+    functionA[i] = 0;
+    functionB[i] = 0;
+  }
   // Sum the features with their weights into the relevant vector.
   calculateSimHashFloats(*first_function, all_features, functionA, weights,
     global_to_local);
   calculateSimHashFloats(*second_function, all_features, functionB, weights,
     global_to_local);
 
-  // Calculate the component-wise loss. We want the component-wise loss to have
-  // the following properties... (TODO: Explain the loss function choice).
+  // Calculate the component-wise loss. Understanding the shape of the loss
+  // function is a bit involved. It will be explained below, and commands
+  // will be provided that help plotting individual components in gnuplot
+  // (and hence understand better the function was chosen).
+  //
+  // At this point in time, we have two vectors of floats, where every entry
+  // is a linear combination of the per-feature weights, either with positive
+  // or negative sign (depending on the hash of the feature). For "attraction
+  // pairs", we wish to minimize the hamming distance of the resulting SimHash -
+  // but Hamming Distances optimize poorly because our local derivatives are
+  // going to be zero (Hamming Distances are discrete and "jump").
+  //
+  // In order to minimize that hamming distance, we wish to "punish" weights
+  // where bot functionA[i] and functionB[i] have different signs -- because
+  // that will lead to different bits in the SimHash, and hence to a bigger
+  // hamming distance.
+  //
+  // Issue the following gnuplot commands:
+  //
+  // set pm3d
+  // g(x,y) = (-(x*y)/sqrt(x**2 * y**2 + 1.0))+1
+  // splot [-10:10][-10:10] g(x,y)
+  //
+  // You will see a "smoothed step function", e.g. a function that approaches
+  // 1 when the signs of x and y are not equal, and that goes to zero if the
+  // signs of the two functions are equal. The "1.0" constant is a sort of
+  // smoothing parameter -- as you decrease it toward 0, the edges of the step
+  // function get harder, if you increase it, the entire function gets softer.
+  // It also helps ensure that we never issue a sqrt(0), which tends to wreak
+  // havoc on the reverse mode differentiation code we are using.
+  //
+  // We will use this smoothed step function as a building block. Right now,
+  // we would like to multiply something into it that makes sure that the flat
+  // areas of +1 exhibit some slope to allow weights to be moved so they "slide
+  // off the cliff" into an area that has lower loss.
+  //
+  // First, we get distance between the two floats functionA[i] and functionB[i],
+  // and run it through a smoothed version of abs() as follows:
+  //    sqrt((functionA[i] - functionB[i])**2 + 0.1)
+  // The constant 0.1 helps smooth the kink in the distance function and prevents
+  // problems with sqrt(0).
+  //
+  // Issue the following gnuplot commands:
+  // d(x,y) = sqrt((x-y)**2+0.1)
+  // splot [-10:10][-10:10] d(x,y)
+  //
+  // Ok - now if we multiply both functions together, we get something that has
+  // most of the properties we want:
+  //
+  // splot [-10:10][-10:10] g(x,y)*d(x,y)
+  //
+  // This looks pretty good, but after staring at it for a moment I decided
+  // that the near-linear decrease of loss near 0 is not something I wanted, and
+  // added a sqrt() around the distance for good measure.
+  //
+  // Finally, there is a pleasing shape for the loos function:
+  //
+  // splot [-10:10][-10:10] g(x,y)*sqrt(d(x,y)+0.01)
+  //
+  // For the "repulsion-pairs" we pretty much just want to flip the entire
+  // diagram, so we invert the sign of x.
   for (uint32_t i = 0; i < 128; ++i) {
-    if (attract) {
-      R x = functionA[i];
-      R y = functionB[i];
+    R x = functionA[i];
+    R y = functionB[i];
 
-      loss += sqrt((x-y)*(x-y));
-      //loss += 5*((x-y)*(x-y)) + (x-1)*(x-1) + (y-1)*(y-1);
+    // Flip sign of x for repulsion pairs.
+    if (!attract) {
+      x = -x;
     }
+    R x_times_y = x*y;
+    R x_times_y_square = x_times_y * x_times_y;
+    // The "1.0" in the following line is the smoothing parameter for the step
+    // function.
+    R sqrt_of_xsqr_ysqr_plus_one = sqrt(x_times_y_square + 1.0);
+    //.Function "g" above.
+    R step_function = (-x_times_y / sqrt_of_xsqr_ysqr_plus_one) + 1;
+
+    R distance = x-y;
+    R distance_squared = distance * distance;
+    // Function "d" above.
+    R absolute_distance = sqrt(distance_squared + 0.1);
+
+    // The final loss to be added for the two floats.
+    R added_loss = step_function * sqrt(absolute_distance + 0.01);
+    loss += added_loss;
   }
   return loss;
 }
@@ -164,7 +265,12 @@ public:
       weights,
       &global_to_local_,
       attract_);
+
+    //dump_value("result", result);
     R temp = number_of_pairs_;
+    //dump_value("temp", temp);
+    R final_result = result / temp;
+    //dump_value("final_result", final_result);
     return result / temp;
   }
 
@@ -178,3 +284,25 @@ private:
 };
 
 #endif // SIMHASHWEIGHTSLOSSFUNCTOR_HPP
+
+/*inline void checkNaN(const double& d) {
+  if (isnan(d)) {
+    printf("[!] NaN encountered!\n");
+    exit(-1);
+  }
+  if (isinf(d)) {
+    printf("[!] Inf encountered!\n");
+    exit(-1);
+  }
+}
+
+template <typename U>
+inline void checkNaN(const fadbad::F<U>& val) {
+  return;
+}
+
+
+
+
+*/
+

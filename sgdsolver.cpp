@@ -41,7 +41,7 @@ void SGDSolver::solve(const Function& function, SolverResults* results) const {
 
   double exponentially_weighed_average_gain = gain;
 
-  while (iteration < 10000000) {
+  while (iteration < 500) {
     function_value = function.evaluate(current_point, &gradient);
     gradient_norm = std::max(gradient.maxCoeff(), -gradient.minCoeff());
     stepdirection = -gradient;
@@ -56,14 +56,14 @@ void SGDSolver::solve(const Function& function, SolverResults* results) const {
     // Evaluate the function at the next point and see if we are making
     // progress.
     double next_function_value;
-    while (stepsize > 1.0e-100) {
-      next_point = current_point + stepsize * stepdirection;
+    while (stepsize > 1.0e-10) {
+      next_point = current_point + (10*stepsize) * stepdirection;
       next_function_value = function.evaluate(next_point,
         &next_point_gradient);
       // In order to make progress, the next_function_value needs to be smaller
       // than the current_function_value, so the gain needs to be positive.
       gain = function_value - next_function_value;
-      if (gain <= 0) {
+      if ((gain <= 0) || isnan(gain)) {
         printf("[%d:] gain is %+.17e, reducing stepsize * norm from %+.17e\n", 
           iteration, gain, stepsize * gradient_norm);
         stepsize = stepsize / 100.0;
@@ -89,6 +89,15 @@ void SGDSolver::solve(const Function& function, SolverResults* results) const {
 
     if (exponentially_weighed_average_gain < 1.0e-20) {
       printf("[%d:] Exponentially weighed avg gain too small, aborting\n", iteration);
+      if (exponentially_weighed_average_gain < 0.0) {
+        printf("[%d:] Can't be negative, exiting.\n", iteration);
+        exit(-1);
+      }
+      break;
+    }
+
+    if (function_value < 1.0) {
+      printf("[%d:] Loss less than 1, aborting\n", iteration);
       break;
     }
     ++iteration;

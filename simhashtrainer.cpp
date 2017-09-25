@@ -204,6 +204,7 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::unique_ptr<spii::Solver> solver;
   if (use_lbfgs) {
     solver.reset(new spii::LBFGSSolver);
+    solver->maximum_iterations = 500;
   } else {
     solver.reset(new spii::SGDSolver);
   }
