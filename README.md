@@ -46,7 +46,17 @@ generated library supports being relocated.
 
 ## Running the tests
 
-There are no tests yet. This will change eventually, most likely using gtest.
+You can run the tests by doing:
+```
+cd tests
+./runtests
+```
+Note that the tests use relative directories, assuming that you actually changed
+your directory, so running
+```
+tests/runtests
+```
+will not work.
 
 ## Running the tools
 
