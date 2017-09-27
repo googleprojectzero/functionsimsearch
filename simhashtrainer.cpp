@@ -179,7 +179,7 @@ bool LoadTrainingData(const std::string& directory,
 }
 
 bool TrainSimHashFromDataDirectory(const std::string& directory, const
-  std::string& outputfile, bool use_lbfgs) {
+  std::string& outputfile, bool use_lbfgs, uint32_t max_steps) {
   std::vector<FunctionFeatures> all_functions;
   std::vector<FeatureHash> all_features_vector;
   std::vector<std::pair<uint32_t, uint32_t>> attractionset;
@@ -204,7 +204,7 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::unique_ptr<spii::Solver> solver;
   if (use_lbfgs) {
     solver.reset(new spii::LBFGSSolver);
-    solver->maximum_iterations = 500;
+    solver->maximum_iterations = max_steps;
   } else {
     solver.reset(new spii::SGDSolver);
   }

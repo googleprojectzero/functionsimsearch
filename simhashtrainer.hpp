@@ -25,7 +25,8 @@ bool LoadTrainingData(const std::string& directory,
 // Convenience function. Expects the data described in LoadTrainingData, outputs
 // a file full of weights.
 bool TrainSimHashFromDataDirectory(const std::string& directory,
-  const std::string& weights_filename, bool use_lbfgs=true);
+  const std::string& weights_filename, bool use_lbfgs=true, 
+  uint32_t max_steps=100);
 
 class SimHashTrainer {
 public:

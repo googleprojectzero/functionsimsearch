@@ -86,7 +86,7 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
 
 FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   const std::string& filename, const std::string& mode, uint64_t address,
-  std::vector<uint64_t>* feature_ids) {
+  std::vector<FeatureHash>* feature_hashes) {
   Disassembly disassembly(mode, filename);
   if (!disassembly.Load()) {
     exit(1);
@@ -125,7 +125,7 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
 
       std::vector<uint64_t> hashes;
       DyninstFeatureGenerator generator(function);
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, feature_hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       return std::make_pair(hash_A, hash_B);

@@ -43,6 +43,6 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
 // entire disassembly, so this should not be used in a loop.
 FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   const std::string& filename, const std::string& mode, uint64_t address,
-  std::vector<uint64_t>* feature_ids = nullptr);
+  std::vector<FeatureHash>* feature_hashes = nullptr);
 
 #endif // UTIL_HPP

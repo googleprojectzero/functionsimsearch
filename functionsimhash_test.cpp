@@ -13,12 +13,15 @@ TEST(functionsimhash, check_feature_uniqueness) {
     uint64_t file_hash = hash_addr.first;
     uint64_t address = hash_addr.second;
 
-    std::vector<uint64_t> feature_ids;
+    std::vector<FeatureHash> feature_hashes;
     FeatureHash trained = GetHashForFileAndFunction(hasher,
-      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_ids);
+      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_hashes);
 
-    std::set<uint64_t> feature_id_set(feature_ids.begin(), feature_ids.end());
-    ASSERT_EQ(feature_ids.size(), feature_id_set.size());
+    std::set<uint64_t> feature_id_set;
+    for (const auto& feature : feature_hashes) {
+      feature_id_set.insert(feature.first);
+    }
+    ASSERT_EQ(feature_hashes.size(), feature_id_set.size());
   }
 }
 
@@ -43,11 +46,14 @@ TEST(functionsimhash, check_feature_counts) {
     uint64_t file_hash = hash_addr.first;
     uint64_t address = hash_addr.second;
 
-    std::vector<uint64_t> feature_ids;
+    std::vector<FeatureHash> feature_hashes;
     FeatureHash trained = GetHashForFileAndFunction(hasher,
-      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_ids);
+      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_hashes);
 
-    std::set<uint64_t> feature_id_set(feature_ids.begin(), feature_ids.end());
+    std::set<uint64_t> feature_id_set;
+    for (const auto& feature : feature_hashes) {
+      feature_id_set.insert(feature.first);
+    }
     EXPECT_EQ(feature_id_set.size(), feature_counts[file_hash]);
   }
 }
@@ -64,10 +70,10 @@ TEST(functionsimhash, zero_weight_hasher) {
   for (const auto& hash_addr : id_to_address_function_1) {
     uint64_t file_hash = hash_addr.first;
     uint64_t address = hash_addr.second;
-    std::vector<uint64_t> feature_ids;
+    std::vector<FeatureHash> feature_hashes;
 
     FeatureHash trained = GetHashForFileAndFunction(hasher_trained,
-      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_ids);
+      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_hashes);
 
     if ((trained.first == 0) && (trained.second == 0)) {
       printf("Failed to open %s and get function at %llx\n",
@@ -78,8 +84,8 @@ TEST(functionsimhash, zero_weight_hasher) {
     EXPECT_EQ(trained.first, 0xFFFFFFFFFFFFFFFFULL);
     EXPECT_EQ(trained.second, 0xFFFFFFFFFFFFFFFFULL);
 
-    for (uint32_t index = 0; index < feature_ids.size(); ++index) {
-      uint64_t feature_id = feature_ids[index];
+    for (uint32_t index = 0; index < feature_hashes.size(); ++index) {
+      uint64_t feature_id = feature_hashes[index].first;
       // Assume that each feature_id has an associated weight.
       EXPECT_TRUE(weights->find(feature_id) != weights->end());
       if (weights->find(feature_id) == weights->end()) {

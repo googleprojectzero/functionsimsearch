@@ -24,6 +24,34 @@ void DumpDelta(const std::vector<float>& vec1, const std::vector<float>& vec2) {
   printf("(\n");
 }
 
+typedef std::pair<uint64_t, uint64_t> FileAndAddress;
+void CalculateMeanAndVarianceOfDistances(
+  std::map<FileAndAddress, FeatureHash> *hashes, double* mean,
+  double* variance, double* maximum) {
+  *mean = 0;
+  *variance = 0;
+  *maximum = 0;
+
+  uint64_t num_values = 0;
+  for (std::map<FileAndAddress, FeatureHash>::const_iterator
+    iter = hashes->begin(); iter != hashes->end(); ++iter) {
+    auto next_iter = iter;
+    next_iter++;
+    FeatureHash hash_A = iter->second;
+    while (next_iter != hashes->end()) {
+      FeatureHash hash_B = next_iter->second;
+      uint32_t distance = HammingDistance(hash_A, hash_B);
+      ++num_values;
+      printf("%d ", distance);
+      (*mean) += distance;
+      (*maximum) = std::max((double)distance, (*maximum));
+      ++next_iter;
+    }
+    printf("...\n");
+  }
+  (*mean) /= num_values;
+}
+
 void RunSimpleAttractionTest(const std::string& pathname) {
   std::vector<FunctionFeatures> all_functions;
   std::vector<FeatureHash> all_features_vector;
@@ -138,8 +166,8 @@ TEST(simhashtrainer, attractionset) {
 
   printf("[!] Ran training\n");
   // Get the hashes for all functions above, with both hashers.
-  std::map<std::pair<uint64_t, uint64_t>, FeatureHash> hashes_untrained;
-  std::map<std::pair<uint64_t, uint64_t>, FeatureHash> hashes_trained;
+  std::map<FileAndAddress, FeatureHash> hashes_untrained;
+  std::map<FileAndAddress, FeatureHash> hashes_trained;
 
   for (const auto& hash_addr : id_to_address_function_1) {
     uint64_t file_hash = hash_addr.first;
@@ -159,43 +187,17 @@ TEST(simhashtrainer, attractionset) {
 
   printf("[!] Calculated the hashes!\n");
 
-  // All the untrained and trained hashes are available now.
-  // Calculate a similarity matrix using both and dump it out.
-  printf("[!] Untrained hamming distances:\n");
+  double untrained_mean, trained_mean, untrained_variance, trained_variance,
+    untrained_max, trained_max;
+  CalculateMeanAndVarianceOfDistances(&hashes_untrained,
+    &untrained_mean, &untrained_variance, &untrained_max);
+  CalculateMeanAndVarianceOfDistances(&hashes_trained,
+    &trained_mean, &trained_variance, &trained_max);
 
-  for (std::map<std::pair<uint64_t, uint64_t>, FeatureHash>::const_iterator
-    untrained_iter = hashes_untrained.begin();
-    untrained_iter != hashes_untrained.end(); ++untrained_iter) {
-
-    auto next_iter = untrained_iter;
-    next_iter++;
-    FeatureHash hash_A = untrained_iter->second;
-    while (next_iter != hashes_untrained.end()) {
-      FeatureHash hash_B = next_iter->second;
-      printf("%02.02d ", HammingDistance(hash_A, hash_B));
-      ++next_iter;
-    }
-    printf("...\n");
-  }
-  for (const auto& hash_addr_A : hashes_untrained) {
-    for (const auto& hash_addr_B : hashes_untrained) {
-      FeatureHash hash_A = hash_addr_A.second;
-      FeatureHash hash_B = hash_addr_B.second;
-
-      printf("%02.02d ", HammingDistance(hash_A, hash_B));
-    }
-    printf("\n");
-  }
-  printf("[!] Trained hamming distances:\n");
-  for (const auto& hash_addr_A : hashes_trained) {
-    for (const auto& hash_addr_B : hashes_trained) {
-      FeatureHash hash_A = hash_addr_A.second;
-      FeatureHash hash_B = hash_addr_B.second;
-
-      printf("%02.02d ", HammingDistance(hash_A, hash_B));
-    }
-    printf("\n");
-  }
+  printf("Untrained: Mean %f Variance %f Max %f\n", untrained_mean, 
+    untrained_variance, untrained_max);
+  printf("Trained: Mean %f Variance %f Max %f\n", trained_mean, trained_variance,
+    trained_max);
 
 }
 
