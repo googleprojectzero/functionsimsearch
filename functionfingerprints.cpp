@@ -83,9 +83,11 @@ int main(int argc, char** argv) {
 
     // If we are in verbose mode, the following lines will dump out the
     // individual feature hashes.
+    std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
     DyninstFeatureGenerator generator(function);
-    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
+    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes, 
+      &feature_hashes);
 
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
@@ -94,6 +96,11 @@ int main(int argc, char** argv) {
     // mode.
     if (!verbose) {
       printf("%16.16lx%16.16lx\n", hash1, hash2);
+    } else {
+      for (const auto& feature_hash : feature_hashes) {
+        printf("%16.16lx%16.16lx ", feature_hash.first, feature_hash.second);
+      }
+      printf("\n");
     }
   }
 }

@@ -46,7 +46,6 @@ bool FileToLineTokens(const std::string& filename,
   std::vector<std::vector<std::string>>* tokenized_lines) {
   std::ifstream inputfile(filename);
   if (!inputfile) {
-    printf("Failed to open inputfile %s.\n", filename.c_str());
     return false;
   }
 
@@ -126,7 +125,7 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
 
       std::vector<uint64_t> hashes;
       DyninstFeatureGenerator generator(function);
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, feature_ids);
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       return std::make_pair(hash_A, hash_B);

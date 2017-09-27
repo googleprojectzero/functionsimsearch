@@ -62,12 +62,12 @@ public:
   // calculated. Reasonable use is usually 128.
   void CalculateFunctionSimHash(
     Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-    std::vector<uint64_t>* output_simhash_values);
+    std::vector<FeatureHash>* output_simhash_values);
 
   void CalculateFunctionSimHash(
     FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
     std::vector<uint64_t>* output_simhash_values,
-    std::vector<uint64_t>* feature_ids=nullptr);
+    std::vector<FeatureHash>* feature_hashes=nullptr);
 
   void CalculateFunctionSimHash(
     std::vector<FeatureHash>* features, std::vector<uint64_t>* output,
@@ -85,11 +85,13 @@ private:
   // Process one subgraph and hash it into the output vector.
   void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, float graphlet_weight,
     address node, uint64_t bits, uint64_t cardinality,
-    std::vector<float>* output_simhash_floats) const;
+    std::vector<float>* output_simhash_floats, std::vector<FeatureHash>*
+    feature_hashes = nullptr) const;
 
   // Process one mnemonic n-gram and hash it into the output vector.
   void ProcessMnemTuple(const MnemTuple &tup, float weight, uint64_t bits,
-    uint64_t hash_index, std::vector<float>* output_simhash_floats) const;
+    uint64_t hash_index, std::vector<float>* output_simhash_floats,
+    std::vector<FeatureHash>* feature_hashes = nullptr) const;
 
   // Given an n-bit hash and a weight, hash the weight into the output vector
   // with positive sign for 1's and negative sign for 0's.
@@ -121,11 +123,11 @@ private:
 
   // Obtain graphlet or mnemonic IDs with or without occurrence.
   uint64_t GetGraphletIdOccurrence(std::unique_ptr<Flowgraph>& graph,
-    uint32_t occurrence, address node, std::vector<uint64_t>* feature_ids) const;
+    uint32_t occurrence, address node) const;
   uint64_t GetGraphletIdNoOccurrence(std::unique_ptr<Flowgraph>& graph,
     address node) const;
   uint64_t GetMnemonicIdOccurrence(const MnemTuple& tuple,
-    uint32_t occurrence, std::vector<uint64_t>* feature_ids) const;
+    uint32_t occurrence) const;
   uint64_t GetMnemonicIdNoOccurrence(const MnemTuple& tuple) const;
 
   inline bool GetNthBit(const std::vector<uint64_t>& nbit_hash,

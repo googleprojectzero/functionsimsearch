@@ -56,8 +56,8 @@ void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {
 // care has to be taken to add cardinalities into the construction.
 void FunctionSimHasher::CalculateFunctionSimHash(
   FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
-  std::vector<uint64_t>* output_simhash_values, std::vector<uint64_t>*
-  feature_ids) {
+  std::vector<uint64_t>* output_simhash_values, std::vector<FeatureHash>*
+  feature_hashes) {
 
   std::vector<float> output_simhash_floats;
   output_simhash_floats.resize(number_of_outputs);
@@ -80,14 +80,14 @@ void FunctionSimHasher::CalculateFunctionSimHash(
       uint64_t cardinality = feature_cardinalities[graphlet_id]++;
 
       uint64_t graphlet_id_with_cardinality = GetGraphletIdOccurrence(
-        graphlet, cardinality, node, feature_ids);
+        graphlet, cardinality, node);
 
       // Get the weight for the graphlet.
       float graphlet_weight = GetWeight(graphlet_id_with_cardinality,
         default_graphlet_weight_);
 
-      ProcessSubgraph(graphlet, graphlet_weight, node, number_of_outputs, 
-        cardinality, &output_simhash_floats);
+      ProcessSubgraph(graphlet, graphlet_weight, node, number_of_outputs,
+        cardinality, &output_simhash_floats, feature_hashes);
     }
   }
   while (generator->HasMoreMnemonics()) {
@@ -96,12 +96,12 @@ void FunctionSimHasher::CalculateFunctionSimHash(
     uint64_t cardinality = feature_cardinalities[tuple_id]++;
 
     uint64_t mnemonic_id_with_cardinality = GetMnemonicIdOccurrence(tuple,
-      cardinality, feature_ids);
+      cardinality);
     float mnemonic_tuple_weight = GetWeight(mnemonic_id_with_cardinality,
       default_mnemonic_weight_);
 
     ProcessMnemTuple(tuple, mnemonic_tuple_weight, number_of_outputs, cardinality,
-      &output_simhash_floats);
+      &output_simhash_floats, feature_hashes);
   }
 
   FloatsToBits(output_simhash_floats, output_simhash_values);
@@ -133,12 +133,16 @@ void FunctionSimHasher::CalculateFunctionSimHash(
 // Add a given subgraph into the vector of floats.
 void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
   float graphlet_weight, address node, uint64_t bits, uint64_t hash_index,
-  std::vector<float>* output_simhash_floats) const {
+  std::vector<float>* output_simhash_floats, std::vector<FeatureHash>*
+  feature_hashes) const {
 
   // Calculate n-bit hash of the subgraph.
   std::vector<uint64_t> hash;
   CalculateNBitGraphHash(graph, node, bits, hash_index, &hash);
 
+  if (feature_hashes) {
+    feature_hashes->push_back(std::make_pair(hash[0], hash[1]));
+  }
   // Iterate over the bits in the hash.
   AddWeightsInHashToOutput(hash, bits, graphlet_weight, output_simhash_floats);
 }
@@ -146,11 +150,15 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
 // Add a given mnemonic tuple into the vector of floats.
 void FunctionSimHasher::ProcessMnemTuple(const MnemTuple &tup,
   float mnem_tuple_weight, uint64_t bits, uint64_t hash_index,
-  std::vector<float>* output_simhash_floats) const {
+  std::vector<float>* output_simhash_floats, std::vector<FeatureHash>*
+  feature_hashes) const {
 
   std::vector<uint64_t> hash;
   CalculateNBitMnemTupleHash(tup, bits, hash_index, &hash);
 
+  if (feature_hashes) {
+    feature_hashes->push_back(std::make_pair(hash[0], hash[1]));
+  }
   AddWeightsInHashToOutput(hash, bits, mnem_tuple_weight, output_simhash_floats);
 }
 
@@ -246,14 +254,10 @@ float FunctionSimHasher::GetWeight(uint64_t key, float standard = 1.0) const {
 // Calculates an ID for a graphlet, taking the occurrence count of the graphlet
 // into account. This is used for weight lookup.
 uint64_t FunctionSimHasher::GetGraphletIdOccurrence(
-  std::unique_ptr<Flowgraph>& graph, uint32_t occurrence, address node,
-  std::vector<uint64_t>* feature_ids) const {
+  std::unique_ptr<Flowgraph>& graph, uint32_t occurrence, address node) const {
   uint64_t graphlet_id = graph->CalculateHash(node, SeedXForHashY(0, occurrence),
     SeedXForHashY(1, occurrence), SeedXForHashY(2, occurrence));
 
-  if (feature_ids) {
-    feature_ids->push_back(graphlet_id);
-  }
   return graphlet_id;
 }
 
@@ -272,13 +276,10 @@ uint64_t FunctionSimHasher::GetMnemonicIdNoOccurrence(const MnemTuple& tuple)
 }
 
 uint64_t FunctionSimHasher::GetMnemonicIdOccurrence(const MnemTuple& tuple,
-  uint32_t occurrence, std::vector<uint64_t>* feature_ids) const {
+  uint32_t occurrence) const {
   std::vector<uint64_t> hash;
   CalculateNBitMnemTupleHash(tuple, 128, occurrence, &hash);
 
-  if (feature_ids) {
-    feature_ids->push_back(hash[0]);
-  }
   return hash[0];
 }
 

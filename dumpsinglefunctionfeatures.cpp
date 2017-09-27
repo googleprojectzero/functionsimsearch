@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   uint64_t target_address = strtoul(argv[3], nullptr, 16);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
-  printf("[!] Executable id is %16.16lx\n", file_id);
+  printf("%16.16lx:%16.16lx ", file_id, target_address);
 
   Disassembly disassembly(mode, binary_path_string);
   if (!disassembly.Load()) {
@@ -82,14 +82,15 @@ int main(int argc, char** argv) {
       DyninstFeatureGenerator generator(function);
       mutex_pointer->unlock();
 
-      std::vector<uint64_t> feature_ids;
+      std::vector<FeatureHash> feature_ids;
       hasher.CalculateFunctionSimHash(&generator, 128, &hashes, &feature_ids);
-      for (uint64_t feature : feature_ids) {
-        printf("%16.16lx\n", feature);
+      for (FeatureHash feature : feature_ids) {
+        printf("%16.16lx%16.16lx ", feature.first, feature.second);
       }
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
     });
   }
   pool.Stop(true);
+  printf("\n");
 }

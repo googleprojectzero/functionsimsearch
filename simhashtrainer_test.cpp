@@ -166,7 +166,8 @@ TEST(simhashtrainer, attractionset) {
   for (std::map<std::pair<uint64_t, uint64_t>, FeatureHash>::const_iterator
     untrained_iter = hashes_untrained.begin();
     untrained_iter != hashes_untrained.end(); ++untrained_iter) {
-    auto& next_iter = untrained_iter;
+
+    auto next_iter = untrained_iter;
     next_iter++;
     FeatureHash hash_A = untrained_iter->second;
     while (next_iter != hashes_untrained.end()) {
