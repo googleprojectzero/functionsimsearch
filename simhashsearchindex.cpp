@@ -140,11 +140,6 @@ uint64_t SimHashSearchIndex::AddFunction(uint64_t hash_A, uint64_t hash_B,
   uint128_t full_hash = to128(hash_A, hash_B);
   std::vector<uint128_t> permuted_values;
   get_n_permutations(full_hash, buckets_, &permuted_values);
-  /*  printf("Dumping permuted values:\n");
-  for (uint128_t permuted_value : permuted_values) {
-    printf("%16.16lx %16.16lx\n", getHigh64(permuted_value),
-      getLow64(permuted_value));
-  }*/
 
   for (uint8_t bucket_count = 0; bucket_count < buckets_; ++bucket_count) {
     uint128_t permuted = permuted_values[bucket_count];
@@ -159,6 +154,7 @@ uint64_t SimHashSearchIndex::AddFunction(uint64_t hash_A, uint64_t hash_B,
         bucket_count, hash_component_A, hash_component_B, function_id));
     }
   }
+  return 0; // TODO(thomasdullien): Why return anything at all?
 }
 
 uint64_t SimHashSearchIndex::GetIndexFileSize() {

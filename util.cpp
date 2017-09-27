@@ -1,6 +1,7 @@
 // DynInst headers.
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
+#include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly.hpp"
 #include "flowgraph.hpp"
@@ -8,6 +9,17 @@
 #include "functionsimhash.hpp"
 #include "dyninstfeaturegenerator.hpp"
 #include "util.hpp"
+
+// Obtain the first 64 bits of the input file's SHA256 hash.
+uint64_t GenerateExecutableID(const std::string& filename) {
+  std::ifstream ifs(filename.c_str(), std::ios::binary);
+  std::vector<unsigned char> hash(32);
+  picosha2::hash256(std::istreambuf_iterator<char>(ifs),
+      std::istreambuf_iterator<char>(), hash.begin(), hash.end());
+
+  uint64_t *temp = reinterpret_cast<uint64_t*>(&hash[0]);
+  return __builtin_bswap64(*temp);
+}
 
 uint32_t HammingDistance(uint64_t A1, uint64_t A2, uint64_t B1, uint64_t B2) {
   uint32_t distance =
@@ -74,7 +86,8 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
 }
 
 FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
-  const std::string& filename, const std::string& mode, uint64_t address) {
+  const std::string& filename, const std::string& mode, uint64_t address,
+  std::vector<uint64_t>* feature_ids) {
   Disassembly disassembly(mode, filename);
   if (!disassembly.Load()) {
     exit(1);
@@ -84,6 +97,22 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   // Obtain the list of all functions in the binary.
   const Dyninst::ParseAPI::CodeObject::funclist &functions =
     code_object->funcs();
+
+  bool contains_function = false;
+  for (Dyninst::ParseAPI::Function* function : functions) {
+    Dyninst::Address function_address = function->addr();
+    if (function_address == address) {
+      contains_function = true;
+      break;
+    }
+  }
+
+  if (!contains_function) {
+    // Make sure the function-to-index is in fact getting indexed.
+    printf("[!] Warning: Did not find %lx during auto-analysis of %s, adding.\n",
+      address, filename.c_str());
+    disassembly.DisassembleFromAddress(address, true);
+  }
 
   if (functions.size() == 0) {
     return std::make_pair(0,0);
@@ -97,7 +126,7 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
 
       std::vector<uint64_t> hashes;
       DyninstFeatureGenerator generator(function);
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
+      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, feature_ids);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       return std::make_pair(hash_A, hash_B);

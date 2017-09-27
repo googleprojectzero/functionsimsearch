@@ -227,6 +227,7 @@ const std::vector<address>* Flowgraph::GetInEdges(address node) {
   if (iter != in_edges_.end()) {
     return &(iter->second);
   }
+  return nullptr;
 }
 
 // Returns the number of nodes that have more than one successor in the graph.

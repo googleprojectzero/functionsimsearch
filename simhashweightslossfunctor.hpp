@@ -22,6 +22,8 @@
 
 #include "util.hpp"
 
+// Two useful functions for debugging the learning process (allow conversion
+// to double) during loss function calculation.
 double toDouble(double d) {
   return d;
 }
@@ -74,53 +76,12 @@ void calculateSimHashFloats(
       uint32_t weight_index = global_to_local->at(feature_index);
 
       if (bit) {
-//        printf("out[%d]: %.10e\n", i, toDouble(out[i]));
-//        printf("weights[%d][0]: %.10e\n", weight_index, toDouble(
-//          weights[weight_index][0]));
         out[i] += weights[weight_index][0];
-//        printf("out[%d] + weight: %.10e\n", i, toDouble(out[i]));
       } else {
-//        printf("out[%d]: %.10e\n", i, toDouble(out[i]));
-//        printf("weights[%d][0]: %.10e\n", weight_index, toDouble(
-//          weights[weight_index][0]));
         out[i] -= weights[weight_index][0];
-//        printf("out[%d] - weight: %.10e\n", i, toDouble(out[i]));
       }
     }
   }
-}
-
-template <typename R>
-R piecewise_linear(R argument) {
-  if (argument > 1.01) {
-    return 1.01;
-  } else if (argument < -1.01) {
-    return -1.01;
-  }
-  return argument;
-}
-
-template <typename R>
-R sigmoid_shifted(R argument) {
-  return ((1.0 / (1 + exp(-argument))) - 0.5) * 2;
-}
-
-// A function that returns 1 if the sign of x is different than the sign of
-// y, and 0 otherwise.
-template <typename R>
-R hard_edged_sign_punish(R x, R y) {
-  R x_times_y = x * y;
-  R x_square = x * x;
-  R y_square = y * y;
-  return 0.5*(-(x_times_y / sqrt(x_square * y_square))+1);
-}
-
-template <typename R>
-R punish_wrong_sign(R x, R y) {
-  R x_times_y = x * y;
-  R x_square = x * x;
-  R y_square = y * y;
-  return (-(x_times_y / sqrt(x_square * y_square)));
 }
 
 template <typename R>
@@ -224,12 +185,12 @@ R calculatePairLoss(
     // The "1.0" in the following line is the smoothing parameter for the step
     // function.
     R sqrt_of_xsqr_ysqr_plus_one = sqrt(x_times_y_square + 1.0);
-    //.Function "g" above.
+    // Function "g" in the comment above.
     R step_function = (-x_times_y / sqrt_of_xsqr_ysqr_plus_one) + 1;
 
     R distance = x-y;
     R distance_squared = distance * distance;
-    // Function "d" above.
+    // Function "d" in the comment above.
     R absolute_distance = sqrt(distance_squared + 0.1);
 
     // The final loss to be added for the two floats.
@@ -265,13 +226,7 @@ public:
       weights,
       &global_to_local_,
       attract_);
-
-    //dump_value("result", result);
-    R temp = number_of_pairs_;
-    //dump_value("temp", temp);
-    R final_result = result / temp;
-    //dump_value("final_result", final_result);
-    return result / temp;
+    return result / number_of_pairs_;
   }
 
 private:
@@ -284,25 +239,3 @@ private:
 };
 
 #endif // SIMHASHWEIGHTSLOSSFUNCTOR_HPP
-
-/*inline void checkNaN(const double& d) {
-  if (isnan(d)) {
-    printf("[!] NaN encountered!\n");
-    exit(-1);
-  }
-  if (isinf(d)) {
-    printf("[!] Inf encountered!\n");
-    exit(-1);
-  }
-}
-
-template <typename U>
-inline void checkNaN(const fadbad::F<U>& val) {
-  return;
-}
-
-
-
-
-*/
-

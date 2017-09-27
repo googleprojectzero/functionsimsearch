@@ -86,6 +86,12 @@ class LargeAutoDiffTerm final : public Term {
 		for (int i = 0; i < dimensions.size(); ++i) {
 			auto d = dimensions[i];
 			for (int j = 0; j < d; ++j) {
+        auto gradient_entry = x[i][j].d(0);
+
+        if (isnan(gradient_entry)) {
+          printf("Encountered NaN gradient entry!\n");
+          exit(-1);
+        }
 				(*gradient)[i][j] = x[i][j].d(0);
 			}
 			pos += d;

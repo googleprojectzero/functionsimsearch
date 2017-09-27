@@ -56,7 +56,8 @@ void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {
 // care has to be taken to add cardinalities into the construction.
 void FunctionSimHasher::CalculateFunctionSimHash(
   FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
-  std::vector<uint64_t>* output_simhash_values) {
+  std::vector<uint64_t>* output_simhash_values, std::vector<uint64_t>*
+  feature_ids) {
 
   std::vector<float> output_simhash_floats;
   output_simhash_floats.resize(number_of_outputs);
@@ -79,7 +80,7 @@ void FunctionSimHasher::CalculateFunctionSimHash(
       uint64_t cardinality = feature_cardinalities[graphlet_id]++;
 
       uint64_t graphlet_id_with_cardinality = GetGraphletIdOccurrence(
-        graphlet, cardinality, node);
+        graphlet, cardinality, node, feature_ids);
 
       // Get the weight for the graphlet.
       float graphlet_weight = GetWeight(graphlet_id_with_cardinality,
@@ -95,7 +96,7 @@ void FunctionSimHasher::CalculateFunctionSimHash(
     uint64_t cardinality = feature_cardinalities[tuple_id]++;
 
     uint64_t mnemonic_id_with_cardinality = GetMnemonicIdOccurrence(tuple,
-      cardinality);
+      cardinality, feature_ids);
     float mnemonic_tuple_weight = GetWeight(mnemonic_id_with_cardinality,
       default_mnemonic_weight_);
 
@@ -104,9 +105,6 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   }
 
   FloatsToBits(output_simhash_floats, output_simhash_values);
-  if (verbose_) {
-    printf("\n");
-  }
 }
 
 // TODO(thomasdullien): When the refactoring of the main implementation (above)
@@ -162,12 +160,6 @@ void FunctionSimHasher::AddWeightsInHashToOutput(
   const std::vector<uint64_t>& hash, uint64_t bits, float weight,
   std::vector<float>* output_simhash_floats) const {
 
-  if (verbose_) {
-    for (uint64_t hash_fragment : hash) {
-      printf("%16.16lx", hash_fragment);
-    }
-    printf(" ");
-  }
   for (uint64_t bit_index = 0; bit_index < bits; ++bit_index) {
     if (GetNthBit(hash, bit_index)) {
       (*output_simhash_floats)[bit_index] += weight;
@@ -245,15 +237,26 @@ void FunctionSimHasher::CalculateNBitMnemTupleHash(
 // Return a weight for a given key, default to 1.0.
 float FunctionSimHasher::GetWeight(uint64_t key, float standard = 1.0) const {
   const auto& iter = weights_.find(key);
-  return (iter == weights_.end()) ? standard : iter->second;
+  if (iter == weights_.end()) {
+    //printf("Failed to find key %16.16lx\n", key);
+    return standard;
+  }
+  return iter->second;
 }
 
 // Calculates an ID for a graphlet, taking the occurrence count of the graphlet
 // into account. This is used for weight lookup.
 uint64_t FunctionSimHasher::GetGraphletIdOccurrence(
-  std::unique_ptr<Flowgraph>& graph, uint32_t occurrence, address node) const {
+  std::unique_ptr<Flowgraph>& graph, uint32_t occurrence, address node,
+  std::vector<uint64_t>* feature_ids) const {
   uint64_t graphlet_id = graph->CalculateHash(node, SeedXForHashY(0, occurrence),
     SeedXForHashY(1, occurrence), SeedXForHashY(2, occurrence));
+
+  if (feature_ids) {
+    printf("%d: Pushing back %16.16lx graphlet id at address %lx\n", 
+      feature_ids->size(), graphlet_id, node);
+    feature_ids->push_back(graphlet_id);
+  }
   return graphlet_id;
 }
 
@@ -272,9 +275,16 @@ uint64_t FunctionSimHasher::GetMnemonicIdNoOccurrence(const MnemTuple& tuple)
 }
 
 uint64_t FunctionSimHasher::GetMnemonicIdOccurrence(const MnemTuple& tuple,
-  uint32_t occurrence) const {
+  uint32_t occurrence, std::vector<uint64_t>* feature_ids) const {
   std::vector<uint64_t> hash;
-  CalculateNBitMnemTupleHash(tuple, 128, 0, &hash);
+  CalculateNBitMnemTupleHash(tuple, 128, occurrence, &hash);
+
+  if (feature_ids) {
+    printf("%d: Pushing back %16.16lx mnem tuple id (%s, %s, %s)\n",
+      feature_ids->size(), hash[0], std::get<0>(tuple).c_str(),
+      std::get<1>(tuple).c_str(), std::get<2>(tuple).c_str());
+    feature_ids->push_back(hash[0]);
+  }
   return hash[0];
 }
 
@@ -288,8 +298,8 @@ inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
 }
 
 FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
-  bool verbose, double default_mnemonic_weight, double default_graphlet_weight) :
-    verbose_(verbose), default_mnemonic_weight_(default_mnemonic_weight),
+  double default_mnemonic_weight, double default_graphlet_weight) :
+    default_mnemonic_weight_(default_mnemonic_weight),
     default_graphlet_weight_(default_graphlet_weight) {
   std::vector<std::vector<std::string>> tokenized_lines;
 
@@ -298,15 +308,24 @@ FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
   }
   if (FileToLineTokens(weight_file, &tokenized_lines)) {
     for (const std::vector<std::string>& line : tokenized_lines) {
-      FeatureHash hash = StringToFeatureHash(line[0]);
+      if (line.size() < 2) {
+        printf("[!] Truncated line found!\n");
+        continue;
+      }
       double weight = strtod(line[1].c_str(), nullptr);
-      weights_[hash.first] = weight;
+      if ((line[0].size() == 32) || (line[0].size() == 35)) {
+        FeatureHash hash = StringToFeatureHash(line[0]);
+        weights_[hash.first] = weight;
+      } else if (line[0].size() == 16) {
+        uint64_t value = strtoull(line[0].c_str(), nullptr, 16);
+        weights_[value] = weight;
+      }
     }
   }
 }
 
 FunctionSimHasher::FunctionSimHasher(std::map<uint64_t, float>* weights) :
-  weights_(*weights), verbose_(false), default_mnemonic_weight_(0.05),
+  weights_(*weights), default_mnemonic_weight_(0.05),
   default_graphlet_weight_(1.0) {
   weights_ = *weights;
 }

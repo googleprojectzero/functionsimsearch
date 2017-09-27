@@ -47,7 +47,6 @@ void DyninstFeatureGenerator::BuildMnemonicNgrams(
   }
 }
 
-
 bool DyninstFeatureGenerator::HasMoreSubgraphs() const {
   return !nodes_and_distance_.empty();
 }

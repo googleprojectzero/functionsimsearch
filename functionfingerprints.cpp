@@ -16,8 +16,6 @@
 #include <iostream>
 #include <map>
 
-#include "third_party/PicoSHA2/picosha2.h"
-
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
@@ -27,22 +25,12 @@
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
 #include "pecodesource.hpp"
+#include "util.hpp"
 
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
-
-// Obtain the first 64 bits of the input file's SHA256 hash.
-uint64_t GenerateExecutableID(const std::string& filename) {
-  std::ifstream ifs(filename.c_str(), std::ios::binary);
-  std::vector<unsigned char> hash(32);
-  picosha2::hash256(std::istreambuf_iterator<char>(ifs),
-      std::istreambuf_iterator<char>(), hash.begin(), hash.end());
-
-  uint64_t *temp = reinterpret_cast<uint64_t*>(&hash[0]);
-  return __builtin_bswap64(*temp);
-}
 
 int main(int argc, char** argv) {
   if (argc != 5) {

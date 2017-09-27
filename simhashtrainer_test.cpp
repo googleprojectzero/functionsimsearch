@@ -3,42 +3,9 @@
 #include "functionsimhash.hpp"
 #include "sgdsolver.hpp"
 #include "simhashtrainer.hpp"
+#include "testutil.hpp"
 #include "util.hpp"
 #include <array>
-
-// This test calculates the similarity between RarVM::ExecuteStandardFilter
-// in various optimization settings, both pre- and post-training.
-std::map<uint64_t, const std::string> id_to_filename = {
-  { 0xf89b73cc72cd02c7ULL, "../testdata/unrar.5.5.3.builds/unrar.x64.O0" },
-  { 0x5ae018cfafb410f5ULL, "../testdata/unrar.5.5.3.builds/unrar.x64.O2" },
-  { 0x51f3962ff93c1c1eULL, "../testdata/unrar.5.5.3.builds/unrar.x64.O3" },
-  { 0x584e2f1630b21cfaULL, "../testdata/unrar.5.5.3.builds/unrar.x64.Os" },
-  { 0xf7f94f1cdfbe0f98ULL, "../testdata/unrar.5.5.3.builds/unrar.x86.O0" },
-  { 0x83fe3244c90314f4ULL, "../testdata/unrar.5.5.3.builds/unrar.x86.O2" },
-  { 0x396063026eaac371ULL, "../testdata/unrar.5.5.3.builds/unrar.x86.O3" },
-  { 0x924daa0b17c6ae64ULL, "../testdata/unrar.5.5.3.builds/unrar.x86.Os" }};
-
-std::map<uint64_t, const std::string> id_to_mode = {
-  { 0xf89b73cc72cd02c7ULL, "ELF" },
-  { 0x5ae018cfafb410f5ULL, "ELF" },
-  { 0x51f3962ff93c1c1eULL, "ELF" },
-  { 0x584e2f1630b21cfaULL, "ELF" },
-  { 0xf7f94f1cdfbe0f98ULL, "ELF" },
-  { 0x83fe3244c90314f4ULL, "ELF" },
-  { 0x396063026eaac371ULL, "ELF" },
-  { 0x924daa0b17c6ae64ULL, "ELF" }};
-
-// The addresses of RarVM::ExecuteStandardFilter in the various executables
-// listed above.
-std::map<uint64_t, uint64_t> id_to_address_function_1 = {
-  { 0xf89b73cc72cd02c7, 0x0000000000418400 },
-  { 0x5ae018cfafb410f5, 0x0000000000411890 },
-  { 0x51f3962ff93c1c1e, 0x0000000000416f60 },
-  { 0x584e2f1630b21cfa, 0x000000000040e092 },
-  { 0xf7f94f1cdfbe0f98, 0x000000000805e09c },
-  { 0x83fe3244c90314f4, 0x0000000008059f70 },
-  { 0x396063026eaac371, 0x000000000805e910 },
-  { 0x924daa0b17c6ae64, 0x00000000080566fc } };
 
 void DumpFloatVector(const std::vector<float>& vector) {
   printf("(");
@@ -140,8 +107,8 @@ void RunSimpleAttractionTest(const std::string& pathname) {
   printf("Untrained hamming distance is %d\n", untrained_hamming);
   printf("Trained hamming distance is %d\n", trained_hamming);
 
-  // Expect a significant improvement in the hamming distance.
-  EXPECT_GT(untrained_hamming - trained_hamming, 10);
+  // Pushing the distance down to zero is expected.
+  EXPECT_EQ(trained_hamming, 0);
 }
 
 TEST(simhashtrainer, simple_attraction2) {
@@ -154,39 +121,6 @@ TEST(simhashtrainer, simple_attraction) {
 
 TEST(simhashtrainer, simple_attraction3) {
   RunSimpleAttractionTest("../testdata/train_simple_attraction3");
-}
-
-// Test whether loading and using weights from an input text file works. This
-// is done by loading a bunch of zero-weights, which should lead to all functions
-// having hashes of hamming distance zero.
-TEST(simhashtrainer, zero_weight_hasher) {
-  FunctionSimHasher hasher_trained(
-    "../testdata/train_zero_weights/weights.txt", false);
-
-  // Get the hashes for all functions above, with both hashers.
-  std::map<std::pair<uint64_t, uint64_t>, FeatureHash> hashes_trained;
-
-  for (const auto& hash_addr : id_to_address_function_1) {
-    uint64_t file_hash = hash_addr.first;
-    uint64_t address = hash_addr.second;
-
-    FeatureHash trained = GetHashForFileAndFunction(hasher_trained,
-      id_to_filename[file_hash], id_to_mode[file_hash], address);
-
-    ASSERT_TRUE((trained.first != 0) || (trained.second !=0));
-
-    hashes_trained[hash_addr] = trained;
-  }
-
-  for (const auto& hash_addr_A : hashes_trained) {
-    for (const auto& hash_addr_B : hashes_trained) {
-      FeatureHash hash_A = hash_addr_A.second;
-      FeatureHash hash_B = hash_addr_B.second;
-
-      uint32_t hamming = HammingDistance(hash_A, hash_B);
-      ASSERT_EQ(hamming, 0);
-    }
-  }
 }
 
 // A test to validate that two functions from an attractionset will indeed have
@@ -228,6 +162,20 @@ TEST(simhashtrainer, attractionset) {
   // All the untrained and trained hashes are available now.
   // Calculate a similarity matrix using both and dump it out.
   printf("[!] Untrained hamming distances:\n");
+
+  for (std::map<std::pair<uint64_t, uint64_t>, FeatureHash>::const_iterator
+    untrained_iter = hashes_untrained.begin();
+    untrained_iter != hashes_untrained.end(); ++untrained_iter) {
+    auto& next_iter = untrained_iter;
+    next_iter++;
+    FeatureHash hash_A = untrained_iter->second;
+    while (next_iter != hashes_untrained.end()) {
+      FeatureHash hash_B = next_iter->second;
+      printf("%02.02d ", HammingDistance(hash_A, hash_B));
+      ++next_iter;
+    }
+    printf("...\n");
+  }
   for (const auto& hash_addr_A : hashes_untrained) {
     for (const auto& hash_addr_B : hashes_untrained) {
       FeatureHash hash_A = hash_addr_A.second;

@@ -48,9 +48,12 @@
 class FunctionSimHasher {
 public:
   // The weight_file is a simple memory-mapped map that maps uint64_t IDs for
-  // a feature to float weights.
-  FunctionSimHasher(const std::string& weight_file, bool verbose = false,
-    double default_mnemomic_weight = 0.05, double default_graphlet_weight = 1.0);
+  // a feature to float weights. The second argument is used to obtain the
+  // IDs for features used in the calculation of the SimHash, and mainly used
+  // for debugging.
+  FunctionSimHasher(const std::string& weight_file,
+    double default_mnemomic_weight = 0.05,
+    double default_graphlet_weight = 1.0);
 
   FunctionSimHasher(std::map<uint64_t, float>* weights);
 
@@ -63,7 +66,8 @@ public:
 
   void CalculateFunctionSimHash(
     FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
-    std::vector<uint64_t>* output_simhash_values);
+    std::vector<uint64_t>* output_simhash_values,
+    std::vector<uint64_t>* feature_ids=nullptr);
 
   void CalculateFunctionSimHash(
     std::vector<FeatureHash>* features, std::vector<uint64_t>* output,
@@ -72,6 +76,11 @@ public:
   static uint64_t FloatsToBits(const std::vector<float>& floats);
   static bool FloatsToBits(const std::vector<float>& floats,
     std::vector<uint64_t>* outputs);
+
+  // Primarily exposed for testing.
+  const std::map<uint64_t, float>* GetWeights() const {
+    return &weights_;
+  }
 private:
   // Process one subgraph and hash it into the output vector.
   void ProcessSubgraph(std::unique_ptr<Flowgraph>& graph, float graphlet_weight,
@@ -112,11 +121,11 @@ private:
 
   // Obtain graphlet or mnemonic IDs with or without occurrence.
   uint64_t GetGraphletIdOccurrence(std::unique_ptr<Flowgraph>& graph,
-    uint32_t occurrence, address node) const;
+    uint32_t occurrence, address node, std::vector<uint64_t>* feature_ids) const;
   uint64_t GetGraphletIdNoOccurrence(std::unique_ptr<Flowgraph>& graph,
     address node) const;
   uint64_t GetMnemonicIdOccurrence(const MnemTuple& tuple,
-    uint32_t occurrence) const;
+    uint32_t occurrence, std::vector<uint64_t>* feature_ids) const;
   uint64_t GetMnemonicIdNoOccurrence(const MnemTuple& tuple) const;
 
   inline bool GetNthBit(const std::vector<uint64_t>& nbit_hash,
@@ -125,7 +134,6 @@ private:
   void DumpFloatState(std::vector<float>* output_floats);
 
   std::map<uint64_t, float> weights_;
-  bool verbose_ = false;
 
   double default_mnemonic_weight_;
   double default_graphlet_weight_;

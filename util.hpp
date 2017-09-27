@@ -16,6 +16,7 @@ typedef std::pair<uint64_t, uint64_t> FeatureHash;
 // A vector of indices into a FeatureHash vector represents a function.
 typedef std::vector<uint32_t> FunctionFeatures;
 
+uint64_t GenerateExecutableID(const std::string& filename);
 uint32_t HammingDistance(uint64_t A1, uint64_t A2, uint64_t B1, uint64_t B2);
 uint32_t HammingDistance(FeatureHash A, FeatureHash B);
 
@@ -41,6 +42,7 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
 // A helper function mostly for the benefit of testing. Iterates through the
 // entire disassembly, so this should not be used in a loop.
 FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
-  const std::string& filename, const std::string& mode, uint64_t address);
+  const std::string& filename, const std::string& mode, uint64_t address,
+  std::vector<uint64_t>* feature_ids = nullptr);
 
 #endif // UTIL_HPP

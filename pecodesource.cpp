@@ -68,6 +68,7 @@ PECodeSource::PECodeSource(const std::string& filename) {
     // Debug print the new section?
     pe_code_source->_regions.push_back(new_region);
     pe_code_source->_region_tree.insert(new_region);
+    return 1; // TODO(thomasdullien): Unclear what the right return value is?
   };
   peparse::IterSec( parsed_file, section_callback, static_cast<void*>(this) );
   parsed_ = true;
