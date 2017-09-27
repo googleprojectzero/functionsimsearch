@@ -238,7 +238,6 @@ void FunctionSimHasher::CalculateNBitMnemTupleHash(
 float FunctionSimHasher::GetWeight(uint64_t key, float standard = 1.0) const {
   const auto& iter = weights_.find(key);
   if (iter == weights_.end()) {
-    //printf("Failed to find key %16.16lx\n", key);
     return standard;
   }
   return iter->second;
@@ -253,8 +252,6 @@ uint64_t FunctionSimHasher::GetGraphletIdOccurrence(
     SeedXForHashY(1, occurrence), SeedXForHashY(2, occurrence));
 
   if (feature_ids) {
-    printf("%d: Pushing back %16.16lx graphlet id at address %lx\n", 
-      feature_ids->size(), graphlet_id, node);
     feature_ids->push_back(graphlet_id);
   }
   return graphlet_id;
@@ -280,9 +277,6 @@ uint64_t FunctionSimHasher::GetMnemonicIdOccurrence(const MnemTuple& tuple,
   CalculateNBitMnemTupleHash(tuple, 128, occurrence, &hash);
 
   if (feature_ids) {
-    printf("%d: Pushing back %16.16lx mnem tuple id (%s, %s, %s)\n",
-      feature_ids->size(), hash[0], std::get<0>(tuple).c_str(),
-      std::get<1>(tuple).c_str(), std::get<2>(tuple).c_str());
     feature_ids->push_back(hash[0]);
   }
   return hash[0];

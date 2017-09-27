@@ -50,7 +50,6 @@ PECodeSource::PECodeSource(const std::string& filename) : is_amd64_(false) {
   // Determine if this is a AMD64 or i386 file.
   uint32_t machine = parsed_file->peHeader.nt.FileHeader.Machine;
   if (machine == peparse::IMAGE_FILE_MACHINE_AMD64) {
-    printf("[!] Setting mode to AMD64.\n");
     is_amd64_ = true;
   } else if (machine != peparse::IMAGE_FILE_MACHINE_I386) {
     printf("[!] PE file is neither i386 nor AMD64, aborting!\n");

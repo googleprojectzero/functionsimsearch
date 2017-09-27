@@ -89,8 +89,9 @@ TEST(functionsimhash, zero_weight_hasher) {
         printf("./dumpsinglefunctionfeature %s %s %llx\n",
           id_to_mode[file_hash].c_str(), id_to_filename[file_hash].c_str(),
           address);
+      } else {
+        EXPECT_EQ(weights->at(feature_id), 0.0);
       }
-      EXPECT_EQ(weights->at(feature_id), 0.0);
     }
     ASSERT_TRUE((trained.first != 0) || (trained.second !=0));
 
