@@ -9,14 +9,16 @@ OBJ = build/util.o build/disassembly.o build/pecodesource.o build/flowgraph.o \
       build/flowgraphutil.o build/functionsimhash.o \
       build/simhashsearchindex.o build/bitpermutation.o \
       build/threadtimer.o build/functionmetadata.o \
-      build/simhashtrainer.o build/sgdsolver.o build/dyninstfeaturegenerator.o
+      build/simhashtrainer.o build/sgdsolver.o build/dyninstfeaturegenerator.o \
+      build/trainingdata.o
 
 ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/addsinglefunctiontoindex \
       bin/createfunctionindex bin/functionfingerprints \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
       bin/growfunctionindex bin/dumpfunctionindex \
-      bin/trainsimhashweights bin/dumpsinglefunctionfeatures
+      bin/trainsimhashweights bin/dumpsinglefunctionfeatures \
+      bin/evalsimhashweights
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
         build/sgdsolver_test.o build/testutil.o \

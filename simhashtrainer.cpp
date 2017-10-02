@@ -14,6 +14,12 @@
 #include "util.hpp"
 #include "simhashtrainer.hpp"
 
+// Helper function to load the contents of a data directory and populate the
+// necessary data structures to perform training.
+
+
+
+
 SimHashTrainer::SimHashTrainer(
   const std::vector<FunctionFeatures>* all_functions,
   const std::vector<FeatureHash>* all_features,

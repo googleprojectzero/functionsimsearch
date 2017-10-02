@@ -133,3 +133,4 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   }
   return std::make_pair(0,0);
 }
+

@@ -24,7 +24,6 @@
 #include <spii/term.h>
 
 #include "util.hpp"
-#include "sgdsolver.hpp"
 #include "simhashtrainer.hpp"
 
 using namespace std;
@@ -40,10 +39,6 @@ using namespace std;
 //                  indicating which functions should be the same.
 //  repulse.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
 //                  indicating which functions should NOT be the same.
-//  attract_eval.txt - Optional: A file similar to attract.txt which is not used
-//                  during training, but only for evaluation.
-//  repulse_eval.txt - Optional: A file similar to repulse.txt which is not
-//                  used during training, but only for evaluation.
 //
 
 int main(int argc, char** argv) {
@@ -57,128 +52,9 @@ int main(int argc, char** argv) {
   printf("[!] Parsing training data.\n");
   std::string directory(argv[1]);
   std::string outputfile(argv[2]);
-  // Read the contents of functions.txt.
-  std::string functionsfilename = directory + "/functions.txt";
-  std::vector<std::vector<std::string>> file_contents;
-  if (!FileToLineTokens(functionsfilename, &file_contents)) {
+
+  if(!TrainSimHashFromDataDirectory(directory, outputfile, true, 400)) {
+    printf("[!] Training failed, exiting.\n");
     return -1;
   }
-
-  // Read all the features, place them in a vector, and populate a map that maps
-  // FeatureHash to vector index.
-  std::set<FeatureHash> all_features;
-  ReadFeatureSet(file_contents, &all_features);
-  std::vector<FeatureHash> all_features_vector;
-  std::map<FeatureHash, uint32_t> feature_to_vector_index;
-  uint32_t index = 0;
-  for (const FeatureHash& feature : all_features) {
-    all_features_vector.push_back(feature);
-    feature_to_vector_index[feature] = index;
-    ++index;
-  }
-
-  // FunctionFeatures are a vector of uint32_t.
-  std::vector<FunctionFeatures> all_functions;
-  std::map<std::string, uint32_t> function_to_index;
-  index = 0;
-  all_functions.resize(file_contents.size());
-  for (const std::vector<std::string>& line : file_contents) {
-    function_to_index[line[0]] = index;
-    for (uint32_t i = 1; i < line.size(); ++i) {
-      FeatureHash hash = StringToFeatureHash(line[i]);
-      all_functions[index].push_back(feature_to_vector_index[hash]);
-    }
-    ++index;
-  }
-  // Feature vector and function vector have been loaded. Now load the attraction
-  // and repulsion set.
-  std::vector<std::vector<std::string>> attract_file_contents;
-  if (!FileToLineTokens(directory + "/attract.txt", &attract_file_contents)) {
-    return -1;
-  }
-
-  std::vector<std::vector<std::string>> repulse_file_contents;
-  if (!FileToLineTokens(directory + "/repulse.txt", &repulse_file_contents)) {
-    return -1;
-  }
-
-  std::vector<std::pair<uint32_t, uint32_t>> attractionset;
-  for (const std::vector<std::string>& line : attract_file_contents) {
-    attractionset.push_back(std::make_pair(
-      function_to_index[line[0]],
-      function_to_index[line[1]]));
-  }
-
-  std::vector<std::pair<uint32_t, uint32_t>> repulsionset;
-  for (const std::vector<std::string>& line : repulse_file_contents) {
-    repulsionset.push_back(std::make_pair(
-      function_to_index[line[0]],
-      function_to_index[line[1]]));
-  }
-
-  printf("[!] Loaded %ld functions (%ld unique features)\n",
-    all_functions.size(), all_features_vector.size());
-  printf("[!] Attraction-Set: %ld pairs\n", attractionset.size());
-  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset.size());
-
-  printf("[!] Training data parsed, beginning the training process.\n");
-
-  SimHashTrainer trainer(
-    &all_functions,
-    &all_features_vector,
-    &attractionset,
-    &repulsionset);
-  std::vector<double> weights;
-
-  std::unique_ptr<spii::Solver> solver;
-  bool use_lbfgs = true;
-  if (use_lbfgs) {
-    solver.reset(new spii::LBFGSSolver);
-  } else {
-    solver.reset(new spii::SGDSolver);
-  }
-  trainer.Train(&weights, solver.get());
-
-  // Write the weights file.
-  {
-    std::ofstream outfile(outputfile);
-    if (!outfile) {
-      printf("Failed to open outputfile %s.\n", outputfile.c_str());
-      return false;
-    }
-    for (uint32_t i = 0; i < all_features_vector.size(); ++i) {
-      char buf[512];
-      FeatureHash& hash = all_features_vector[i];
-      sprintf(buf, "%16.16lx%16.16lx %f", hash.first, hash.second,
-        weights[i]);
-      outfile << buf << std::endl;
-    }
-  }
-
-  /*
-  // Training has been performed. Instantiate two FunctionSimHasher, one with
-  // the new weights, one without.
-  FunctionSimHasher hash_no_weight("", false);
-  FunctionSimHasher hash_weights(outputfile, false);
-
-  for (const auto& pair : attractionset) {
-    std::vector<FeatureHash> features_A;
-    std::vector<FeatureHash> features_B;
-    for (uint32_t index : all_functions[pair.first]) {
-      features_A.push_back(all_features_vector[index]);
-    }
-    for (uint32_t index : all_functions[pair.second]) {
-      features_B.push_back(all_features_vector[index]);
-    }
-    std::vector<uint64_t> function_A_hash;
-    std::vector<uint64_t> function_B_hash;
-    hash_no_weight.CalculateFunctionSimHash(
-      &features_A, &function_A_hash);
-    hash_no_weight.CalculateFunctionSimHash(
-      &features_B, &function_B_hash);
-    
-    FunctionFeaturesi* functionA = &all_functions[pair.first];
-
-  }*/
 }
-

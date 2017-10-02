@@ -228,6 +228,7 @@ Experimental tool to help learn feature weights from examples. Do not use yet.
 
 ## End-to-end tutorial: How to build an index of vulnerable functions to scan for
 
+## End-to-end tutorial: Training weights prior to building an index of vulnerable functions
 
 ## Built With
 
