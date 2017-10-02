@@ -19,12 +19,16 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/trainsimhashweights bin/dumpsinglefunctionfeatures
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
-        build/simhashtrainer_test.o build/sgdsolver_test.o build/testutil.o \
-        build/functionsimhash_test.o 
+        build/sgdsolver_test.o build/testutil.o \
+        build/functionsimhash_test.o
+
+SLOWTESTS = build/simhashtrainer_test.o build/testutil.o
 
 DIRECTORIES = directory/build directory/bin directory/tests directory/profile
 
 TEST = tests/runtests
+
+SLOWTEST = tests/slowtests
 
 directory/%:
 	mkdir -p $(@F)
@@ -32,9 +36,15 @@ directory/%:
 build/%.o: %.cpp $(DIRECTORIES)
 	$(CPP) $(INCLUDEDIR) -c -o $@ $< $(CPPFLAGS)
 
-all: $(ALL) $(TESTS) $(TEST)
+all: $(ALL) $(TESTS) $(SLOWTESTS) $(TEST) $(SLOWTEST)
 
 tests/runtests: $(TESTS) tests
+
+tests/slowtests: $(SLOWTESTS) slowtests
+
+slowtests: $(ALL) $(OBJ) $(SLOWTESTS)
+	$(CPP) $(CPPFLAGS) -o tests/slowtests runtests.cpp $(OBJ) $(SLOWTESTS) \
+		$(LIBDIR) $(LIBS) -lgtest
 
 tests: $(ALL) $(OBJ) $(TESTS)
 	$(CPP) $(CPPFLAGS) -o tests/runtests runtests.cpp $(OBJ) $(TESTS) $(LIBDIR) \
