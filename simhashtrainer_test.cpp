@@ -27,10 +27,10 @@ void DumpDelta(const std::vector<float>& vec1, const std::vector<float>& vec2) {
 typedef std::pair<uint64_t, uint64_t> FileAndAddress;
 void CalculateMeanAndVarianceOfDistances(
   std::map<FileAndAddress, FeatureHash> *hashes, double* mean,
-  double* variance, double* maximum) {
+  double* min, double* max) {
   *mean = 0;
-  *variance = 0;
-  *maximum = 0;
+  *min = 200;
+  *max = 0;
 
   uint64_t num_values = 0;
   for (std::map<FileAndAddress, FeatureHash>::const_iterator
@@ -44,7 +44,8 @@ void CalculateMeanAndVarianceOfDistances(
       ++num_values;
       printf("%d ", distance);
       (*mean) += distance;
-      (*maximum) = std::max((double)distance, (*maximum));
+      (*max) = std::max((double)distance, (*max));
+      (*min) = std::min((double)distance, (*min));
       ++next_iter;
     }
     printf("...\n");
@@ -153,13 +154,68 @@ TEST(simhashtrainer, simple_attraction3) {
 
 // A test to validate that two functions from an attractionset will indeed have
 // their distance reduced by the training procedure.
+TEST(simhashtrainer, repulsionset) {
+  // Initialize an untrained hasher.
+  FunctionSimHasher hasher_untrained("");
+
+  // Train weights on the testing data, and save them to the temp directory.
+  ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_repulsion_only",
+    "/tmp/repulsion_weights.txt", true, 100), true);
+
+  // Initialize a trained hasher.
+  FunctionSimHasher hasher_trained("/tmp/repulsion_weights.txt");
+
+  printf("[!] Ran training\n");
+  // Get the hashes for all functions above, with both hashers.
+  std::map<FileAndAddress, FeatureHash> hashes_untrained;
+  std::map<FileAndAddress, FeatureHash> hashes_trained;
+
+  for (const auto& hash_addr : id_to_address_function_1) {
+    uint64_t file_hash = hash_addr.first;
+    uint64_t address = hash_addr.second;
+
+    FeatureHash untrained = GetHashForFileAndFunction(hasher_untrained,
+      id_to_filename[file_hash], id_to_mode[file_hash], address);
+    FeatureHash trained = GetHashForFileAndFunction(hasher_trained,
+      id_to_filename[file_hash], id_to_mode[file_hash], address);
+
+    ASSERT_TRUE((untrained.first != 0) || (untrained.second !=0));
+    ASSERT_TRUE((trained.first != 0) || (trained.second !=0));
+
+    hashes_untrained[hash_addr] = untrained;
+    hashes_trained[hash_addr] = trained;
+  }
+
+  printf("[!] Calculated the hashes!\n");
+
+  double untrained_mean, trained_mean, untrained_min, trained_min,
+    untrained_max, trained_max;
+  CalculateMeanAndVarianceOfDistances(&hashes_untrained,
+    &untrained_mean, &untrained_min, &untrained_max);
+  CalculateMeanAndVarianceOfDistances(&hashes_trained,
+    &trained_mean, &trained_min, &trained_max);
+
+  printf("Untrained: Mean %f Min %f Max %f\n", untrained_mean,
+    untrained_min, untrained_max);
+  printf("Trained: Mean %f Min %f Max %f\n", trained_mean, trained_min,
+    trained_max);
+
+  // Expect reduction in mean distance to be significant.
+  EXPECT_TRUE((trained_mean - untrained_mean > 0.8));
+
+  // The increase in minimum value to be significant.
+  EXPECT_TRUE((trained_min - untrained_min > 10));
+}
+
+// A test to validate that two functions from an attractionset will indeed have
+// their distance reduced by the training procedure.
 TEST(simhashtrainer, attractionset) {
   // Initialize an untrained hasher.
   FunctionSimHasher hasher_untrained("");
 
   // Train weights on the testing data, and save them to the temp directory.
   ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_attraction_only",
-    "/tmp/attraction_weights.txt", true), true);
+    "/tmp/attraction_weights.txt", true, 100), true);
 
   // Initialize a trained hasher.
   FunctionSimHasher hasher_trained("/tmp/attraction_weights.txt");
@@ -187,17 +243,78 @@ TEST(simhashtrainer, attractionset) {
 
   printf("[!] Calculated the hashes!\n");
 
-  double untrained_mean, trained_mean, untrained_variance, trained_variance,
+  double untrained_mean, trained_mean, untrained_min, trained_min,
     untrained_max, trained_max;
   CalculateMeanAndVarianceOfDistances(&hashes_untrained,
-    &untrained_mean, &untrained_variance, &untrained_max);
+    &untrained_mean, &untrained_min, &untrained_max);
   CalculateMeanAndVarianceOfDistances(&hashes_trained,
-    &trained_mean, &trained_variance, &trained_max);
+    &trained_mean, &trained_min, &trained_max);
 
-  printf("Untrained: Mean %f Variance %f Max %f\n", untrained_mean, 
-    untrained_variance, untrained_max);
-  printf("Trained: Mean %f Variance %f Max %f\n", trained_mean, trained_variance,
+  printf("Untrained: Mean %f Min %f Max %f\n", untrained_mean,
+    untrained_min, untrained_max);
+  printf("Trained: Mean %f Min %f Max %f\n", trained_mean, trained_min,
     trained_max);
 
+  // Expect reduction in mean distance to be significant.
+  EXPECT_TRUE((untrained_mean - trained_mean > 13));
+
+  // Expect reduction in maximum value to be significant.
+  EXPECT_TRUE((untrained_max - trained_max > 10));
+}
+
+// A test to validate that two functions from an attractionset will indeed have
+// their distance reduced by the training procedure.
+TEST(simhashtrainer, full_training) {
+  // Initialize an untrained hasher.
+  FunctionSimHasher hasher_untrained("");
+
+  // Train weights on the testing data, and save them to the temp directory.
+  ASSERT_EQ(TrainSimHashFromDataDirectory("../testdata/train_full",
+    "/tmp/full_weights.txt", true, 100), true);
+
+  // Initialize a trained hasher.
+  FunctionSimHasher hasher_trained("/tmp/full_weights.txt");
+
+  printf("[!] Ran training\n");
+
+  // Get the hashes for all functions above, with both hashers.
+  std::map<FileAndAddress, FeatureHash> hashes_untrained;
+  std::map<FileAndAddress, FeatureHash> hashes_trained;
+
+  for (const auto& hash_addr : id_to_address_function_1) {
+    uint64_t file_hash = hash_addr.first;
+    uint64_t address = hash_addr.second;
+
+    FeatureHash untrained = GetHashForFileAndFunction(hasher_untrained,
+      id_to_filename[file_hash], id_to_mode[file_hash], address);
+    FeatureHash trained = GetHashForFileAndFunction(hasher_trained,
+      id_to_filename[file_hash], id_to_mode[file_hash], address);
+
+    ASSERT_TRUE((untrained.first != 0) || (untrained.second !=0));
+    ASSERT_TRUE((trained.first != 0) || (trained.second !=0));
+
+    hashes_untrained[hash_addr] = untrained;
+    hashes_trained[hash_addr] = trained;
+  }
+
+  printf("[!] Calculated the hashes!\n");
+
+  double untrained_mean, trained_mean, untrained_min, trained_min,
+    untrained_max, trained_max;
+  CalculateMeanAndVarianceOfDistances(&hashes_untrained,
+    &untrained_mean, &untrained_min, &untrained_max);
+  CalculateMeanAndVarianceOfDistances(&hashes_trained,
+    &trained_mean, &trained_min, &trained_max);
+
+  printf("Untrained: Mean %f Min %f Max %f\n", untrained_mean,
+    untrained_min, untrained_max);
+  printf("Trained: Mean %f Min %f Max %f\n", trained_mean, trained_min,
+    trained_max);
+
+  // Expect reduction in mean distance to be significant.
+  EXPECT_TRUE((untrained_mean - trained_mean > 13));
+
+  // Expect reduction in maximum value to be significant.
+  EXPECT_TRUE((untrained_max - trained_max > 10));
 }
 

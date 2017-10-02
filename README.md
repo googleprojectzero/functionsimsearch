@@ -58,6 +58,9 @@ tests/runtests
 ```
 will not work.
 
+Also be aware that a fair number of the tests are pretty expensive to run, and
+expect the full testsuite to eat all your CPU for a few minutes.
+
 ## Running the tools
 
 At the moment, the following executables will be built (in alphabetical order):

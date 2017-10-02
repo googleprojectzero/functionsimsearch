@@ -62,7 +62,7 @@ void SimHashTrainer::AddPairLossTerm(const std::pair<uint32_t, uint32_t>& pair,
   function->add_term(
     std::make_shared<spii::LargeAutoDiffTerm<SimHashPairLossTerm>>(
     dimensions, all_features_vector, functionA, functionB,
-    set_size, attract, global_index_to_pair_index),
+    attract, set_size, global_index_to_pair_index),
       weights_in_this_pair);
 }
 
@@ -99,6 +99,9 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
       &function, all_functions_, all_features_, &weights,
       repulsionset_->size(), false);
   }
+
+  // TODO(thomasdullien): Loss terms should be created to maximize entropy on
+  // the functions that have not been labeled.
 
   spii::SolverResults results;
   solver->solve(function, &results);
@@ -229,4 +232,5 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   }
   return true;
 }
+
 

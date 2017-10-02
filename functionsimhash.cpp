@@ -107,9 +107,6 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   FloatsToBits(output_simhash_floats, output_simhash_values);
 }
 
-// TODO(thomasdullien): When the refactoring of the main implementation (above)
-// is complete, remove this code - if arbitrary iterators can be used as input,
-// this code will serve no purpose any more.
 void FunctionSimHasher::CalculateFunctionSimHash(
   std::vector<FeatureHash>* features, std::vector<uint64_t>* output,
   std::vector<float>* optional_state) {

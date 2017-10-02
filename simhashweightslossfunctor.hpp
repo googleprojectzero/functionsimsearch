@@ -226,7 +226,7 @@ public:
       weights,
       &global_to_local_,
       attract_);
-    return result / number_of_pairs_;
+    return result / (number_of_pairs_ / 64.0);
   }
 
 private:

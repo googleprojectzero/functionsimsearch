@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS += -ggdb -O2 -fsanitize=address -std=c++11 -D_DEBUG -fPIE
+CPPFLAGS += -ggdb -O3 -std=c++11 -D_DEBUG -fPIE
 LIBDIR = -L./third_party/pe-parse/parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
@@ -19,8 +19,8 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/trainsimhashweights bin/dumpsinglefunctionfeatures
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
-        build/functionsimhash_test.o \
-        build/simhashtrainer_test.o build/sgdsolver_test.o build/testutil.o
+        build/simhashtrainer_test.o build/sgdsolver_test.o build/testutil.o \
+        build/functionsimhash_test.o 
 
 DIRECTORIES = directory/build directory/bin directory/tests directory/profile
 

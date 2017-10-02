@@ -39,7 +39,11 @@ using namespace std;
 //  attract.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
 //                  indicating which functions should be the same.
 //  repulse.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
-//                  indicating which functions should NOT be the same
+//                  indicating which functions should NOT be the same.
+//  attract_eval.txt - Optional: A file similar to attract.txt which is not used
+//                  during training, but only for evaluation.
+//  repulse_eval.txt - Optional: A file similar to repulse.txt which is not
+//                  used during training, but only for evaluation.
 //
 
 int main(int argc, char** argv) {
