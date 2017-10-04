@@ -271,8 +271,8 @@ Input data currently consists of three text files:
 
 So let's walk through generating these files from the unrar executables:
 
-First, generate a ```functions.txt``` from the executables in question:
-```
+Generate ```functions.txt, attract.txt, repulse.txt``` from the executables in question:
+```bash
 # Process the GCC-compiled files.
 mkdir /tmp/train
 
