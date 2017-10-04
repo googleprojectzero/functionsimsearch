@@ -80,6 +80,8 @@ for func in $(cat /tmp/train/attract.txt | sort -R | head -n 50); do
   cp /tmp/train/attract_temp2.txt /tmp/train/attract_temp.txt;
 done
 cp /tmp/train/attract_temp.txt /tmp/train/training_data/attract.txt;
+cat /tmp/train/validation_data/attract.txt | sort | uniq > /tmp/train/attract_temp.txt;
+cp /tmp/train/attract_temp.txt /tmp/train/validation_data/attract.txt;
 
 # To generate non-matching pairs, we simply shuffle the matching pairs.
 cat /tmp/train/training_data/attract.txt | cut -d" " -f1 | sort -R > /tmp/train/repulse_temp.txt;
