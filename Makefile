@@ -18,7 +18,7 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
       bin/growfunctionindex bin/dumpfunctionindex \
       bin/trainsimhashweights bin/dumpsinglefunctionfeatures \
-      bin/evalsimhashweights
+      bin/evalsimhashweights bin/stemsymbol
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
         build/sgdsolver_test.o build/testutil.o \

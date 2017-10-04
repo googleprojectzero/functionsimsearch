@@ -6,7 +6,7 @@
 #include <vector>
 
 // A class that provides metainformation about a given function.
-// Reads and parses a CSV file with the following fields:
+// Reads and parses a space-delimited file with the following fields:
 //
 // FileID FileName FunctionAddress FunctionName IsVulnerable
 class FunctionMetadataStore {
