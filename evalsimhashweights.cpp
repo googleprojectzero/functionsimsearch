@@ -68,6 +68,8 @@ void CalculateHashStats(TrainingData* data, FunctionSimHasher* not_trained,
       function_A_hash_untrained[1], function_B_hash_untrained[0],
       function_B_hash_untrained[1]);
 
+    printf("Trained Hamming distance: %d Untrained: %d\n", hamming_trained,
+      hamming_untrained);
     *trained_mean += hamming_trained;
     *untrained_mean += hamming_untrained;
   }
@@ -123,7 +125,7 @@ int main(int argc, char** argv) {
   double repulsion_mean_untrained = 0;
 
   CalculateHashStats(&data, &hash_no_weight, &hash_weights,
-    data.GetAttractionSet(), &repulsion_mean_trained,
+    data.GetRepulsionSet(), &repulsion_mean_trained,
     &repulsion_mean_untrained);
 
   printf("Attraction mean trained: %.10e\n", attraction_mean_trained);
