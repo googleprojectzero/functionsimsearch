@@ -42,9 +42,9 @@ using namespace std;
 //
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
+  if (argc != 4) {
     printf("Use labelled and unlabelled data to train a weights.txt file.\n");
-    printf("Usage: %s <data directory> <weights file>\n", argv[0]);
+    printf("Usage: %s <data directory> <weights file> <training steps>\n", argv[0]);
     printf("Refer to the source code of this utility for detailed usage.\n");
     return -1;
   }
@@ -52,8 +52,9 @@ int main(int argc, char** argv) {
   printf("[!] Parsing training data.\n");
   std::string directory(argv[1]);
   std::string outputfile(argv[2]);
+  uint32_t train_steps = strtoul(argv[3], nullptr, 10);
 
-  if(!TrainSimHashFromDataDirectory(directory, outputfile, true, 400)) {
+  if(!TrainSimHashFromDataDirectory(directory, outputfile, true, train_steps)) {
     printf("[!] Training failed, exiting.\n");
     return -1;
   }
