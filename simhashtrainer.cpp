@@ -106,6 +106,10 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
       repulsionset_->size(), false);
   }
 
+  // Disable calculation of the Hessian for the function (since L-BFGS does
+  // not need it.
+  function.hessian_is_enabled = false;
+
   // TODO(thomasdullien): Loss terms should be created to maximize entropy on
   // the functions that have not been labeled.
 
