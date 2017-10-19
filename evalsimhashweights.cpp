@@ -33,6 +33,9 @@ using namespace std;
 void CalculateHashStats(TrainingData* data, FunctionSimHasher* not_trained,
   FunctionSimHasher* trained, std::vector<std::pair<uint32_t, uint32_t>>* pairs,
   double* trained_mean, double* untrained_mean) {
+  std::map<uint32_t, uint32_t> untrained_histogram;
+  std::map<uint32_t, uint32_t> trained_histogram;
+
   // Calculate the hashes for all elements in the attraction set.
   for (const auto& pair : *pairs) {
     std::vector<FeatureHash> features_A;
@@ -68,13 +71,24 @@ void CalculateHashStats(TrainingData* data, FunctionSimHasher* not_trained,
       function_A_hash_untrained[1], function_B_hash_untrained[0],
       function_B_hash_untrained[1]);
 
-    printf("Trained Hamming distance: %d Untrained: %d\n", hamming_trained,
-      hamming_untrained);
+    untrained_histogram[hamming_untrained]++;
+    trained_histogram[hamming_trained]++;
     *trained_mean += hamming_trained;
     *untrained_mean += hamming_untrained;
   }
   *trained_mean /= pairs->size();
   *untrained_mean /= pairs->size();
+
+  // Write the histographms to stdout.
+  printf("# Untrained histogram:\n");
+  for (const auto& entry : untrained_histogram) {
+    printf("%d %d\n", entry.first, entry.second);
+  }
+  printf("\n\n");
+  printf("# Trained histogram:\n");
+  for (const auto& entry : trained_histogram) {
+    printf("%d %d\n", entry.first, entry.second);
+  }
 }
 
 // The code expects the following files to be present inside the data directory
