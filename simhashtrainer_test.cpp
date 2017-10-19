@@ -259,7 +259,7 @@ TEST(simhashtrainer, attractionset) {
   EXPECT_TRUE((untrained_mean - trained_mean > 13));
 
   // Expect reduction in maximum value to be significant.
-  EXPECT_TRUE((untrained_max - trained_max > 10));
+  EXPECT_TRUE((untrained_max - trained_max >= 10));
 }
 
 // A test to validate that two functions from an attractionset will indeed have

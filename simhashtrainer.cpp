@@ -14,12 +14,6 @@
 #include "util.hpp"
 #include "simhashtrainer.hpp"
 
-// Helper function to load the contents of a data directory and populate the
-// necessary data structures to perform training.
-
-
-
-
 SimHashTrainer::SimHashTrainer(
   const std::vector<FunctionFeatures>* all_functions,
   const std::vector<FeatureHash>* all_features,
@@ -72,8 +66,26 @@ void SimHashTrainer::AddPairLossTerm(const std::pair<uint32_t, uint32_t>& pair,
       weights_in_this_pair);
 }
 
+bool WriteWeightsFile(const std::string& outputfile,
+  const std::vector<FeatureHash>& all_features_vector,
+  const std::vector<double>& weights) {
+  std::ofstream outfile(outputfile);
+  if (!outfile) {
+    printf("Failed to open outputfile %s.\n", outputfile.c_str());
+    return false;
+  }
+  for (uint32_t i = 0; i < all_features_vector.size(); ++i) {
+    char buf[512];
+    const FeatureHash& hash = all_features_vector[i];
+    sprintf(buf, "%16.16lx%16.16lx %f", hash.first, hash.second,
+      weights[i]);
+    outfile << buf << std::endl;
+  }
+  return true;
+}
+
 void SimHashTrainer::Train(std::vector<double>* output_weights,
-  spii::Solver* solver) {
+  spii::Solver* solver, const std::string& snapshot_directory) {
   // Begin constructing the loss function for the training.
   spii::Function function;
 
@@ -112,6 +124,27 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
 
   // TODO(thomasdullien): Loss terms should be created to maximize entropy on
   // the functions that have not been labeled.
+
+  // If the snapshot directory is non-empty, set a callback from the solver to
+  // save the intermediate results every 100 steps.
+  uint32_t iteration = 0;
+  if (snapshot_directory != "") {
+    solver->callback_function =
+      [&](const spii::CallbackInformation& info) -> bool {
+        ++iteration;
+        if ((iteration % 100) == 0) {
+          function.copy_global_to_user(*info.x);
+          char buf[256];
+          sprintf(buf, "%d.snapshot", iteration);
+          std::string snapshotfile = snapshot_directory + buf;
+          for (uint32_t index = 0; index < number_of_weights; ++index) {
+            (*output_weights)[index] = weights[index][0];
+          }
+          WriteWeightsFile(snapshotfile, *all_features_, *output_weights);
+        }
+        return true;
+      };
+  }
 
   spii::SolverResults results;
   solver->solve(function, &results);
@@ -225,22 +258,7 @@ bool TrainSimHashFromDataDirectory(const std::string& directory, const
   std::vector<double> weights;
   trainer.Train(&weights, solver.get());
 
-  // Write the weights file.
-  {
-    std::ofstream outfile(outputfile);
-    if (!outfile) {
-      printf("Failed to open outputfile %s.\n", outputfile.c_str());
-      return false;
-    }
-    for (uint32_t i = 0; i < all_features_vector.size(); ++i) {
-      char buf[512];
-      FeatureHash& hash = all_features_vector[i];
-      sprintf(buf, "%16.16lx%16.16lx %f", hash.first, hash.second,
-        weights[i]);
-      outfile << buf << std::endl;
-    }
-  }
-  return true;
+  return WriteWeightsFile(outputfile, all_features_vector, weights);
 }
 
 
