@@ -1,10 +1,9 @@
 FROM ubuntu:xenial
 
-
 RUN apt-get update
 RUN apt-get install -y git wget cmake gcc build-essential
 # some deps via: https://github.com/richinseattle/Dockerfiles/blob/master/afl-dyninst.Dockerfile
-RUN apt-get install -y libelf-dev libelf1 libiberty-dev libboost-all-dev
+RUN apt-get install -y libelf-dev libelf1 libiberty-dev libboost-all-dev libgtest-dev
 RUN mkdir /code
 
 # build, install dyninst
@@ -20,23 +19,36 @@ RUN cd /code/dyninst && \
     make install && \
     ldconfig
 
+# build gtest
+RUN cd /usr/src/gtest && \
+    cmake ./CMakeLists.txt && \
+    make && \
+    cp *.a /usr/lib
+
 # build functionsimsearch
 RUN cd /code && \
     git clone https://github.com/google/functionsimsearch.git && \
     cd functionsimsearch && \
+    mv third_party third_party_temp && \
     mkdir third_party && \
     cd third_party && \
     git clone https://github.com/okdshin/PicoSHA2.git && \
     git clone https://github.com/trailofbits/pe-parse.git && \
     git clone https://github.com/PetterS/spii.git && \
+    cp -R ../third_party_temp/* ./ && \
     cd pe-parse && \
-    cmake . && \
-    make && \
+    cmake -D CMAKE_CXX_FLAGS=-Wstrict-overflow=1 . && \
+    sed -i -e 's/overflow\=5/overflow\=1/g' ./parser-library/CMakeFiles/pe-parser-library.dir/flags.make && \
+    cat ./parser-library/CMakeFiles/pe-parser-library.dir/flags.make && \
+    make -j 16 && \
     cd ../spii && \
-    cmake . && \
-    make && \
+    cmake . -DBUILD_SHARED_LIBS=true && \
+    make -j 16 && \
+    make install && \
+    cp /usr/local/lib/libspii* /usr/lib && \
     cd ../.. && \
-    make
+    sed -i -e 's/isnan/std::isnan/g' ./third_party/spii/include/spii/large_auto_diff_term.h && \
+    make -j 16
 
 # dispatch via entrypoint script
 # recommend mapping the /pwd volume, probably like (for ELF file):
