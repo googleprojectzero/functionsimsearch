@@ -32,7 +32,9 @@ using namespace std;
 
 void CalculateHashStats(TrainingData* data, FunctionSimHasher* not_trained,
   FunctionSimHasher* trained, std::vector<std::pair<uint32_t, uint32_t>>* pairs,
-  double* trained_mean, double* untrained_mean) {
+  double* trained_mean, double* untrained_mean, std::map<uint32_t, uint32_t>*
+  trained_histogram, std::map<uint32_t, uint32_t>* untrained_histogram) {
+
   // Calculate the hashes for all elements in the attraction set.
   for (const auto& pair : *pairs) {
     std::vector<FeatureHash> features_A;
@@ -68,13 +70,23 @@ void CalculateHashStats(TrainingData* data, FunctionSimHasher* not_trained,
       function_A_hash_untrained[1], function_B_hash_untrained[0],
       function_B_hash_untrained[1]);
 
-    printf("Trained Hamming distance: %d Untrained: %d\n", hamming_trained,
-      hamming_untrained);
+    (*untrained_histogram)[hamming_untrained]++;
+    (*trained_histogram)[hamming_trained]++;
     *trained_mean += hamming_trained;
     *untrained_mean += hamming_untrained;
   }
   *trained_mean /= pairs->size();
   *untrained_mean /= pairs->size();
+}
+
+// Write a histogram to stdout in gnuplot format.
+void DumpHistogram(const std::string& title, const std::map<uint32_t, uint32_t>&
+    histogram) {
+  printf("# Histogram %s\n", title.c_str());
+  for (const auto& entry : histogram) {
+    printf("%d %d\n", entry.first, entry.second);
+  }
+  printf("\n\n");
 }
 
 // The code expects the following files to be present inside the data directory
@@ -116,22 +128,32 @@ int main(int argc, char** argv) {
 
   double attraction_mean_trained = 0;
   double attraction_mean_untrained = 0;
+  std::map<uint32_t, uint32_t> attraction_trained_histogram;
+  std::map<uint32_t, uint32_t> attraction_untrained_histogram;
 
   CalculateHashStats(&data, &hash_no_weight, &hash_weights,
     data.GetAttractionSet(), &attraction_mean_trained,
-    &attraction_mean_untrained);
+    &attraction_mean_untrained, &attraction_trained_histogram,
+    &attraction_untrained_histogram);
 
   double repulsion_mean_trained = 0;
   double repulsion_mean_untrained = 0;
+  std::map<uint32_t, uint32_t> repulsion_trained_histogram;
+  std::map<uint32_t, uint32_t> repulsion_untrained_histogram;
 
   CalculateHashStats(&data, &hash_no_weight, &hash_weights,
     data.GetRepulsionSet(), &repulsion_mean_trained,
-    &repulsion_mean_untrained);
+    &repulsion_mean_untrained, &repulsion_trained_histogram,
+    &repulsion_untrained_histogram);
+
+  DumpHistogram("attraction untrained", attraction_untrained_histogram);
+  DumpHistogram("repulsion untrained", repulsion_untrained_histogram);
+  DumpHistogram("attraction trained", attraction_trained_histogram);
+  DumpHistogram("repulsion trained", repulsion_trained_histogram);
 
   printf("Attraction mean trained: %.10e\n", attraction_mean_trained);
   printf("Attraction mean untrained: %.10e\n", attraction_mean_untrained);
   printf("Repulsion mean trained: %.10e\n", repulsion_mean_trained);
   printf("Repulsion mean untrained: %.10e\n", repulsion_mean_untrained);
-
 }
 
