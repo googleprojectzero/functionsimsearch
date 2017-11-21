@@ -10,7 +10,7 @@ for inputfile in $(ls ../testdata/unrar.5.5.3.builds/unrar.x??.O?); do
   shasum=$(sha256sum $inputfile);
   id=${shasum:0:16};
   filename=$(echo $inputfile | rev | cut -d"/" -f1 | rev);
-  ../bin/functionfingerprints ELF $inputfile 5 true >> $work_directory/functions_$id.txt;
+  ../bin/functionfingerprints --format=ELF --input=$inputfile --minimum_function_size=5 --verbose=true >> $work_directory/functions_$id.txt;
   objdump -t $inputfile | grep " g " | grep \.text | sort -k6 | cut -d" " -f1,22- | while read -r syms; do
     address=$(echo $syms | cut -d" " -f1);
     symbolname=$(echo $syms | cut -d" " -f2 | tr -d '\n');
@@ -29,7 +29,7 @@ for inputfile in $(find ../testdata/unrar.5.5.3.builds/VS2015/ -iname \*.exe); d
   shasum=$(sha256sum $inputfile);
   id=${shasum:0:16};
   filename=$(echo $inputfile | rev | cut -d"/" -f1 | rev);
-  ../bin/functionfingerprints PE $inputfile 5 true >> $work_directory/functions_$id.txt;
+  ../bin/functionfingerprints --format=PE --input=$inputfile --minimum_function_size=5 --verbose=true >> $work_directory/functions_$id.txt;
   # Get the default image base. For 32-bit executables, this is 0x400000, for
   # 64-bit executables, it is 0x140000000.
   filetype=$(file -b $inputfile);

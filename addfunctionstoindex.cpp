@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -29,24 +30,39 @@
 #include "threadpool.hpp"
 #include "util.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_string(index, "./similarity.index", "Index file");
+DEFINE_string(weights, "weights.txt", "Feature weights file");
+DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 5) {
-    printf("Adds simhash vectors from a binary to a search index\n");
-    printf("Usage: %s <PE/ELF> <binary path> <index file> "
-      "<minimum function size>\n", argv[0]);
+  SetUsageMessage(
+    "Add the functions of the input executable which exceed a certain minimum "
+    "size to the search index specified.");
+  ParseCommandLineFlags(&argc, &argv, true);
+
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  std::string index_file(FLAGS_index);
+  uint64_t minimum_size = FLAGS_minimum_function_size;
+
+  if (binary_path_string == "") {
+    printf("[!] Empty target binary.\n");
     return -1;
   }
-
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
-  std::string index_file(argv[3]);
-  uint64_t minimum_size = strtoul(argv[4], nullptr, 10);
-
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %16.16lx\n", file_id);
 
@@ -72,7 +88,7 @@ int main(int argc, char** argv) {
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
-  FunctionSimHasher hasher("weights.txt");
+  FunctionSimHasher hasher(FLAGS_weights);
 
   for (Function* function : functions) {
     pool.Push(

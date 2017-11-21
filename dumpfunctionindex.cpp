@@ -14,20 +14,30 @@
 
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "simhashsearchindex.hpp"
+
+DEFINE_string(index, "./similarity.index", "Index file");
+DEFINE_bool(verbose, false, "Verbose dump");
+
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
 
 using namespace std;
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
-    printf("Dump contents of a search index file.\n");
-    printf("Usage: %s <index file>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Dump the contents of the search index file.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string index_file(argv[1]);
-  SimHashSearchIndex search_index(index_file, false);
+  std::string index_file(FLAGS_index);
+  SimHashSearchIndex search_index(index_file, FLAGS_verbose);
   printf("[!] Indexed %lu functions, total index has %lu elements\n",
     search_index.GetNumberOfIndexedFunctions(),
     search_index.GetIndexSetSize());

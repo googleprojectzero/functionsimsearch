@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -28,21 +29,30 @@
 #include "pecodesource.hpp"
 #include "threadpool.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_string(function_address, "", "Address of function");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 4) {
-    printf("Dump feature hashes for a function to stdout.\n");
-    printf("Usage: %s <PE/ELF> <binary path> <function_address>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Dump feature hashes for a given function to stdout.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
-  uint64_t target_address = strtoul(argv[3], nullptr, 16);
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  uint64_t target_address = strtoul(FLAGS_function_address.c_str(), nullptr, 16);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("%16.16lx:%16.16lx ", file_id, target_address);

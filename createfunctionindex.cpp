@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -24,18 +25,26 @@
 #include "simhashsearchindex.hpp"
 #include "pecodesource.hpp"
 
+DEFINE_string(index, "./similarity.index", "Index file");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 2) {
-    printf("Create a new index file for function minhash search.\n");
-    printf("Usage: %s <index file>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Add the functions of the input executable which exceed a certain minimum "
+    "size to the search index specified.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string index_file(argv[1]);
+  std::string index_file(FLAGS_index);
   SimHashSearchIndex(index_file, true);
 }

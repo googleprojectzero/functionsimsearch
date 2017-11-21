@@ -27,11 +27,14 @@ local machine for development and testing purposes.
 ### Prerequisites
 
 This code has a few external dependencies. The dependencies are:
+  - CMake, for building
   - DynInst 9.3, built and the relevant shared libraries installed
   - (In order to build DynInst, you may need to build libdwarf from scratch with --enable-shared)
   - PE-parse, a C++ PE parser: https://github.com/trailofbits/pe-parse.git
   - PicoSHA2, a C++ SHA256 hash library: https://github.com/okdshin/PicoSHA2.git
   - SPII, a C++ library for automatic differentiation & optimization: https://github.com/PetterS/spii.git
+  - GoogleTest, a C++ unit testing library
+  - GFlags, a C++ library for handling command line parameters
 
 ### Installing
 
@@ -42,6 +45,13 @@ You should be able to build the code by doing the following:
    libdwarf from scratch.
 2. Get the dependencies:
 ```bash
+# Install gtest and gflags. It's a bit fidgety, but works:
+sudo apt-get install libgtest-dev libgflags-dev cmake
+cd /usr/src/gtest
+sudo cmake CMakeLists
+sudo make
+sudo cp *.a /usr/lib
+# Now get the other dependencies
 mkdir third_party
 cd third_party
 git clone https://github.com/okdshin/PicoSHA2.git

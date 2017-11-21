@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include <spii/auto_diff_term.h>
 #include <spii/dynamic_auto_diff_term.h>
@@ -27,6 +28,17 @@
 #include "functionsimhash.hpp"
 #include "simhashtrainer.hpp"
 #include "trainingdata.hpp"
+
+DEFINE_string(data_directory, "./data", "Directory for sourcing data");
+DEFINE_string(weights, "weights.txt", "Feature weights file");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 
 using namespace std;
 
@@ -104,15 +116,13 @@ void DumpHistogram(const std::string& title, const std::map<uint32_t, uint32_t>&
 // It also expects a weights file to evaluate against the data in question.
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
-    printf("Evaluate a weights file against labelled data.\n");
-    printf("Usage: %s <data directory> <weights file>\n", argv[0]);
-    printf("Refer to the source code of this utility for detailed usage.\n");
-    return -1;
-  }
+  SetUsageMessage(
+    "Evaluate a weights file against labelled data. Refer to the source file "
+    "for a detailed description of what data the tool expects to find.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string directory(argv[1]);
-  std::string outputfile(argv[2]);
+  std::string directory(FLAGS_data_directory);
+  std::string outputfile(FLAGS_weights);
 
   TrainingData data(directory);
   if (!data.Load()) {

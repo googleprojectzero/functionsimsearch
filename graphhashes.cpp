@@ -14,6 +14,8 @@
 
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
+
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
@@ -22,19 +24,28 @@
 #include "flowgraphutil.hpp"
 #include "pecodesource.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
-    printf("Dumps hashes of all CFGs in the target binary to stdout\n");
-    printf("Usage: %s <PE/ELF> <binary path>\n", argv[0]);
-    return -1;
-  }
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
+  SetUsageMessage(
+    "Dumps hashes of all CFGs in the target binary to stdout.");
+  ParseCommandLineFlags(&argc, &argv, true);
+
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
   Disassembly disassembly(mode, binary_path_string);
   if (!disassembly.Load()) {
     exit(1);

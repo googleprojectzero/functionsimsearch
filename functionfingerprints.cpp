@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -27,28 +28,34 @@
 #include "pecodesource.hpp"
 #include "util.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
+DEFINE_bool(verbose, false, "Verbose output");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 5) {
-    printf("Dump simhash values from a binary to stdout. If verbose is true,\n");
-    printf("dump the feature IDs for the simhash values. This is used to curate\n");
-    printf("training data for training feature weights.\n");
-    printf("Usage: %s <PE/ELF> <binary path> <minimum function size> "
-      "<true/false for verbose>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Dump simhash values from a binary to stdout. If verbose is true, "
+    "dump the feature IDs for the simhash values. This is used to curate "
+    "training data for training feature weights.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
-  uint64_t minimum_size = strtoul(argv[3], nullptr, 10);
-  bool verbose = false;
-  if (strcmp(argv[4], "true") == 0) {
-    verbose = true;
-  }
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  uint64_t minimum_size = FLAGS_minimum_function_size;
+  bool verbose = FLAGS_verbose;
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
 

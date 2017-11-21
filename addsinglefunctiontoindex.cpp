@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -29,23 +30,33 @@
 #include "threadpool.hpp"
 #include "util.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_string(index, "./similarity.index", "Index file");
+DEFINE_string(weights, "weights.txt", "Feature weights file");
+DEFINE_string(function_address, "", "Address of the function");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if (argc != 5) {
-    printf("Add simhash vector from a binary to a search index\n");
-    printf("Usage: %s <PE/ELF> <binary path> <index file> "
-      "<function_address>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Add a single functions of the input executable to the search index.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
-  std::string index_file(argv[3]);
-  uint64_t target_address = strtoul(argv[4], nullptr, 16);
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  std::string index_file(FLAGS_index);
+  uint64_t target_address = strtoul(FLAGS_function_address.c_str(), nullptr, 16);
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %16.16lx\n", file_id);

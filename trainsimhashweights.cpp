@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include <spii/auto_diff_term.h>
 #include <spii/dynamic_auto_diff_term.h>
@@ -25,6 +26,17 @@
 
 #include "util.hpp"
 #include "simhashtrainer.hpp"
+
+DEFINE_string(data, "./data", "Data directory");
+DEFINE_string(weights, "weights.txt", "Feature weights file");
+DEFINE_uint64(train_steps, 500, "Number of training steps");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
 
 using namespace std;
 
@@ -42,17 +54,15 @@ using namespace std;
 //
 
 int main(int argc, char** argv) {
-  if (argc != 4) {
-    printf("Use labelled and unlabelled data to train a weights.txt file.\n");
-    printf("Usage: %s <data directory> <weights file> <training steps>\n", argv[0]);
-    printf("Refer to the source code of this utility for detailed usage.\n");
-    return -1;
-  }
+  SetUsageMessage(
+    "Use labelled and unlabelled data to train a weights.txt file. Refer to the "
+    "source code for details regarding the data format in the data directory.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
   printf("[!] Parsing training data.\n");
-  std::string directory(argv[1]);
-  std::string outputfile(argv[2]);
-  uint32_t train_steps = strtoul(argv[3], nullptr, 10);
+  std::string directory(FLAGS_data);
+  std::string outputfile(FLAGS_weights);
+  uint32_t train_steps = FLAGS_train_steps;
 
   if(!TrainSimHashFromDataDirectory(directory, outputfile, true, train_steps)) {
     printf("[!] Training failed, exiting.\n");

@@ -14,6 +14,8 @@
 
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
+
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
@@ -22,25 +24,35 @@
 #include "flowgraphutil.hpp"
 #include "pecodesource.hpp"
 
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_string(output, "/var/tmp", "Output directory to dump .dot files to");
+DEFINE_string(function_address, "", "Address of function (optional)");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
+
 using namespace std;
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
-  if ((argc < 4) || (argc > 5)) {
-    printf("Dumps all CFGs in the target binary as .dot files\n");
-    printf("Usage: %s <PE/ELF> <binary path> <output dir> "
-      "<optional: function_address>\n", argv[0]);
-    return -1;
-  }
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
+  SetUsageMessage(
+    "Dumps the CFGs in the target binary as .dot files to the output directory.");
+  ParseCommandLineFlags(&argc, &argv, true);
+
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
   // Optional argument: A single function that should be explicitly disassembled
   // to make sure it is in the disassembly.
   uint64_t function_address = 0;
-  if (argc == 5) {
-    function_address = strtoul(argv[4], nullptr, 16);
+  if (FLAGS_function_address != "") {
+    function_address = strtoul(FLAGS_function_address.c_str(), nullptr, 16);
   }
 
   Disassembly disassembly(mode, binary_path_string);
@@ -51,7 +63,7 @@ int main(int argc, char** argv) {
     disassembly.DisassembleFromAddress(function_address, true);
   }
 
-  std::string output_path_string(argv[3]);
+  std::string output_path_string(FLAGS_output);
 
   CodeObject* code_object = disassembly.getCodeObject();
 

@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <gflags/gflags.h>
 
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -29,6 +30,21 @@
 #include "pecodesource.hpp"
 #include "threadpool.hpp"
 #include "util.hpp"
+
+DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(input, "", "File to disassemble");
+DEFINE_string(index, "./similarity.index", "Index file");
+DEFINE_string(weights, "weights.txt", "Feature weights file");
+DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added");
+DEFINE_uint64(max_matches, 5, "Maximum number of matches per query");
+DEFINE_double(minimum_percentage, 0.8, "Minimum similarity");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
 
 using namespace std;
 using namespace Dyninst;
@@ -59,18 +75,16 @@ public:
 };
 
 int main(int argc, char** argv) {
-  if (argc != 7) {
-    printf("Match simhashes from a binary against a search index\n");
-    printf("Usage: %s <PE/ELF> <binary path> <index file> <minimum function size> <max_matches> <minimum_percentage>\n", argv[0]);
-    return -1;
-  }
+  SetUsageMessage(
+    "Match simhashes from a binary against a search index");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string mode(argv[1]);
-  std::string binary_path_string(argv[2]);
-  std::string index_file(argv[3]);
-  uint64_t minimum_size = strtoul(argv[4], nullptr, 10);
-  uint64_t max_matches = strtoul(argv[5], nullptr, 10);
-  float minimum_percentage = strtod(argv[6], nullptr);
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  std::string index_file(FLAGS_index);
+  uint64_t minimum_size = FLAGS_minimum_function_size;
+  uint64_t max_matches = FLAGS_max_matches;
+  float minimum_percentage = FLAGS_minimum_percentage;
 
   uint64_t file_id = GenerateExecutableID(binary_path_string);
   printf("[!] Executable id is %16.16lx\n", file_id);
@@ -104,7 +118,7 @@ int main(int argc, char** argv) {
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
-  FunctionSimHasher hasher("weights.txt");
+  FunctionSimHasher hasher(FLAGS_weights);
 
   // Push the consumer thread into the threadpool.
   for (Function* function : functions) {

@@ -12,18 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gflags/gflags.h>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
+
+DEFINE_string(index, "./similarity.index", "Index file");
+DEFINE_uint64(size_to_grow, 500, "Size in MB to grow the index");
+// The google namespace is there for compatibility with legacy gflags and will
+// be removed eventually.
+#ifndef gflags
+using namespace google;
+#else
+using namespace gflags;
+#endif
 
 using namespace boost::interprocess;
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
-    printf("Grow function search index file.\n");
-    printf("Usage: %s <index file> <size_to_grow_in_MB>\n", argv[0]);
-    return -1;
-  }
-  uint64_t grow_size = strtoul(argv[2], nullptr, 10);
+  SetUsageMessage(
+    "Grow function search index file by specified number of megabytes.");
+  ParseCommandLineFlags(&argc, &argv, true);
+
+  uint64_t grow_size = FLAGS_size_to_grow;
   grow_size *= (1024*1024);
-  managed_mapped_file::grow(argv[1], grow_size);
+  managed_mapped_file::grow(FLAGS_index.c_str(), grow_size);
 }
