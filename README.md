@@ -92,7 +92,21 @@ slow tests may keep your computer busy for hours.
 
 ## Running the tools
 
+WARNING: The command line tools were recently converted to using GFlags, so
+the below command lines are no longer accurate. This will be fixed soond.
+
 At the moment, the following executables will be built (in alphabetical order):
+
+
+#### addfunctionstoindex
+
+```
+./addfunctionstoindex ELF /bin/tar ./function_search.index 5
+./addfunctionstoindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5
+```
+
+Disassemble the specified input file, find functions with more than 5 basic blocks,
+calculate the SimHash for each such function and add it to the search index file.
 
 #### addsinglefunctiontoindex
 
@@ -105,15 +119,6 @@ Disassemble the specified input file, disassemble the file, then find the functi
 at the specified address and at it to the search index. Incurs the full cost of
 disassembling the entire executable, so use with care.
 
-#### addfunctionstoindex
-
-```
-./addfunctionstoindex ELF /bin/tar ./function_search.index 5
-./addfunctionstoindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5
-```
-
-Disassemble the specified input file, find functions with more than 5 basic blocks,
-calculate the SimHash for each such function and add it to the search index file.
 
 #### createfunctionindex
 
