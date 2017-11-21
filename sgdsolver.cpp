@@ -63,7 +63,7 @@ void SGDSolver::solve(const Function& function, SolverResults* results) const {
       // In order to make progress, the next_function_value needs to be smaller
       // than the current_function_value, so the gain needs to be positive.
       gain = function_value - next_function_value;
-      if ((gain <= 0) || isnan(gain)) {
+      if ((gain <= 0) || std::isnan(gain)) {
         printf("[%d:] gain is %+.17e, reducing stepsize * norm from %+.17e\n", 
           iteration, gain, stepsize * gradient_norm);
         stepsize = stepsize / 100.0;
