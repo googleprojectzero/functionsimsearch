@@ -22,6 +22,12 @@ case "$1" in
   dumpfunctionindexinfo)
     /code/functionsimsearch/bin/dumpfunctionindexinfo "${@:2}";
     ;;
+  dumpsinglefunctionfeatures)
+    /code/functionsimsearch/bin/dumpsinglefunctionfeatures "${@:2}";
+    ;;
+  evalsimhashweights)
+    /code/functionsimsearch/bin/evalsimhashweights "${@:2}";
+    ;;
   functionfingerprints)
     /code/functionsimsearch/bin/functionfingerprints "${@:2}";
     ;;

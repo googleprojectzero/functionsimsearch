@@ -3,7 +3,23 @@
 FunctionSimSearch - Example C++ code to demonstrate how to do SimHash-based
 similarity search over CFGs extracted from disassemblies.
 
-## Getting Started
+## Getting started for the lazy (using Docker)
+
+Make sure you have Docker installed. Then do:
+
+```bash
+docker build -t functionsimsearch .
+```
+
+After the container is built, you can run all relevant commands by doing
+```bash
+sudo docker run -it --rm -v $(pwd):/pwd functionsimsearch COMMAND ARGUMENTS_TO_COMMAND
+sudo docker run -it --rm -v $(pwd):/pwd functionsimsearch disassemble ELF /pwd/elf_file
+```
+
+The last command should dump the disassembly of ./elf_file to stdout.
+
+## Getting Started for the less lazy (build from source)
 
 These instructions will get you a copy of the project up and running on your
 local machine for development and testing purposes.
