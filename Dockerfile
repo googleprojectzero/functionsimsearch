@@ -3,7 +3,7 @@ FROM ubuntu:xenial
 RUN apt-get update
 RUN apt-get install -y git wget cmake gcc build-essential
 # some deps via: https://github.com/richinseattle/Dockerfiles/blob/master/afl-dyninst.Dockerfile
-RUN apt-get install -y libelf-dev libelf1 libiberty-dev libboost-all-dev libgtest-dev
+RUN apt-get install -y libelf-dev libelf1 libiberty-dev libboost-all-dev libgtest-dev libgflags-dev
 RUN mkdir /code
 
 # build, install dyninst
