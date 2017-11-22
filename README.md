@@ -115,7 +115,7 @@ calculate the SimHash for each such function and add it to the search index file
 ./addsinglefunctionstoindex -format=PE -input=~/sources/mpengine/engine/mpengine.dll -index=./function_search.index -function_address=0x40deadb
 ```
 
-Disassemble the specified input file, disassemble the file, then find the function
+Disassemble the specified input file, then find the function
 at the specified address and at it to the search index. Incurs the full cost of
 disassembling the entire executable, so use with care.
 
@@ -270,6 +270,8 @@ the specified data directory, trains for 500 iterations (using LBFGS), and then
 writes the resulting weights to the specified file.
 
 ## End-to-end tutorial: How to build an index of vulnerable functions to scan for
+
+TBD.
 
 ## End-to-end tutorial: Training weights prior to building an index of vulnerable functions
 
