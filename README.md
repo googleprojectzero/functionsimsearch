@@ -101,8 +101,8 @@ At the moment, the following executables will be built (in alphabetical order):
 #### addfunctionstoindex
 
 ```
-./addfunctionstoindex ELF /bin/tar ./function_search.index 5
-./addfunctionstoindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5
+./addfunctionstoindex -format=ELF -input=/bin/tar -index=./function_search.index -minimum_function_size=5 -weights=./weights.txt
+./addfunctionstoindex -format=PE -input=~/sources/mpengine/engine/mpengine.dll -index=./function_search.index -minimum_function_size=5
 ```
 
 Disassemble the specified input file, find functions with more than 5 basic blocks,
@@ -111,8 +111,8 @@ calculate the SimHash for each such function and add it to the search index file
 #### addsinglefunctiontoindex
 
 ```
-./addsinglefunctiontoindex ELF /bin/tar ./function_search.index 40deadb
-./addsinglefunctionstoindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 40deadb
+./addsinglefunctiontoindex -format=ELF -input=/bin/tar -index=./function_search.index -function_address=0x40deadb -weights=./weights.txt
+./addsinglefunctionstoindex -format=PE -input=~/sources/mpengine/engine/mpengine.dll -index=./function_search.index -function_address=0x40deadb
 ```
 
 Disassemble the specified input file, disassemble the file, then find the function
@@ -123,7 +123,7 @@ disassembling the entire executable, so use with care.
 #### createfunctionindex
 
 ```
-./createfunctionindex ./function_search.index
+./createfunctionindex -index=./function_search.index
 ```
 
 Creates a file to use for the function similarity search index. Most likely the
@@ -132,8 +132,8 @@ first command you want to run.
 #### disassemble
 
 ```
-./disassemble ELF /bin/tar
-./disassemble PE ~/sources/mpengine/engine/mpengine.dll
+./disassemble -format=ELF -input=/bin/tar
+./disassemble -format=PE -input=~/sources/mpengine/engine/mpengine.dll
 ```
 
 Disassemble the specified file and dump the disassembly to stdout. The input
@@ -143,8 +143,8 @@ for 64-bit PE is easy and will be done soon.
 #### dotgraphs
 
 ```
-./dotgraphs ELF /bin/tar /tmp/graphs
-./dotgraphs PE ~/sources/mpengine/engine/mpengine.dll /tmp/graphs
+./dotgraphs -format=ELF -input=/bin/tar -output=/tmp/graphs
+./dotgraphs -format=PE -input=~/sources/mpengine/engine/mpengine.dll -output=/tmp/graphs
 ```
 
 Disassemble the specified file and write the CFGs as dot files to the specified
@@ -153,7 +153,7 @@ directory.
 #### dumpfunctionindex
 
 ```
-./dumpfunctionindex ./function_search.index
+./dumpfunctionindex -index=./function_search.index
 ```
 
 Dumps the content of the search index to text. The content consists of 5 text
@@ -166,7 +166,7 @@ colums:
 #### dumpfunctionindexinfo
 
 ```
-./dumpfunctionindexinfo ./function_search.index
+./dumpfunctionindexinfo -index=./function_search.index
 ```
 
 Prints information about the index file - how much space is used, how much space
@@ -181,7 +181,7 @@ Example output:
 #### dumpsinglefunctionfeatures
 
 ```
-./dumpsinglefunctionfeatures ELF /bin/tar 0x43AB900
+./dumpsinglefunctionfeatures -format=ELF -input=/bin/tar -function_address=0x43AB900
 ```
 
 Disassembles the input file, finds the relevant function, and dumps the 64-bit
@@ -192,7 +192,7 @@ learning features in the codebase.
 #### evalsimhashweights
 
 ```
-./evalsimhashweights /datadirectory /datadirectory/weights.txt
+./evalsimhashweights -data=datadirectory -weights=./weights.txt
 ```
 
 Evaluates the weight file specified on labeled data in /datadirectory. Refer
@@ -201,8 +201,8 @@ to the tutorial about weight learning for details.
 #### functionfingerprints
 
 ```
-./functionfingerprints ELF /bin/tar 5 true
-./functionfingerprints PE ~/sources/mpengine/engine/mpengine.dll 5 false
+./functionfingerprints -format=ELF -input=/bin/tar -minimum_function_size=5 -verbose=true
+./functionfingerprints -format=PE -input=~/sources/mpengine/engine/mpengine.dll -minimum_function_size=5 -verbose=false
 ```
 
 Disassembles the target file and all functions therein. If the last argument
@@ -228,19 +228,19 @@ mode is used to create training data for the machine learning components.
 #### graphhashes
 
 ```
-./graphhashes elf /bin/tar /tmp/graphs
-./graphhashes pe ~/sources/mpengine/engine/mpengine.dll /tmp/graphs
+./graphhashes -format=ELF -input=/bin/tar
+./graphhashes -format=PE -input=~/sources/mpengine/engine/mpengine.dll
 ```
 
-disassemble the specified file and write a hash of the cfg structure of each
-disassembled function to stdout. these hashes encode **only** the graph
+Disassemble the specified file and write a hash of the cfg structure of each
+disassembled function to stdout. These hashes encode **only** the graph
 structure and completely ignore any mnemonics; as such they are not very useful
 on small graphs.
 
 #### growfunctionindex
 
 ```
-./growfunctionindex ./function_search.index 512
+./growfunctionindex -index=./function_search.index -size_to_grow=512
 ```
 
 Expand the search index file by 512 megabytes. Index files unfortunately cannot
