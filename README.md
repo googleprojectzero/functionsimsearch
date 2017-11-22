@@ -371,8 +371,8 @@ cat /tmp/evaldata | grep -v [a-z] > /tmp/eval
 gnuplot
 
 gnuplot> set multiplot layout 2, 1 title "Pre- and Post-training distributions" font ",14"
-multiplot> plot '/tmp/eval' index 1 with lines title "Repulsion pre-train", '/tmp/foo' index 3 with lines title "Repulsion post-train"
-multiplot> plot '/tmp/eval' index 0 with lines title "Attraction pre-train", '/tmp/foo' index 2 with lines title "Attraction post-train"
+multiplot> plot '/tmp/eval' index 1 with lines title "Repulsion pre-train", '/tmp/eval' index 3 with lines title "Repulsion post-train"
+multiplot> plot '/tmp/eval' index 0 with lines title "Attraction pre-train", '/tmp/eval' index 2 with lines title "Attraction post-train"
 multiplot> unset multiplot
 
 ```
