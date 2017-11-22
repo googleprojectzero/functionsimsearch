@@ -29,7 +29,7 @@
 #include "simhashtrainer.hpp"
 #include "trainingdata.hpp"
 
-DEFINE_string(data_directory, "./data", "Directory for sourcing data");
+DEFINE_string(data, "./data", "Directory for sourcing data");
 DEFINE_string(weights, "weights.txt", "Feature weights file");
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
     "for a detailed description of what data the tool expects to find.");
   ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string directory(FLAGS_data_directory);
+  std::string directory(FLAGS_data);
   std::string outputfile(FLAGS_weights);
 
   TrainingData data(directory);

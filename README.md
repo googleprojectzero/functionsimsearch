@@ -251,8 +251,8 @@ grow it.
 #### matchfunctionsfromindex
 
 ```
-./matchfunctionsfromindex ELF /bin/tar ./function_search.index 5 10 .90
-./matchfunctionsfromindex PE ~/sources/mpengine/engine/mpengine.dll ./function_search.index 5 10 .90
+./matchfunctionsfromindex -format=ELF -input=/bin/tar -index=./function_search.index -minimum_function_size=5 -max_matches=10 -minimum_percentage=0.90 -weights=./weights_to_use.txt
+./matchfunctionsfromindex -format=PE -input=~/sources/mpengine/engine/mpengine.dll -index=./function_search.index -minimum_function_size=5 -max_matches=10 -minimum_percentage=.90
 ```
 
 Disassemble the specified input file, and for each function with more than 5
@@ -262,11 +262,12 @@ Each match must be at least 90% similar.
 #### trainsimhashweights
 
 ```
-./trainsimhashweights
+./trainsimhashweights -data=/tmp/datadir -train_steps=500 -weights=./trained_weights.txt
 ```
 
-Experimental tool to help learn feature weights from examples. Do not use yet.
-
+A command line tool to infer feature weights from examples. Uses the data in
+the specified data directory, trains for 500 iterations (using LBFGS), and then
+writes the resulting weights to the specified file.
 
 ## End-to-end tutorial: How to build an index of vulnerable functions to scan for
 
@@ -285,9 +286,6 @@ In order to generate labelled datasets, the usual process involves compiling the
 same codebase with many different compilers and compiler settings. In an ideal
 world, we would have something like Compiler Explorer; in the meantime, people
 will have to build things themselves.
-
-The git repository contains builds of unrar.5.5.3 using GCC 4.8 and VS2015 to
-get started in the ./testdata directory.
 
 ### Generating input data
 
@@ -322,6 +320,60 @@ appearing in the validation data.
 
 Note that the shell script is grossly inefficient. Rewriting this hack in C++
 would be a great thing for a contributor to do :-).
+
+### Running the training code
+
+In order to launch the training itself, simply do:
+```bash
+
+bin/trainsimhashweights -data=/tmp/train/training_data/ -train_steps=500 -weights=./trained_weights_500.txt
+```
+
+This should launch the training process and nicely max out all the cores you have
+in your machine. Unfortunately, there is no GPU-accelerated training yet, so odds
+are you will have to wait a few hours until the training is done.
+
+The resulting weights will be written to the specified output file.
+
+### Running the validation code
+
+After we have arun a training iteration, we need to check whether the training
+actually did anything useful. Run the following command line to see what the
+effects of the new weights are on the validation set:
+
+```bash
+
+bin/evalsimhashweights -data=/tmp/train/training_data/ -weights=./trained_weights_500.txt
+```
+
+Running this command will output data for 4 histograms (ideally visualized using
+GNUplot), and the differences between the mean distances pre- and post training:
+
+```bash
+
+Attraction mean trained: 1.6483634587e+01
+Attraction mean untrained: 2.3003175379e+01
+Repulsion mean trained: 3.1962383977e+01
+Repulsion mean untrained: 2.8451636541e+01
+```
+
+As we can see here, the average distance between two identical pairs was lowered
+to 16.5 bits from 23.0 bits, and the average distance for non-identical pairs
+was increased to 32 bits from 28.5 bits prior to training.
+
+Drawing histograms from the data can be done as follows (assuming you have piped
+the output to /tmp/evaldata):
+
+```bash
+cat /tmp/evaldata | grep -v [a-z] > /tmp/eval
+gnuplot
+
+gnuplot> set multiplot layout 2, 1 title "Pre- and Post-training distributions" font ",14"
+multiplot> plot '/tmp/eval' index 1 with lines title "Repulsion pre-train", '/tmp/foo' index 3 with lines title "Repulsion post-train"
+multiplot> plot '/tmp/eval' index 0 with lines title "Attraction pre-train", '/tmp/foo' index 2 with lines title "Attraction post-train"
+multiplot> unset multiplot
+
+```
 
 
 ## Built With
