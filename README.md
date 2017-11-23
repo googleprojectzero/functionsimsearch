@@ -271,7 +271,71 @@ writes the resulting weights to the specified file.
 
 ## End-to-end tutorial: How to build an index of vulnerable functions to scan for
 
-TBD.
+Let's assume that weights have been trained already, and placed in a file
+called "trained_weights_500.txt". 
+
+```bash
+# Create a new index file.
+bin/createfunctionindex --index="./trained.index"
+
+# Grow the index to be 2 gigs in size.
+bin/growfunctionindex --index="./trained.index" --size_to_grow=2048
+
+# Add DLLs with interesting functions to the search index.
+for dll in $(find -iname \*.dll); do \
+  bin/addfunctionstoindex -format=PE -index=,/trained.index -weights=./trained_weights_500.txt --input $(pwd)/$dll; done
+
+# Add ELFs with interesting functions to the search index.
+
+
+```
+
+At this point, we can start scanning a given new executable for any of the
+functions in the search index.
+
+```bash
+
+bin/matchfunctionsfromindex -format=PE -index=./trained.index -input=../bin/libpng-1.6.26_msvc14/libpng16.dll -weights=./trained_weights_500.txt
+
+sr/local/google/home/thomasdullien/Desktop/sources/functionsimsearch/trained_weights_500.txt 
+[!] Executable id is 66d4ebee347438de
+[!] Loaded search index, starting disassembly.
+[!] Done disassembling, beginning search.
+[!] (289/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10002360 matches 829836f67adb6dad.10002360 
+[!] (289/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10002360 matches 47b1aef4056f7bcc.10002360 
+[!] (289/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10002360 matches 99838a9a51e1e4f2.10002360 
+[!] (289/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10002360 matches 829836f67adb6dad.10002360 
+[!] (289/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10002360 matches 47b1aef4056f7bcc.10002360 
+(...)
+```
+
+While this is nice and fine, all we get is the source executable ID and the
+address of the function we matched to. In order to make sense of this, we need
+to make sure there is a file called "./trained.index.metadata" in the same
+directory as the index file.
+
+This file should contain simple space-delimited lines of the format:
+```
+[16 char FileID] [FileName] [16 char function address] [function name] [true/false]
+```
+The last field indicates whether the function is known to be vulnerable or not.
+
+Re-running our matching command above now yields much more useful output:
+
+```bash
+[!] Executable id is 66d4ebee347438de
+[!] Loaded search index, starting disassembly.
+[!] Done disassembling, beginning search.
+[!] (313/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10004490 matches 829836f67adb6dad.10004490 /media/thomasdullien/storage/binaries/bin/./libpng-1.6.27_msvc17/libpng16.dll _png_colorspace_set_sRGB 
+[!] (313/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10004490 matches 47b1aef4056f7bcc.10004490 /media/thomasdullien/storage/binaries/bin/./libpng-1.6.25_msvc17/libpng16.dll _png_colorspace_set_sRGB 
+[!] (313/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10004490 matches 99838a9a51e1e4f2.10004490 /media/thomasdullien/storage/binaries/bin/./libpng-1.6.28_msvc17/libpng16.dll _png_colorspace_set_sRGB 
+[!] (313/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10004490 matches 829836f67adb6dad.10004490 /media/thomasdullien/storage/binaries/bin/./libpng-1.6.27_msvc17/libpng16.dll _png_colorspace_set_sRGB 
+[!] (313/882 - 7 branching nodes) 1.000000: 66d4ebee347438de.10004490 matches 47b1aef4056f7bcc.10004490 /media/thomasdullien/storage/binaries/bin/./libpng-1.6.25_msvc17/libpng16.dll _png_colorspace_set_sRGB 
+(...)
+```
+
+Allright, that's all. Things seem to work. Enjoy!
+
 
 ## End-to-end tutorial: Training weights prior to building an index of vulnerable functions
 

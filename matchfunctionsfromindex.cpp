@@ -34,7 +34,7 @@
 DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(index, "./similarity.index", "Index file");
-DEFINE_string(weights, "weights.txt", "Feature weights file");
+DEFINE_string(weights, "", "Feature weights file");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added");
 DEFINE_uint64(max_matches, 5, "Maximum number of matches per query");
 DEFINE_double(minimum_percentage, 0.8, "Minimum similarity");
@@ -67,7 +67,7 @@ public:
     matching_function_(match_address) {};
   SimHashSearchIndex::FileID source_file_;
   Address source_function_;
-  uint32_t source_function_index_;
+  uint64_t source_function_index_;
   uint32_t source_function_bnodes_; // Number of branching nodes in source.
   float similarity_;
   SimHashSearchIndex::FileID matching_file_;
@@ -113,6 +113,8 @@ int main(int argc, char** argv) {
   printf("[!] Done disassembling, beginning search.\n");
   Instruction::Ptr instruction;
 
+  std::mutex search_index_mutex;
+  std::mutex* mutex_pointer = &search_index_mutex; 
   threadpool::SynchronizedQueue<SearchResult> resultqueue;
   threadpool::ThreadPool pool(std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
@@ -120,30 +122,32 @@ int main(int argc, char** argv) {
   uint64_t number_of_functions = functions.size();
   FunctionSimHasher hasher(FLAGS_weights);
 
+  uint64_t function_index = 0;
+
   // Push the consumer thread into the threadpool.
   for (Function* function : functions) {
     // Push the producer threads into the threadpool.
     pool.Push(
-      [&resultqueue, &search_index, &metadata, processed_functions, file_id,
-      function, minimum_size, max_matches, minimum_percentage,
+      [&resultqueue, function_index, mutex_pointer, &search_index, &metadata,
+      file_id, function, minimum_size, max_matches, minimum_percentage,
       number_of_functions, &hasher]
         (int threadid) {
       Flowgraph graph;
       Address function_address = function->addr();
       BuildFlowgraph(function, &graph);
-      (*processed_functions)++;
 
       uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
-
       if (graph.GetNumberOfBranchingNodes() <= minimum_size) {
        return;
       }
 
       std::vector<uint64_t> hashes;
-
-      // TODO(thomasdullien): Investigate if we need locking for the constructor
-      // of the DyninstFeatureGenerator.
+      // Dyninst cannot tolerate multi-threaded access, so construction of the
+      // DyninstFeatureGenerator needs to be synched accross threads.
+      mutex_pointer->lock();
       DyninstFeatureGenerator generator(function);
+      mutex_pointer->unlock();
+
       hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
@@ -151,15 +155,17 @@ int main(int argc, char** argv) {
       std::vector<std::pair<float, SimHashSearchIndex::FileAndAddress>> results;
       search_index.QueryTopN(
         hash_A, hash_B, max_matches, &results);
+
       for (const auto& result : results) {
         if (result.first > minimum_percentage) {
           resultqueue.Push(
-            SearchResult(file_id, function_address,
-              processed_functions->load(), branching_nodes, result.first,
-              result.second.first, result.second.second));
+            SearchResult(file_id, function_address, function_index,
+              branching_nodes, result.first, result.second.first,
+              result.second.second));
         }
       }
     });
+    ++function_index;
   }
 
   // Run as long as there is still work to do in the pool.
@@ -168,7 +174,7 @@ int main(int argc, char** argv) {
     if (resultqueue.Pop(result)) {
       printf("[!] (%lu/%lu - %d branching nodes) %f: %lx.%lx matches "
         "%lx.%lx ", result.source_function_index_, number_of_functions,
-        result.source_function_bnodes_, result.similarity_,
+        result.source_function_bnodes_, result.similarity_ / 128.0,
         result.source_file_, result.source_function_,
         result.matching_file_, result.matching_function_);
 
