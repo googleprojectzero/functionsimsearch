@@ -92,9 +92,6 @@ slow tests may keep your computer busy for hours.
 
 ## Running the tools
 
-WARNING: The command line tools were recently converted to using GFlags, so
-the below command lines are no longer accurate. This will be fixed soond.
-
 At the moment, the following executables will be built (in alphabetical order):
 
 
@@ -286,7 +283,7 @@ for dll in $(find -iname \*.dll); do \
   bin/addfunctionstoindex -format=PE -index=,/trained.index -weights=./trained_weights_500.txt --input $(pwd)/$dll; done
 
 # Add ELFs with interesting functions to the search index.
-
+(...)
 
 ```
 
