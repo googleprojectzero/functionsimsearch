@@ -38,8 +38,8 @@ RUN cd /code && \
     cp -R ../third_party_temp/* ./ && \
     cd pe-parse && \
     cmake -D CMAKE_CXX_FLAGS=-Wstrict-overflow=1 . && \
-    sed -i -e 's/overflow\=5/overflow\=1/g' ./parser-library/CMakeFiles/pe-parser-library.dir/flags.make && \
-    cat ./parser-library/CMakeFiles/pe-parser-library.dir/flags.make && \
+    sed -i -e 's/overflow\=5/overflow\=1/g' ./cmake/compilation_flags.cmake && \
+    cat ./cmake/compilation_flags.cmake && \
     make -j 16 && \
     cd ../spii && \
     cmake . -DBUILD_SHARED_LIBS=true && \
@@ -56,6 +56,5 @@ RUN cd /code && \
 #    docker run -it --rm -v $(pwd):/pwd functionsimsearch disassemble ELF /pwd/someexe
 VOLUME /pwd
 WORKDIR /code/functionsimsearch
-ADD ./entrypoint.sh /root/entrypoint.sh
-RUN chmod +x /root/entrypoint.sh
-ENTRYPOINT ["/root/entrypoint.sh"]
+RUN chmod +x /code/functionsimsearch/entrypoint.sh
+ENTRYPOINT ["/code/functionsimsearch/entrypoint.sh"]
