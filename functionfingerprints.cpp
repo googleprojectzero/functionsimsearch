@@ -32,6 +32,9 @@ DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
 DEFINE_bool(verbose, false, "Verbose output");
+DEFINE_string(weights, "", "Feature weights file");
+DEFINE_string(function_address, "", "Address of function");
+//
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -51,6 +54,8 @@ int main(int argc, char** argv) {
     "dump the feature IDs for the simhash values. This is used to curate "
     "training data for training feature weights.");
   ParseCommandLineFlags(&argc, &argv, true);
+
+  uint64_t target_address = strtoul(FLAGS_function_address.c_str(), nullptr, 16);
 
   std::string mode(FLAGS_format);
   std::string binary_path_string(FLAGS_input);
@@ -72,12 +77,16 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  FunctionSimHasher sim_hasher("./simhash_weights", verbose);
-  Instruction::Ptr instruction;
+  FunctionSimHasher sim_hasher(FLAGS_weights, verbose);
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
   for (Function* function : functions) {
     Flowgraph graph;
     Address function_address = function->addr();
     BuildFlowgraph(function, &graph);
+
+    if ((target_address != 0) && (target_address != function_address)) {
+      continue;
+    }
 
     uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
 

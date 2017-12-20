@@ -15,8 +15,14 @@
 #ifndef FLOWGRAPH_HPP
 #define FLOWGRAPH_HPP
 
+#include <functional>
+#include <vector>
+
 /* A Flowgraph class designed to allow fast extraction of small subgraphs
  A set of target nodes is kept for each node allowing easy retrieval.
+ This file is kept intentionally relatively free of external dependencies;
+ the goal is that implementing this interface should eventually be enough to
+ swap disassembly engines.
 */
 
 typedef uint64_t address;
@@ -26,6 +32,21 @@ enum Direction {
   direction_down,
   direction_bidirectional
 };
+
+class Instruction {
+public:
+  Instruction(const std::string& mnemonic, const std::vector<std::string>&
+    operands);
+  const std::string& GetMnemonic() const { return mnemonic_; };
+  const std::vector<std::string>& GetOperands() const { return operands_; };
+private:
+  std::string mnemonic_;
+  std::vector<std::string> operands_;
+};
+
+// A callback to get the instructions for a basic block at a given address.
+typedef std::function<bool(uint64_t, std::vector<Instruction>*)> 
+  InstructionGetter;
 
 class Flowgraph {
 private:
@@ -56,6 +77,8 @@ public:
     uint64_t k2 = 0x9ae16a3b2f90404fULL);
 
   void WriteDot(const std::string& output_file);
+  void WriteJSON(const std::string& output_file,
+    InstructionGetter block_getter);
 };
 
  

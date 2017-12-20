@@ -18,12 +18,18 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include "third_party/json/src/json.hpp"
 
 #include "flowgraphutil.hpp"
-
 #include "flowgraph.hpp"
 
+using json = nlohmann::json;
+
 Flowgraph::Flowgraph() {}
+
+Instruction::Instruction(const std::string& mnemonic,
+  const std::vector<std::string>& operands) : mnemonic_(mnemonic),
+  operands_(operands) {};
 
 // Automatically default-constructs the target vector.
 bool Flowgraph::AddNode(address node_address) {
@@ -58,6 +64,44 @@ void Flowgraph::WriteDot(const std::string& output_file) {
     }
   }
   dotfile << "}\n";
+}
+
+void Flowgraph::WriteJSON(const std::string& output_file,
+  InstructionGetter block_getter) {
+  std::ofstream jsonfile;
+  std::vector<address> nodes;
+  jsonfile.open(output_file);
+  json out_graph = {
+    {"name", output_file},
+    {"nodes", json::array()},
+    {"edges", json::array()}};
+
+  GetNodes(&nodes);
+  for (const auto& block_address : nodes) {
+    json node = {
+      { "address", static_cast<uint32_t>(block_address) },
+      { "instructions", json::array() } };
+
+    std::vector<Instruction> instructions;
+    block_getter(block_address, &instructions);
+    for (const Instruction& instruction : instructions) {
+      node["instructions"].push_back(
+        {{"mnemonic", instruction.GetMnemonic()},
+        {"operands", instruction.GetOperands() }});
+    }
+    out_graph["nodes"].emplace_back(node);
+  }
+
+  // Add the relevant edges.
+  for (const auto& edge : out_edges_) {
+    for (address destination : edge.second) {
+      out_graph["edges"].push_back(
+        {{ "source", edge.first}, { "destination", destination }});
+    }
+  }
+
+  jsonfile << out_graph;
+  std::cout << out_graph.dump(2) << std::endl;
 }
 
 bool Flowgraph::HasNode(address node) {

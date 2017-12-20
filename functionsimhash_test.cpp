@@ -55,6 +55,15 @@ TEST(functionsimhash, check_feature_counts) {
       feature_id_set.insert(feature.first);
     }
     EXPECT_EQ(feature_id_set.size(), feature_counts[file_hash]);
+    if (feature_id_set.size() != feature_counts[file_hash]) {
+      printf(
+        "Failure extracting features from %s %s %16.16lx "
+        "(%d features, %d expected)\n",
+        id_to_filename[file_hash].c_str(),
+        id_to_mode[file_hash].c_str(),
+        address, feature_id_set.size(),
+        feature_counts[file_hash]);
+    }
   }
 }
 

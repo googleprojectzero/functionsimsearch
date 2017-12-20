@@ -33,6 +33,7 @@ This code has a few external dependencies. The dependencies are:
   - PE-parse, a C++ PE parser: https://github.com/trailofbits/pe-parse.git
   - PicoSHA2, a C++ SHA256 hash library: https://github.com/okdshin/PicoSHA2.git
   - SPII, a C++ library for automatic differentiation & optimization: https://github.com/PetterS/spii.git
+  - JSON.hpp, a C++ library for using JSON: https://github.com/nlohmann/json.git
   - GoogleTest, a C++ unit testing library
   - GFlags, a C++ library for handling command line parameters
 
@@ -57,6 +58,13 @@ cd third_party
 git clone https://github.com/okdshin/PicoSHA2.git
 git clone https://github.com/trailofbits/pe-parse.git
 git clone https://github.com/PetterS/spii.git
+# Alternatively just get the single file:
+mkdir json
+mkdir json/src
+cd json/src
+wget https://raw.githubusercontent.com/nlohmann/json/develop/src/json.hpp
+cd ..
+cd ..
 cd pe-parse
 cmake ./CMakeLists
 make

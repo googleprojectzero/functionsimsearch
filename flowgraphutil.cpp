@@ -34,3 +34,34 @@ uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
   }
   return count;
 }
+
+InstructionGetter MakeDyninstInstructionGetter(
+  Dyninst::ParseAPI::CodeObject* codeobject) {
+  InstructionGetter getter =
+    [codeobject](uint64_t address, std::vector<Instruction>* results) -> bool {
+    Dyninst::ParseAPI::CodeSource* codesource = codeobject->cs();
+    for (Dyninst::ParseAPI::CodeRegion* region : codesource->regions()) {
+      Dyninst::ParseAPI::Block* block = codeobject->findBlockByEntry(
+        region, address);
+      if (!block) {
+        continue;
+      }
+      Dyninst::ParseAPI::Block::Insns block_instructions;
+      block->getInsns(block_instructions);
+      for (const auto& instruction : block_instructions) {
+        std::vector<std::string> operand_strings;
+        std::vector<Dyninst::InstructionAPI::Operand> operands;
+        instruction.second->getOperands(operands);
+        for (const auto& operand : operands) {
+          operand_strings.emplace_back(
+            operand.format(
+              instruction.second->getArch(),
+              instruction.first));
+        }
+        results->emplace_back(Instruction(
+          instruction.second->getOperation().format(), operand_strings));
+      }
+    }
+  };
+  return getter;
+}

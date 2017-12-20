@@ -111,12 +111,12 @@ int main(int argc, char** argv) {
   }
 
   printf("[!] Done disassembling, beginning search.\n");
-  Instruction::Ptr instruction;
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
 
   std::mutex search_index_mutex;
   std::mutex* mutex_pointer = &search_index_mutex; 
   threadpool::SynchronizedQueue<SearchResult> resultqueue;
-  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+  threadpool::ThreadPool pool(1);//std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
 
   // Push the consumer thread into the threadpool.
   for (Function* function : functions) {
+    printf("Pushing function %lx\n", function->addr());
     // Push the producer threads into the threadpool.
     pool.Push(
       [&resultqueue, function_index, mutex_pointer, &search_index, &metadata,
@@ -157,12 +158,15 @@ int main(int argc, char** argv) {
         hash_A, hash_B, max_matches, &results);
 
       for (const auto& result : results) {
-        if (result.first > minimum_percentage) {
+        if (result.first > (minimum_percentage * 128.0)) {
           resultqueue.Push(
             SearchResult(file_id, function_address, function_index,
               branching_nodes, result.first, result.second.first,
               result.second.second));
+        } else {
+          //printf("result.first is %f, limit is %f\n", result.first, (minimum_percentage * 128.0));
         }
+
       }
     });
     ++function_index;

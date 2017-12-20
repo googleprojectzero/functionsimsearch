@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  Instruction::Ptr instruction;
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
   for (Function* function : functions) {
     Flowgraph graph;
     Address function_address = function->addr();

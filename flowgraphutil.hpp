@@ -16,6 +16,7 @@
 #define FLOWGRAPHUTIL_HPP
 
 #include "CodeObject.h"
+#include "InstructionDecoder.h"
 
 #include "flowgraph.hpp"
 
@@ -24,7 +25,13 @@ static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;
 static constexpr uint64_t k1 = 0xb492b66fbe98f273ULL;
 static constexpr uint64_t k2 = 0x9ae16a3b2f90404fULL;
 
-uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function, Flowgraph* graph);
+// Builds a CFG using a Dyninst Function* as input.
+uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
+  Flowgraph* graph);
+
+// Return a std::function that retrieves instruction strings from DynInst.
+InstructionGetter MakeDyninstInstructionGetter(
+  Dyninst::ParseAPI::CodeObject* codeobject);
 
 inline uint64_t rotl64 ( uint64_t x, int8_t r ) {
   return (x << r) | (x >> (64 - r));

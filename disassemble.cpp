@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
   std::string mode(FLAGS_format);
   std::string binary_path_string(FLAGS_input);
 
-  // Optional argument: A single function that should be explicitly disassembled
-  // to make sure it is in the disassembly.
+  // Optional argument: A single function that should be explicitly
+  // disassembled to make sure it is in the disassembly.
   uint64_t function_address = 0;
   if (FLAGS_function_address != "") {
     function_address = strtoul(FLAGS_function_address.c_str(), nullptr, 16);
@@ -91,5 +91,4 @@ int main(int argc, char** argv) {
       }
     }
   }
-
 }

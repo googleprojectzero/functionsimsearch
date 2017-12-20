@@ -28,6 +28,8 @@ DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(output, "/var/tmp", "Output directory to dump .dot files to");
 DEFINE_string(function_address, "", "Address of function (optional)");
+DEFINE_bool(json, "", "Also dump .json CFGs with instructions");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -74,7 +76,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  Instruction::Ptr instruction;
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
+  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
   for (Function* function : functions) {
     Flowgraph graph;
     Address function_address = function->addr();
@@ -84,5 +87,11 @@ int main(int argc, char** argv) {
     sprintf(buf, "sub_%lx.dot", function_address);
     std::string filename = output_path_string + "/" + std::string(buf);
     graph.WriteDot(filename);
+
+    if (FLAGS_json) {
+      sprintf(buf, "sub_%lx.json", function_address);
+      filename = output_path_string + "/" + std::string(buf);
+      graph.WriteJSON(filename, get_block);
+    }
   }
 }
