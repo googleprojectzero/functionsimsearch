@@ -28,8 +28,8 @@ uint64_t GenerateExecutableID(const std::string& filename) {
 
 uint32_t HammingDistance(uint64_t A1, uint64_t A2, uint64_t B1, uint64_t B2) {
   uint32_t distance =
-    __builtin_popcount(A1 ^ B1) +
-    __builtin_popcount(A2 ^ B2);
+    __builtin_popcountl(A1 ^ B1) +
+    __builtin_popcountl(A2 ^ B2);
   return distance;
 }
 
