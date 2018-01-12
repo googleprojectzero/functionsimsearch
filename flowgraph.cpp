@@ -18,7 +18,7 @@
 #include <queue>
 #include <set>
 #include <vector>
-#include "third_party/json/src/json.hpp"
+#include "third_party/json/single_header/json.hpp"
 
 #include "flowgraphutil.hpp"
 #include "flowgraph.hpp"
