@@ -12,8 +12,8 @@ from operator import itemgetter
 from collections import defaultdict
 
 work_directory="/var/tmp/train2"
-#shutil.rmtree(work_directory)
-#os.mkdir(work_directory)
+shutil.rmtree(work_directory)
+os.mkdir(work_directory)
 
 def FindELFTrainingFiles():
   """ Returns the list of ELF files that should be used for training. These
@@ -198,6 +198,7 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
       element_two = random.choice( input_map[symbol] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     attraction_set.add(ordered_pair)
+    print(len(attraction_set))
   # Construct a set of things that should not be the same.
   repulsion_set = set()
   while len(repulsion_set) != number_of_pairs:
@@ -238,9 +239,9 @@ def WriteFunctionsTxt( output_directory ):
   output_file.close()
 
 print("Processing ELF training files to extract features...")
-#ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
 print("Processing PE training files to extract features...")
-#ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+ProcessTrainingFiles(FindPETrainingFiles(), "PE")
 
 # We now have the extracted symbols in a set of files called
 # "extracted_symbols_*.txt"
@@ -252,19 +253,20 @@ symbol_to_files_and_names = BuildSymbolToFileAddressMapping()
 # Split off 10% of the symbols into a control map.
 print("Splitting into validation set and training set...")
 validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
-  symbol_to_files_and_names, 0.30)
+  symbol_to_files_and_names, 0.20)
 
-#os.mkdir(work_directory + "/training_data")
-#os.mkdir(work_directory + "/validation_data")
+os.mkdir(work_directory + "/training_data")
+os.mkdir(work_directory + "/validation_data")
 
 # Write the training set.
 print("Writing training attract.txt and repulse.txt...")
-WriteAttractAndRepulseFromMap( training_map, work_directory + "/training_data" )
+WriteAttractAndRepulseFromMap( training_map, work_directory + "/training_data",
+  number_of_pairs=3000)
 
 # Write the validation set.
 print("Writing validation attract.txt and repulse.txt...")
 WriteAttractAndRepulseFromMap( validation_map, work_directory +
-  "/validation_data" )
+  "/validation_data", number_of_pairs=500 )
 
 # Write functions.txt into both directories.
 print("Writing the function.txt files...")
