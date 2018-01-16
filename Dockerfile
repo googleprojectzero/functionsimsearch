@@ -48,9 +48,10 @@ RUN cd /code && \
     cp /usr/local/lib/libspii* /usr/lib && \
     cd ../.. && \
     sed -i -e 's/isnan/std::isnan/g' ./third_party/spii/include/spii/large_auto_diff_term.h && \
-    mkdir json && mkdir json/single_header && cd json/single_header && \
-    wget https://raw.githubusercontent.com/nlohmann/json/develop/single_header/json.hpp && \
-    cd ../.. && \
+    cd third_party && \
+    mkdir json && mkdir json/src && cd json/src && \
+    wget https://raw.githubusercontent.com/nlohmann/json/develop/src/json.hpp && \
+    cd ../../.. && \
     make -j 16
 
 # dispatch via entrypoint script
