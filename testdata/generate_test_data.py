@@ -60,7 +60,7 @@ def ObtainELFFunctionSymbols(training_file):
   result = {}
   symbols = [ line for line in subprocess.check_output(
     [ "objdump", "-t", training_file ] ).decode("utf-8").split("\n")
-      if line.find(" g ") != -1 ]
+      if line.find(" F .text") != -1 ]
   syms_and_address = []
   for sym in symbols:
     tokens = sym.split()
