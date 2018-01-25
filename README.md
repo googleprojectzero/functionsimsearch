@@ -60,9 +60,9 @@ git clone https://github.com/trailofbits/pe-parse.git
 git clone https://github.com/PetterS/spii.git
 # Alternatively just get the single file:
 mkdir json
-mkdir json/single_header
-cd json/single_header
-wget https://raw.githubusercontent.com/nlohmann/json/develop/single_header/json.hpp
+mkdir json/src
+cd json/src
+wget https://raw.githubusercontent.com/nlohmann/json/develop/src/json.hpp
 cd ..
 cd ..
 cd pe-parse

@@ -68,40 +68,44 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   // will with high likelihood end up being just the per-feature hash.
   std::map<uint64_t, uint64_t> feature_cardinalities;
 
-  // Process subgraphs.
-  while (generator->HasMoreSubgraphs()) {
-    std::pair<Flowgraph*, address> graphlet_and_node =
-      generator->GetNextSubgraph();
-    std::unique_ptr<Flowgraph> graphlet(graphlet_and_node.first);
-    address node = graphlet_and_node.second;
-    if (graphlet) {
-      uint64_t graphlet_id = GetGraphletIdNoOccurrence(graphlet, node);
+  if (!disable_graph_hashes_) {
+    // Process subgraphs.
+    while (generator->HasMoreSubgraphs()) {
+      std::pair<Flowgraph*, address> graphlet_and_node =
+        generator->GetNextSubgraph();
+      std::unique_ptr<Flowgraph> graphlet(graphlet_and_node.first);
+      address node = graphlet_and_node.second;
+      if (graphlet) {
+        uint64_t graphlet_id = GetGraphletIdNoOccurrence(graphlet, node);
 
-      uint64_t cardinality = feature_cardinalities[graphlet_id]++;
+        uint64_t cardinality = feature_cardinalities[graphlet_id]++;
 
-      uint64_t graphlet_id_with_cardinality = GetGraphletIdOccurrence(
-        graphlet, cardinality, node);
+        uint64_t graphlet_id_with_cardinality = GetGraphletIdOccurrence(
+          graphlet, cardinality, node);
 
-      // Get the weight for the graphlet.
-      float graphlet_weight = GetWeight(graphlet_id_with_cardinality,
-        default_graphlet_weight_);
+        // Get the weight for the graphlet.
+        float graphlet_weight = GetWeight(graphlet_id_with_cardinality,
+          default_graphlet_weight_);
 
-      ProcessSubgraph(graphlet, graphlet_weight, node, number_of_outputs,
-        cardinality, &output_simhash_floats, feature_hashes);
+        ProcessSubgraph(graphlet, graphlet_weight, node, number_of_outputs,
+          cardinality, &output_simhash_floats, feature_hashes);
+      }
     }
   }
-  while (generator->HasMoreMnemonics()) {
-    MnemTuple tuple = generator->GetNextMnemTuple();
-    uint64_t tuple_id = GetMnemonicIdNoOccurrence(tuple);
-    uint64_t cardinality = feature_cardinalities[tuple_id]++;
+  if (!disable_mnemonic_hashes_) {
+    while (generator->HasMoreMnemonics()) {
+      MnemTuple tuple = generator->GetNextMnemTuple();
+      uint64_t tuple_id = GetMnemonicIdNoOccurrence(tuple);
+      uint64_t cardinality = feature_cardinalities[tuple_id]++;
 
-    uint64_t mnemonic_id_with_cardinality = GetMnemonicIdOccurrence(tuple,
-      cardinality);
-    float mnemonic_tuple_weight = GetWeight(mnemonic_id_with_cardinality,
-      default_mnemonic_weight_);
+      uint64_t mnemonic_id_with_cardinality = GetMnemonicIdOccurrence(tuple,
+        cardinality);
+      float mnemonic_tuple_weight = GetWeight(mnemonic_id_with_cardinality,
+        default_mnemonic_weight_);
 
-    ProcessMnemTuple(tuple, mnemonic_tuple_weight, number_of_outputs, cardinality,
-      &output_simhash_floats, feature_hashes);
+      ProcessMnemTuple(tuple, mnemonic_tuple_weight, number_of_outputs, cardinality,
+        &output_simhash_floats, feature_hashes);
+    }
   }
 
   FloatsToBits(output_simhash_floats, output_simhash_values);
@@ -290,9 +294,12 @@ inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
 }
 
 FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
+  bool disable_graphs, bool disable_mnemonic,
   double default_mnemonic_weight, double default_graphlet_weight) :
     default_mnemonic_weight_(default_mnemonic_weight),
-    default_graphlet_weight_(default_graphlet_weight) {
+    default_graphlet_weight_(default_graphlet_weight),
+    disable_graph_hashes_(disable_graphs),
+    disable_mnemonic_hashes_(disable_mnemonic) {
   std::vector<std::vector<std::string>> tokenized_lines;
 
   if (weight_file == "") {

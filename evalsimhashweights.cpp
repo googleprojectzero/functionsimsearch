@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     printf("[!] Failure to load the training data, exiting.\n");
     return -1;
   }
-  printf("[!] Training data parsed, beginning the evaluation process.\n");
+  printf("# Training data parsed, beginning the evaluation process.\n");
 
   // Training has been performed. Instantiate two FunctionSimHasher, one with
   // the new weights, one without.
@@ -161,9 +161,11 @@ int main(int argc, char** argv) {
   DumpHistogram("attraction trained", attraction_trained_histogram);
   DumpHistogram("repulsion trained", repulsion_trained_histogram);
 
-  printf("Attraction mean trained: %.10e\n", attraction_mean_trained);
-  printf("Attraction mean untrained: %.10e\n", attraction_mean_untrained);
-  printf("Repulsion mean trained: %.10e\n", repulsion_mean_trained);
-  printf("Repulsion mean untrained: %.10e\n", repulsion_mean_untrained);
+  printf("# Attraction mean trained: %.10e\n", attraction_mean_trained);
+  printf("# Attraction mean untrained: %.10e\n", attraction_mean_untrained);
+  printf("# Repulsion mean trained: %.10e\n", repulsion_mean_trained);
+  printf("# Repulsion mean untrained: %.10e\n", repulsion_mean_untrained);
+  printf("# Difference in means: %10e\n", repulsion_mean_trained, 
+    attraction_mean_trained);
 }
 
