@@ -6,7 +6,7 @@
 # This Python script is meant to replace the horrible bash script that is
 # currently responsible for doing this.
 
-import subprocess, os, fnmatch, codecs, random, shutil
+import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing
 from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 from collections import defaultdict
@@ -107,10 +107,13 @@ def ObtainDisassembledFunctions(training_file_id):
   data.sort()
   return data
 
-def RunFunctionFingerprints(training_file, file_id, file_format):
+def RunFunctionFingerprints(argument_tuple):
   """ Run the bin/functionfingerprints utility to generate features from the
   disassembly and write the output to a file named after the file id. """
-
+  training_file = argument_tuple[0]
+  file_id = argument_tuple[1]
+  file_format = argument_tuple[2]
+ 
   fingerprints = subprocess.check_output(
     [ "../bin/functionfingerprints", "--format=%s" % file_format,
       "--input=%s" % training_file, "--minimum_function_size=5",
@@ -121,11 +124,19 @@ def RunFunctionFingerprints(training_file, file_id, file_format):
   write_fingerprints.close()
 
 def ProcessTrainingFiles(training_files, file_format):
+  # Begin by launching a pool of parallel processes to call
+  # RunFunctionFingerprints.
+  argument_tuples = []
   for training_file in training_files:
     sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
     file_id = sha256sum[0:16].decode("utf-8")
-    # Generate the function fingerprints
-    RunFunctionFingerprints(training_file, file_id, file_format)
+    argument_tuples.append((training_file, file_id, file_format))
+  pool = multiprocessing.Pool()
+  pool.map(RunFunctionFingerprints, argument_tuples)
+
+  for training_file in training_files:
+    sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
+    file_id = sha256sum[0:16].decode("utf-8")
     # Run objdump
     objdump_symbols = ObtainFunctionSymbols(training_file, file_format)
     # Get the functions that our disassembly could find.
