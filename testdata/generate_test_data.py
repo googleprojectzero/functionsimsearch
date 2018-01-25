@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 from collections import defaultdict
 
-work_directory="/var/tmp/train2"
+work_directory="/mnt/storage/functionsimsearch/data"
 shutil.rmtree(work_directory)
 os.mkdir(work_directory)
 
@@ -20,7 +20,7 @@ def FindELFTrainingFiles():
   ELF files need to contain objdump-able debug information.
 
   """
-  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?') ]
+  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'), ('./ffmpeg.3.2.9.sos', '*.so') ]
 
   filenames = []
   for dirname, mask in dirnames_and_masks:
