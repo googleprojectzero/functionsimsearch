@@ -114,13 +114,13 @@ def RunFunctionFingerprints(argument_tuple):
   file_id = argument_tuple[1]
   file_format = argument_tuple[2]
  
-  fingerprints = subprocess.check_output(
-    [ "../bin/functionfingerprints", "--format=%s" % file_format,
-      "--input=%s" % training_file, "--minimum_function_size=5",
-      "--verbose=true" ])
   write_fingerprints = open(
     work_directory + "/" + "functions_%s.txt" % file_id, "wt")
-  write_fingerprints.write(fingerprints.decode("utf-8"))
+ 
+  fingerprints = subprocess.check_call(
+    [ "../bin/functionfingerprints", "--format=%s" % file_format,
+      "--input=%s" % training_file, "--minimum_function_size=5",
+      "--verbose=true" ], stdout = write_fingerprints)
   write_fingerprints.close()
 
 def ProcessTrainingFiles(training_files, file_format):
@@ -131,7 +131,7 @@ def ProcessTrainingFiles(training_files, file_format):
     sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
     file_id = sha256sum[0:16].decode("utf-8")
     argument_tuples.append((training_file, file_id, file_format))
-  pool = multiprocessing.Pool()
+  pool = multiprocessing.Pool(32)
   pool.map(RunFunctionFingerprints, argument_tuples)
 
   for training_file in training_files:
