@@ -79,7 +79,7 @@ void Flowgraph::WriteJSON(const std::string& output_file,
   GetNodes(&nodes);
   for (const auto& block_address : nodes) {
     json node = {
-      { "address", static_cast<uint32_t>(block_address) },
+      { "address", static_cast<uint64_t>(block_address) },
       { "instructions", json::array() } };
 
     std::vector<Instruction> instructions;
