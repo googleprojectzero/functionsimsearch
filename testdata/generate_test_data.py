@@ -20,7 +20,8 @@ def FindELFTrainingFiles():
   ELF files need to contain objdump-able debug information.
 
   """
-  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?') ]
+  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'),
+    ('./ffmpeg.3.2.9.amd64.builds', '*libav*.so') ]
 
   filenames = []
   for dirname, mask in dirnames_and_masks:
@@ -111,6 +112,7 @@ def RunFunctionFingerprints(training_file, file_id, file_format):
   """ Run the bin/functionfingerprints utility to generate features from the
   disassembly and write the output to a file named after the file id. """
 
+  print("Running functionfingerpints on %s." % training_file)
   fingerprints = subprocess.check_output(
     [ "../bin/functionfingerprints", "--format=%s" % file_format,
       "--input=%s" % training_file, "--minimum_function_size=5",
@@ -119,6 +121,7 @@ def RunFunctionFingerprints(training_file, file_id, file_format):
     work_directory + "/" + "functions_%s.txt" % file_id, "wt")
   write_fingerprints.write(fingerprints.decode("utf-8"))
   write_fingerprints.close()
+  print("Done.")
 
 def ProcessTrainingFiles(training_files, file_format):
   for training_file in training_files:
@@ -198,7 +201,6 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
       element_two = random.choice( input_map[symbol] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     attraction_set.add(ordered_pair)
-    print(len(attraction_set))
   # Construct a set of things that should not be the same.
   repulsion_set = set()
   while len(repulsion_set) != number_of_pairs:
