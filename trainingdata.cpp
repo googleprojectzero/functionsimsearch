@@ -86,10 +86,10 @@ bool TrainingData::Load() {
       function_to_index_[line[1]]));
   }
 
-  printf("[!] Loaded %ld functions (%ld unique features)\n",
+  printf("# Loaded %ld functions (%ld unique features)\n",
     all_functions_.size(), all_features_vector_.size());
-  printf("[!] Attraction-Set: %ld pairs\n", attractionset_.size());
-  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset_.size());
+  printf("# Attraction-Set: %ld pairs\n", attractionset_.size());
+  printf("# Repulsion-Set: %ld pairs\n", repulsionset_.size());
   loaded_ = true;
   return true;
 }

@@ -34,6 +34,9 @@ DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.
 DEFINE_bool(verbose, false, "Verbose output");
 DEFINE_string(weights, "", "Feature weights file");
 DEFINE_string(function_address, "", "Address of function");
+DEFINE_bool(disable_graphs, false, "Disable graphs as features");
+DEFINE_bool(disable_instructions, false, "Disable instructions as features");
+
 //
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
@@ -77,7 +80,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  FunctionSimHasher sim_hasher(FLAGS_weights, verbose);
+  FunctionSimHasher sim_hasher(FLAGS_weights, FLAGS_disable_graphs,
+    FLAGS_disable_instructions);
   Dyninst::InstructionAPI::Instruction::Ptr instruction;
   for (Function* function : functions) {
     Flowgraph graph;
@@ -102,7 +106,7 @@ int main(int argc, char** argv) {
     std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
     DyninstFeatureGenerator generator(function);
-    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes, 
+    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes,
       &feature_hashes);
 
     uint64_t hash1 = hashes[0];

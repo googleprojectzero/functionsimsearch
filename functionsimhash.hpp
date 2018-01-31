@@ -52,6 +52,8 @@ public:
   // IDs for features used in the calculation of the SimHash, and mainly used
   // for debugging.
   FunctionSimHasher(const std::string& weight_file,
+    bool disable_graphs = false,
+    bool disable_mnemonic = false,
     double default_mnemomic_weight = 0.05,
     double default_graphlet_weight = 1.0);
 
@@ -139,6 +141,10 @@ private:
 
   double default_mnemonic_weight_;
   double default_graphlet_weight_;
+
+  bool disable_graph_hashes_;
+  bool disable_mnemonic_hashes_;
+
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;
   static constexpr uint64_t seed1_ = 0xb492b66fbe98f273ULL;

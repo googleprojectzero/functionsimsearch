@@ -46,6 +46,7 @@ InstructionGetter MakeDyninstInstructionGetter(
       if (!block) {
         continue;
       }
+      results->clear();
       Dyninst::ParseAPI::Block::Insns block_instructions;
       block->getInsns(block_instructions);
       for (const auto& instruction : block_instructions) {
@@ -61,7 +62,11 @@ InstructionGetter MakeDyninstInstructionGetter(
         results->emplace_back(Instruction(
           instruction.second->getOperation().format(), operand_strings));
       }
+      if (!results->empty()) {
+        return true;
+      }
     }
+    return false;
   };
   return getter;
 }

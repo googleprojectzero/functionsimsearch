@@ -75,9 +75,11 @@ int main(int argc, char** argv) {
     InstructionDecoder decoder(function->isrc()->getPtrToInstruction(
       function->addr()), InstructionDecoder::maxInstructionLength,
       function->region()->getArch());
-    Address function_address = function->addr();
     int instruction_count = 0;
-    printf("\n[!] Function at %lx\n", function_address);
+    if ((function_address != 0) && (function_address != function->addr())) {
+      continue;
+    }
+    printf("\n[!] Function at %lx\n", function->addr());
     for (const auto& block : function->blocks()) {
       printf("     Block at %lx", block->start());
 
