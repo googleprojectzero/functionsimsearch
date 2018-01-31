@@ -20,7 +20,8 @@ def FindELFTrainingFiles():
   ELF files need to contain objdump-able debug information.
 
   """
-  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'), ('./ffmpeg.3.2.9.sos', '*.so') ]
+  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'),
+    ('./ffmpeg.3.2.9.amd64.builds', '*libav*.so') ]
 
   filenames = []
   for dirname, mask in dirnames_and_masks:
@@ -122,6 +123,7 @@ def RunFunctionFingerprints(argument_tuple):
       "--input=%s" % training_file, "--minimum_function_size=5",
       "--verbose=true" ], stdout = write_fingerprints)
   write_fingerprints.close()
+  print("Done.")
 
 def ProcessTrainingFiles(training_files, file_format):
   # Begin by launching a pool of parallel processes to call
@@ -209,7 +211,6 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
       element_two = random.choice( input_map[symbol] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     attraction_set.add(ordered_pair)
-    print(len(attraction_set))
   # Construct a set of things that should not be the same.
   repulsion_set = set()
   while len(repulsion_set) != number_of_pairs:
