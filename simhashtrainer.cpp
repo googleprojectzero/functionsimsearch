@@ -132,7 +132,7 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
     solver->callback_function =
       [&](const spii::CallbackInformation& info) -> bool {
         ++iteration;
-        if ((iteration % 100) == 0) {
+        if ((iteration % 20) == 0) {
           function.copy_global_to_user(*info.x);
           char buf[256];
           sprintf(buf, "%d.snapshot", iteration);

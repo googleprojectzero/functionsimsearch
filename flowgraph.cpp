@@ -101,7 +101,7 @@ void Flowgraph::WriteJSON(const std::string& output_file,
   }
 
   jsonfile << out_graph;
-  std::cout << out_graph.dump(2) << std::endl;
+  //std::cout << out_graph.dump(2) << std::endl;
 }
 
 bool Flowgraph::HasNode(address node) {
