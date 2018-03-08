@@ -446,6 +446,33 @@ multiplot> unset multiplot
 
 ```
 
+## Compiling the same debian package with many compilers/settings
+
+For all experiments with this codebase, it is often useful to be able to compile
+a given codebase with a number of different compilers and compiler settings. This
+is often complicated, though, by various Makefiles and build scripts ignoring
+flags provided to them by debuild, or alternatively, by clang ignoring all but
+the last -Ox argument. The following is a quick guide on how to rebuild a given
+Debian package with a number of different compiler settings.
+
+* Install https://github.com/gawen947/gcc-wrapper -- this is a simple bash
+  wrapper for GCC and G++ which will replace -Ox arguments in the command line.
+* Build a number of configurations for different compilers in your ~/.config/gcc-wrapper directory
+* Get the source code for the package using apt-get source.
+
+Once you have all this, you can change to the source directory and issue the
+following command:
+
+In order to c
+```bash
+
+directory=$(pwd|rev|cut -d"/" -f1|rev); for config in $(ls ~/.config/gcc-wrapper/); do config=$(echo $config|rev|cut -d"/" -f1|rev); DEB_BUILD_OPTIONS="nostrip" debuild --set-envvar=GCC_PROFIL=$config -b -us -uc -j36; cd ..; mkdir $(echo $directory).$config; mv ./*.deb $(echo $directory).$config; cd $directory; done
+```
+
+This should take every compiler configuration that you have in your gcc-wrapper
+directory, and rebuild the package with this compiler configuration. The results
+will be placed in the corresponding subdirectory.
+
 
 ## Built With
 
