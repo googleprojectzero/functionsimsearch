@@ -9,6 +9,7 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
+#include "mappedtextfile.hpp"
 #include "sgdsolver.hpp"
 #include "simhashweightslossfunctor.hpp"
 #include "util.hpp"
@@ -126,7 +127,7 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
   // the functions that have not been labeled.
 
   // If the snapshot directory is non-empty, set a callback from the solver to
-  // save the intermediate results every 100 steps.
+  // save the intermediate results every 20 steps.
   uint32_t iteration = 0;
   if (snapshot_directory != "") {
     solver->callback_function =
@@ -155,43 +156,62 @@ void SimHashTrainer::Train(std::vector<double>* output_weights,
   }
 }
 
+
+
+// Re-write of LoadTrainingData to allow very large training data files (dozens
+// of GBs).
+//
+// Parses a functions.txt file (which consists of lines with function-IDs and
+// feature hashes).
 bool LoadTrainingData(const std::string& directory,
   std::vector<FunctionFeatures>* all_functions,
   std::vector<FeatureHash>* all_features_vector,
   std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
 
-  // Read the contents of functions.txt.
-  std::string functionsfilename = directory + "/functions.txt";
-  std::vector<std::vector<std::string>> file_contents;
-  if (!FileToLineTokens(functionsfilename, &file_contents)) {
-    return false;
-  }
+  // Map functions.txt into memory.
+  MappedTextFile functions_txt(directory + "/functions.txt");
 
-  // Read all the features, place them in a vector, and populate a map that maps
-  // FeatureHash to vector index.
+  // Run through the file and obtain a set of all feature hashes.
   std::set<FeatureHash> all_features;
-  ReadFeatureSet(file_contents, &all_features);
-  std::map<FeatureHash, uint32_t> feature_to_vector_index;
+  uint32_t lines = ReadFeatureSet(&functions_txt, &all_features);
+
+  std::map<FeatureHash, uint32_t> features_to_vector_index;
   uint32_t index = 0;
+  // Fill the all_features_vector while also building a map.
   for (const FeatureHash& feature : all_features) {
     all_features_vector->push_back(feature);
-    feature_to_vector_index[feature] = index;
+    features_to_vector_index[feature] = index;
     ++index;
   }
 
-  // FunctionFeatures are a vector of uint32_t.
+  // FunctionFeatures is typedef'd to a vector of uint32_t. so
+  // all_functions is a vector of vectors. The following code iterates over
+  // all lines in functions.txt, and fills all_functions by putting indices
+  // to the actual hashes into the per-function FunctionFeatures vector.
   std::map<std::string, uint32_t> function_to_index;
   index = 0;
-  all_functions->resize(file_contents.size());
-  for (const std::vector<std::string>& line : file_contents) {
-    function_to_index[line[0]] = index;
-    for (uint32_t i = 1; i < line.size(); ++i) {
-      FeatureHash hash = StringToFeatureHash(line[i]);
-      (*all_functions)[index].push_back(feature_to_vector_index[hash]);
-    }
+  all_functions->resize(lines);
+  do {
+    bool is_function_id = true;
+    std::string function_id;
+    do {
+      std::string token = functions_txt.GetToken();
+      if (token == "") {
+        continue;
+      }
+      if (is_function_id) {
+        function_id = token;
+        function_to_index[function_id] = index;
+        is_function_id = false;
+      } else {
+        FeatureHash hash = StringToFeatureHash(token);
+        (*all_functions)[index].push_back(features_to_vector_index[hash]);
+      }
+    } while (functions_txt.AdvanceToken());
     ++index;
-  }
+  } while(functions_txt.AdvanceLine());
+
   // Feature vector and function vector have been loaded. Now load the attraction
   // and repulsion set.
   std::vector<std::vector<std::string>> attract_file_contents;

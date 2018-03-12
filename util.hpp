@@ -8,6 +8,8 @@
 #include <sstream>
 #include <vector>
 
+#include "mappedtextfile.hpp"
+
 class FunctionSimHasher;
 
 // The hash of an individual feature.
@@ -36,6 +38,7 @@ bool FileToLineTokens(const std::string& filename,
 
 FeatureHash StringToFeatureHash(const std::string& hash_as_string);
 
+uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result);
 void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
   std::set<FeatureHash>* result);
 
