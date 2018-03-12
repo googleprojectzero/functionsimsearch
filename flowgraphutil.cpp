@@ -35,6 +35,8 @@ uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
   return count;
 }
 
+// A helper function to provide an InstructionGetter that abstracts away the
+// DynInst API.
 InstructionGetter MakeDyninstInstructionGetter(
   Dyninst::ParseAPI::CodeObject* codeobject) {
   InstructionGetter getter =

@@ -4,10 +4,11 @@
 #include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly.hpp"
+#include "dyninstfeaturegenerator.hpp"
 #include "flowgraph.hpp"
 #include "flowgraphutil.hpp"
 #include "functionsimhash.hpp"
-#include "dyninstfeaturegenerator.hpp"
+#include "mappedtextfile.hpp"
 #include "util.hpp"
 
 // Obtain the first 64 bits of the input file's SHA256 hash.
@@ -37,6 +38,27 @@ uint32_t HammingDistance(FeatureHash A, FeatureHash B) {
   return HammingDistance(A.first, A.second, B.first, B.second);
 }
 
+
+uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
+  uint32_t lines = 0;
+  do {
+    uint32_t token_index = 0;
+    do {
+      if (token_index != 0) {
+        const char* begin;
+        const char* end;
+        input->GetToken(&begin, &end);
+        std::string hash(begin, end-begin);
+        result->insert(StringToFeatureHash(hash));
+      }
+      token_index++;
+    } while (input->AdvanceToken());
+    ++lines;
+  } while (input->AdvanceLine());
+  input->Reset();
+  return lines;
+}
+
 void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
   std::set<FeatureHash>* result) {
   for (const std::vector<std::string>& line : inputlines) {
@@ -55,7 +77,6 @@ bool FileToLineTokens(const std::string& filename,
   }
 
   uint32_t line_index = 0;
-  // We want features sorted and de-duplicated in the end, so use a set.
   std::string line;
   while (std::getline(inputfile, line)) {
     std::vector<std::string> tokens;
@@ -70,7 +91,7 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   std::string first_half_string;
   std::string second_half_string;
   if ((token.size() != 32) && (token.size() != 35)) {
-    printf("[E] Broken token: %s\n", token.c_str());
+    printf("[E] Broken token: '%s'\n", token.c_str());
     return std::make_pair(0, 0);
   }
 

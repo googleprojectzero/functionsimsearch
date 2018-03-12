@@ -37,7 +37,7 @@ public:
     const std::vector<std::pair<uint32_t, uint32_t>>* repulsionset);
 
   void Train(std::vector<double>* weights, spii::Solver* solver,
-    const std::string& snapshot_directory = "");
+    const std::string& snapshot_directory = "/var/tmp/");
 private:
   void AddPairLossTerm(const std::pair<uint32_t, uint32_t>& pair,
     spii::Function* function,
