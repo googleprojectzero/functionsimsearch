@@ -55,7 +55,7 @@ uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
     } while (input->AdvanceToken());
     ++lines;
     if ((lines % 1000) == 0) {
-      printf("[!] Parsed %d lines ...\n", lines);
+      printf("[!] Parsed %d lines, saw %d features ...\n", lines, result->size());
     }
   } while (input->AdvanceLine());
   input->Reset();

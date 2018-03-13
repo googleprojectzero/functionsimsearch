@@ -1,5 +1,6 @@
 #include <map>
 #include <random>
+#include <unordered_map>
 #include <vector>
 
 #include <spii/auto_diff_term.h>
@@ -173,6 +174,10 @@ bool LoadTrainingData(const std::string& directory,
   printf("[!] Mapping functions.txt\n");
   MappedTextFile functions_txt(directory + "/functions.txt");
 
+  // With large input data, we need 
+  threadpool::ThreadPool(std::thread::hardware_concurrency());
+
+
   // Run through the file and obtain a set of all feature hashes.
   printf("[!] About to count the entire feature set.\n");
   std::set<FeatureHash> all_features;
@@ -194,7 +199,7 @@ bool LoadTrainingData(const std::string& directory,
   // all lines in functions.txt, and fills all_functions by putting indices
   // to the actual hashes into the per-function FunctionFeatures vector.
   printf("[!] Iterating over input data for the 2nd time.\n");
-  std::map<std::string, uint32_t> function_to_index;
+  std::unordered_map<std::string, uint32_t> function_to_index;
   index = 0;
   all_functions->resize(lines);
   do {
