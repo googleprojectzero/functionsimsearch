@@ -48,10 +48,10 @@ uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
         const char* begin;
         const char* end;
         input->GetToken(&begin, &end);
-        std::string hash(begin, end-begin);
-        result->insert(StringToFeatureHash(hash));
+        std::string temp_hash(begin, end-begin);
+        result->insert(StringToFeatureHash(temp_hash));
       } else {
-        printf("[!] Functions %s ", hash.c_str());
+        printf("[!] Functions %s ", temp_hash.c_str());
       }
       token_index++;
     } while (input->AdvanceToken());
