@@ -50,6 +50,7 @@ bool MappedTextFile::AdvanceLine() {
     updateLineEnd();
     current_token_ = current_line_start_;
     updateTokenEnd();
+    return true;
   } else {
     return false;
   }
