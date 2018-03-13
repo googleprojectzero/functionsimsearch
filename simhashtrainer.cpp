@@ -174,10 +174,6 @@ bool LoadTrainingData(const std::string& directory,
   printf("[!] Mapping functions.txt\n");
   MappedTextFile functions_txt(directory + "/functions.txt");
 
-  // With large input data, we need 
-  threadpool::ThreadPool(std::thread::hardware_concurrency());
-
-
   // Run through the file and obtain a set of all feature hashes.
   printf("[!] About to count the entire feature set.\n");
   std::set<FeatureHash> all_features;
