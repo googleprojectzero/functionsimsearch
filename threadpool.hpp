@@ -5,6 +5,16 @@
 // thread pool code.
 //
 // Copyright September 2016, Thomas Dullien. Licensed under Apache License.
+//
+//
+// The way to use the pool is as follows:
+//
+//    threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+//    // Push jobs into the queue.
+//    pool.Push( [ lambda variables ]( lambda args ) { lambda code } );
+//    // Run the queue until it is empty.
+//    pool.Stop(true);
+//
 
 #ifndef THREADPOOL_HPP
 #define THREADPOOL_HPP

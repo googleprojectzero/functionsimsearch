@@ -463,7 +463,6 @@ Debian package with a number of different compiler settings.
 Once you have all this, you can change to the source directory and issue the
 following command:
 
-In order to c
 ```bash
 
 directory=$(pwd|rev|cut -d"/" -f1|rev); for config in $(ls ~/.config/gcc-wrapper/); do config=$(echo $config|rev|cut -d"/" -f1|rev); DEB_BUILD_OPTIONS="nostrip" debuild --set-envvar=GCC_PROFIL=$config -b -us -uc -j36; cd ..; mkdir $(echo $directory).$config; mv ./*.deb $(echo $directory).$config; cd $directory; done
@@ -473,6 +472,16 @@ This should take every compiler configuration that you have in your gcc-wrapper
 directory, and rebuild the package with this compiler configuration. The results
 will be placed in the corresponding subdirectory.
 
+Once this is done, you can run the following command to gather all the .so's in
+the packages, label them properly, and put them in the right directory:
+
+
+```bash
+# Start one level up from the source directory!
+for i in $(find -iname *.deb); do config=$(echo $i | cut -d"/" -f2); mkdir temp; mkdir temp/$config; dpkg -x $i ./temp/$config; done
+mkdir result_sos
+for so in $(find -iname *.so); do config=$(echo $so | cut -d"/" -f3); filename=$(echo $so | rev | cut -d"/" -f1| rev); cp $so ./result_sos/$(echo $filename).$config; done
+```
 
 ## Built With
 

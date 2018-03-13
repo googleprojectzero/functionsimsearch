@@ -170,11 +170,15 @@ bool LoadTrainingData(const std::string& directory,
   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
 
   // Map functions.txt into memory.
+  printf("[!] Mapping functions.txt\n");
   MappedTextFile functions_txt(directory + "/functions.txt");
 
   // Run through the file and obtain a set of all feature hashes.
+  printf("[!] About to count the entire feature set.\n");
   std::set<FeatureHash> all_features;
   uint32_t lines = ReadFeatureSet(&functions_txt, &all_features);
+  printf("[!] Processed %d lines, total features are %d\n", lines,
+    all_features.size());
 
   std::map<FeatureHash, uint32_t> features_to_vector_index;
   uint32_t index = 0;
@@ -189,6 +193,7 @@ bool LoadTrainingData(const std::string& directory,
   // all_functions is a vector of vectors. The following code iterates over
   // all lines in functions.txt, and fills all_functions by putting indices
   // to the actual hashes into the per-function FunctionFeatures vector.
+  printf("[!] Iterating over input data for the 2nd time.\n");
   std::map<std::string, uint32_t> function_to_index;
   index = 0;
   all_functions->resize(lines);
