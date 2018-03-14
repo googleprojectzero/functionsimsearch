@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <map>
+#include <unordered_map>
+#include <vector>
+
 #include "trainingdata.hpp"
 
 TrainingData::TrainingData(const std::string& directory) :
@@ -51,3 +55,96 @@ bool TrainingData::Load() {
     return false;
   }
 }
+
+// Re-write of LoadTrainingData to allow very large training data files (dozens
+// of GBs).
+//
+// Parses a functions.txt file (which consists of lines with function-IDs and
+// feature hashes).
+bool LoadTrainingData(const std::string& directory,
+  std::vector<FunctionFeatures>* all_functions,
+  std::vector<FeatureHash>* all_features_vector,
+  std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
+  std::vector<std::pair<uint32_t, uint32_t>>* repulsionset) {
+
+  // Map functions.txt into memory.
+  printf("[!] Mapping functions.txt\n");
+  MappedTextFile functions_txt(directory + "/functions.txt");
+
+  // Run through the file and obtain a set of all feature hashes.
+  printf("[!] About to count the entire feature set.\n");
+  std::set<FeatureHash> all_features;
+  uint32_t lines = ReadFeatureSet(&functions_txt, &all_features);
+  printf("[!] Processed %d lines, total features are %d\n", lines,
+    all_features.size());
+
+  std::map<FeatureHash, uint32_t> features_to_vector_index;
+  uint32_t index = 0;
+  // Fill the all_features_vector while also building a map.
+  for (const FeatureHash& feature : all_features) {
+    all_features_vector->push_back(feature);
+    features_to_vector_index[feature] = index;
+    ++index;
+  }
+
+  // FunctionFeatures is typedef'd to a vector of uint32_t. so
+  // all_functions is a vector of vectors. The following code iterates over
+  // all lines in functions.txt, and fills all_functions by putting indices
+  // to the actual hashes into the per-function FunctionFeatures vector.
+  printf("[!] Iterating over input data for the 2nd time.\n");
+  std::unordered_map<std::string, uint32_t> function_to_index;
+  index = 0;
+  all_functions->resize(lines);
+  do {
+    bool is_function_id = true;
+    std::string function_id;
+    do {
+      std::string token = functions_txt.GetToken();
+      if (token == "") {
+        continue;
+      }
+      if (is_function_id) {
+        function_id = token;
+        function_to_index[function_id] = index;
+        is_function_id = false;
+      } else {
+        FeatureHash hash = StringToFeatureHash(token);
+        (*all_functions)[index].push_back(features_to_vector_index[hash]);
+      }
+    } while (functions_txt.AdvanceToken());
+    ++index;
+  } while(functions_txt.AdvanceLine());
+
+  // Feature vector and function vector have been loaded. Now load the attraction
+  // and repulsion set.
+  std::vector<std::vector<std::string>> attract_file_contents;
+  if (!FileToLineTokens(directory + "/attract.txt", &attract_file_contents)) {
+    return false;
+  }
+
+  std::vector<std::vector<std::string>> repulse_file_contents;
+  if (!FileToLineTokens(directory + "/repulse.txt", &repulse_file_contents)) {
+    return false;
+  }
+
+  for (const std::vector<std::string>& line : attract_file_contents) {
+    attractionset->push_back(std::make_pair(
+      function_to_index[line[0]],
+      function_to_index[line[1]]));
+  }
+
+  for (const std::vector<std::string>& line : repulse_file_contents) {
+    repulsionset->push_back(std::make_pair(
+      function_to_index[line[0]],
+      function_to_index[line[1]]));
+  }
+
+  printf("[!] Loaded %ld functions (%ld unique features)\n",
+    all_functions->size(), all_features_vector->size());
+  printf("[!] Attraction-Set: %ld pairs\n", attractionset->size());
+  printf("[!] Repulsion-Set: %ld pairs\n", repulsionset->size());
+
+  return true;
+}
+
+
