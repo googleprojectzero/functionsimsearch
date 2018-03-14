@@ -14,7 +14,7 @@
 #include "simhashweightslossfunctor.hpp"
 #include "util.hpp"
 #include "simhashtrainer.hpp"
-//#include "trainingdata.hpp"
+#include "trainingdata.hpp"
 
 SimHashTrainer::SimHashTrainer(
   const std::vector<FunctionFeatures>* all_functions,

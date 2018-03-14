@@ -1,3 +1,5 @@
+#include <sstream>
+
 // DynInst headers.
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -10,6 +12,18 @@
 #include "functionsimhash.hpp"
 #include "mappedtextfile.hpp"
 #include "util.hpp"
+
+std::vector<std::string> Tokenize(const char *str, const char c) {
+  std::vector<std::string> result;
+  do {
+    const char *begin = str;
+    while(*str != c && *str) {
+      str++;
+    }
+    result.push_back(std::string(begin, str));
+  } while (0 != *str++);
+  return result;
+}
 
 // Obtain the first 64 bits of the input file's SHA256 hash.
 uint64_t GenerateExecutableID(const std::string& filename) {
@@ -37,7 +51,6 @@ uint32_t HammingDistance(uint64_t A1, uint64_t A2, uint64_t B1, uint64_t B2) {
 uint32_t HammingDistance(FeatureHash A, FeatureHash B) {
   return HammingDistance(A.first, A.second, B.first, B.second);
 }
-
 
 uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
   uint32_t lines = 0;

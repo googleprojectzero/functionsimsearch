@@ -79,6 +79,7 @@ public:
   void WriteDot(const std::string& output_file);
   void WriteJSON(const std::string& output_file,
     InstructionGetter block_getter);
+  void WriteJSON(std::ostream* output, InstructionGetter block_getter);
 };
 
  
