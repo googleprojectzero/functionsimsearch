@@ -24,7 +24,8 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
         build/testutil.o \
-        build/functionsimhash_test.o build/buffertokeniterator_test.o
+        build/functionsimhash_test.o \
+        build/buffertokeniterator_test.o build/mappedtextfile_test.o
 
 SLOWTESTS = build/simhashtrainer_test.o build/testutil.o build/sgdsolver_test.o
 

@@ -53,29 +53,23 @@ uint32_t HammingDistance(FeatureHash A, FeatureHash B) {
 }
 
 uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
-  uint32_t lines = 0;
-  do {
-    uint32_t token_index = 0;
-    do {
-      if (token_index != 0) {
-        const char* begin;
-        const char* end;
-        input->GetToken(&begin, &end);
-        std::string temp_hash(begin, end-begin);
-        result->insert(StringToFeatureHash(temp_hash));
-      } else {
-        printf("[!] Functions %s ", input->GetToken().c_str());
-      }
-      token_index++;
-    } while (input->AdvanceToken());
-    printf("(%d features)\n", token_index);
-    ++lines;
-    if ((lines % 1000) == 0) {
-      printf("[!] Parsed %d lines, saw %d features ...\n", lines, result->size());
+  uint32_t linecount = 0;
+  auto lines = input->GetLineIterator();
+  while (lines.HasMore()) {
+    auto words = input->GetWordIterator(lines);
+    ++words;
+    while (words.HasMore()) {
+      result->insert(StringToFeatureHash(words.Get()));
+      ++words;
     }
-  } while (input->AdvanceLine());
-  input->Reset();
-  return lines;
+    ++lines;
+    ++linecount;
+    if ((linecount % 1000) == 0) {
+      printf("[!] Parsed %d lines, saw %d features ...\n", linecount,
+        result->size());
+    }
+  }
+  return linecount;
 }
 
 void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,

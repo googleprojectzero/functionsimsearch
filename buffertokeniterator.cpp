@@ -46,4 +46,9 @@ void BufferTokenIterator::Get(const char** tokenstart, const char** tokenend)
   return;
 }
 
-
+std::string BufferTokenIterator::Get() const {
+  const char* begin, *end;
+  Get(&begin, &end);
+  std::string result(begin, end);
+  return result;
+}
