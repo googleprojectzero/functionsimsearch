@@ -29,6 +29,7 @@ DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(output, "/var/tmp", "Output directory to dump .dot files to");
 DEFINE_string(function_address, "", "Address of function (optional)");
 DEFINE_bool(json, false, "Also dump .json CFGs with instructions");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
 
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
@@ -81,6 +82,12 @@ int main(int argc, char** argv) {
   for (Function* function : functions) {
     Flowgraph graph;
     Address function_address = function->addr();
+
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     BuildFlowgraph(function, &graph);
 
     char buf[200];

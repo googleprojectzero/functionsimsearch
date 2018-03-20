@@ -25,6 +25,8 @@
 DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(function_address, "", "Address of function (optional)");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -72,6 +74,11 @@ int main(int argc, char** argv) {
 
   Instruction::Ptr instruction;
   for (Function* function : functions) {
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     InstructionDecoder decoder(function->isrc()->getPtrToInstruction(
       function->addr()), InstructionDecoder::maxInstructionLength,
       function->region()->getArch());

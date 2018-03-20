@@ -35,6 +35,8 @@ DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(index, "./similarity.index", "Index file");
 DEFINE_string(weights, "weights.txt", "Feature weights file");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -91,6 +93,11 @@ int main(int argc, char** argv) {
   FunctionSimHasher hasher(FLAGS_weights);
 
   for (Function* function : functions) {
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     pool.Push(
       [&search_index, mutex_pointer, &binary_path_string, &hasher,
       processed_functions, file_id, function, minimum_size,

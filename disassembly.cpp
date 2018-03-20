@@ -58,6 +58,8 @@ bool Disassembly::Load(bool perform_parsing) {
     // char * instead of a const char*.
     symtab_code_source = new SymtabCodeSource((char *)inputfile_.c_str());
     code_source_ = static_cast<CodeSource*>(symtab_code_source);
+
+    SymtabCodeSource::addNonReturning("__stack_chk_fail");
   } else if (type_ == "PE") {
     PECodeSource* pe_code_source = new PECodeSource(inputfile_);
     if (pe_code_source->parsed() == false) {
@@ -87,5 +89,27 @@ bool Disassembly::Load(bool perform_parsing) {
 
 void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
   code_object_->parse(address, recursive);
+}
+
+bool ContainsSharedBasicBlocks(Function* function) {
+  bool has_shared_blocks = false;
+  for (const auto& block : function->blocks()) {
+    std::vector<Function *> functions_for_block;
+    std::vector<Function *> functions_for_block_no_targ_name;
+    block->getFuncs(functions_for_block);
+    // Copy those functions that do not have "targ" in their name.
+    std::copy_if(functions_for_block.begin(), functions_for_block.end(),
+      std::back_inserter(functions_for_block_no_targ_name),
+      [](Function* fp) { return fp->name().find("targ") != 0; });
+    if (functions_for_block_no_targ_name.size() > 1) {
+      for (Function* fp : functions_for_block_no_targ_name) {
+        printf("Function %s shares block %lx\n", fp->name().c_str(),
+          block->start());
+      }
+      printf("--------\n");
+      return true;
+    }
+  }
+  return false;
 }
 
