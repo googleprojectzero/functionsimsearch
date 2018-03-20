@@ -23,7 +23,7 @@ for inputfile in $(ls ../testdata/unrar.5.5.3.builds/unrar.x??.O?); do
 done
 
 # Process the VS2015-compiled files. For these, we can't use objdump, and we
-# expect that the debug information has been dumped with pdbdump ahead of time.
+# expect that the debug information has been dumped with dia2dump ahead of time.
 for inputfile in $(find ../testdata/unrar.5.5.3.builds/VS2015/ -iname \*.exe); do
   echo $inputfile.debugdump;
   shasum=$(sha256sum $inputfile);
