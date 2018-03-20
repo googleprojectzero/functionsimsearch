@@ -96,7 +96,7 @@ bool ContainsSharedBasicBlocks(Function* function) {
   for (const auto& block : function->blocks()) {
     std::vector<Function *> functions_for_block;
     block->getFuncs(functions_for_block);
-    if (functions_for_block_no_targ_name.size() > 1) {
+    if (functions_for_block.size() > 1) {
       return true;
     }
   }
