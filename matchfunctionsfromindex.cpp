@@ -38,6 +38,8 @@ DEFINE_string(weights, "", "Feature weights file");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added");
 DEFINE_uint64(max_matches, 5, "Maximum number of matches per query");
 DEFINE_double(minimum_percentage, 0.8, "Minimum similarity");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -126,6 +128,11 @@ int main(int argc, char** argv) {
 
   // Push the consumer thread into the threadpool.
   for (Function* function : functions) {
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     printf("Pushing function %lx\n", function->addr());
     // Push the producer threads into the threadpool.
     pool.Push(

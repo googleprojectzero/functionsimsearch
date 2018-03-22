@@ -36,6 +36,7 @@ DEFINE_string(weights, "", "Feature weights file");
 DEFINE_string(function_address, "", "Address of function");
 DEFINE_bool(disable_graphs, false, "Disable graphs as features");
 DEFINE_bool(disable_instructions, false, "Disable instructions as features");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
 
 //
 // The google namespace is there for compatibility with legacy gflags and will
@@ -86,6 +87,12 @@ int main(int argc, char** argv) {
   for (Function* function : functions) {
     Flowgraph graph;
     Address function_address = function->addr();
+
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     BuildFlowgraph(function, &graph);
 
     if ((target_address != 0) && (target_address != function_address)) {
