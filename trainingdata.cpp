@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "buffertokeniterator.hpp"
 #include "trainingdata.hpp"
 
 TrainingData::TrainingData(const std::string& directory) :
@@ -95,25 +96,21 @@ bool LoadTrainingData(const std::string& directory,
   std::unordered_map<std::string, uint32_t> function_to_index;
   index = 0;
   all_functions->resize(lines);
-  do {
-    bool is_function_id = true;
-    std::string function_id;
-    do {
-      std::string token = functions_txt.GetToken();
-      if (token == "") {
-        continue;
-      }
-      if (is_function_id) {
-        function_id = token;
-        function_to_index[function_id] = index;
-        is_function_id = false;
-      } else {
-        FeatureHash hash = StringToFeatureHash(token);
-        (*all_functions)[index].push_back(features_to_vector_index[hash]);
-      }
-    } while (functions_txt.AdvanceToken());
+
+  BufferTokenIterator line_iterator = functions_txt.GetLineIterator();
+  while (line_iterator.HasMore()) {
+    BufferTokenIterator word_iterator = functions_txt.GetWordIterator(
+      line_iterator);
+    function_to_index[word_iterator.Get()] = index;
+    ++word_iterator;
+    while (word_iterator.HasMore()) {
+      FeatureHash hash = StringToFeatureHash(word_iterator.Get());
+      (*all_functions)[index].push_back(features_to_vector_index[hash]);
+      ++word_iterator;
+    }
     ++index;
-  } while(functions_txt.AdvanceLine());
+    ++line_iterator;
+  }
 
   // Feature vector and function vector have been loaded. Now load the attraction
   // and repulsion set.

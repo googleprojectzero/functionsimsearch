@@ -6,6 +6,7 @@ LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii -lgflags
 
 OBJ = build/util.o build/disassembly.o build/pecodesource.o build/flowgraph.o \
+      build/buffertokeniterator.o \
       build/flowgraphutil.o build/functionsimhash.o \
       build/simhashsearchindex.o build/bitpermutation.o \
       build/threadtimer.o build/functionmetadata.o \
@@ -19,13 +20,14 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
       bin/growfunctionindex bin/dumpfunctionindex \
       bin/trainsimhashweights bin/dumpsinglefunctionfeatures \
-      bin/evalsimhashweights bin/stemsymbol
+      bin/evalsimhashweights bin/stemsymbol bin/visualizeflowgraphs
 
 TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
-        build/sgdsolver_test.o build/testutil.o \
-        build/functionsimhash_test.o
+        build/testutil.o \
+        build/functionsimhash_test.o \
+        build/buffertokeniterator_test.o build/mappedtextfile_test.o
 
-SLOWTESTS = build/simhashtrainer_test.o build/testutil.o
+SLOWTESTS = build/simhashtrainer_test.o build/testutil.o build/sgdsolver_test.o
 
 DIRECTORIES = directory/build directory/bin directory/tests directory/profile
 

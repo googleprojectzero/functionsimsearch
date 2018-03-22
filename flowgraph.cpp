@@ -66,13 +66,10 @@ void Flowgraph::WriteDot(const std::string& output_file) {
   dotfile << "}\n";
 }
 
-void Flowgraph::WriteJSON(const std::string& output_file,
-  InstructionGetter block_getter) {
-  std::ofstream jsonfile;
+void Flowgraph::WriteJSON(std::ostream* output, InstructionGetter block_getter) {
   std::vector<address> nodes;
-  jsonfile.open(output_file);
   json out_graph = {
-    {"name", output_file},
+    {"name", "CFG"},
     {"nodes", json::array()},
     {"edges", json::array()}};
 
@@ -100,8 +97,14 @@ void Flowgraph::WriteJSON(const std::string& output_file,
     }
   }
 
-  jsonfile << out_graph;
-  //std::cout << out_graph.dump(2) << std::endl;
+  (*output) << out_graph;
+}
+
+void Flowgraph::WriteJSON(const std::string& output_file,
+  InstructionGetter block_getter) {
+  std::ofstream jsonfile;
+  jsonfile.open(output_file);
+  WriteJSON(&jsonfile, block_getter);
 }
 
 bool Flowgraph::HasNode(address node) {

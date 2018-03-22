@@ -1,3 +1,5 @@
+#include <sstream>
+
 // DynInst headers.
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
@@ -10,6 +12,18 @@
 #include "functionsimhash.hpp"
 #include "mappedtextfile.hpp"
 #include "util.hpp"
+
+std::vector<std::string> Tokenize(const char *str, const char c) {
+  std::vector<std::string> result;
+  do {
+    const char *begin = str;
+    while(*str != c && *str) {
+      str++;
+    }
+    result.push_back(std::string(begin, str));
+  } while (0 != *str++);
+  return result;
+}
 
 // Obtain the first 64 bits of the input file's SHA256 hash.
 uint64_t GenerateExecutableID(const std::string& filename) {
@@ -38,31 +52,24 @@ uint32_t HammingDistance(FeatureHash A, FeatureHash B) {
   return HammingDistance(A.first, A.second, B.first, B.second);
 }
 
-
 uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
-  uint32_t lines = 0;
-  do {
-    uint32_t token_index = 0;
-    do {
-      if (token_index != 0) {
-        const char* begin;
-        const char* end;
-        input->GetToken(&begin, &end);
-        std::string temp_hash(begin, end-begin);
-        result->insert(StringToFeatureHash(temp_hash));
-      } else {
-        printf("[!] Functions %s ", input->GetToken().c_str());
-      }
-      token_index++;
-    } while (input->AdvanceToken());
-    printf("(%d features)\n", token_index);
-    ++lines;
-    if ((lines % 1000) == 0) {
-      printf("[!] Parsed %d lines, saw %d features ...\n", lines, result->size());
+  uint32_t linecount = 0;
+  auto lines = input->GetLineIterator();
+  while (lines.HasMore()) {
+    auto words = input->GetWordIterator(lines);
+    ++words;
+    while (words.HasMore()) {
+      result->insert(StringToFeatureHash(words.Get()));
+      ++words;
     }
-  } while (input->AdvanceLine());
-  input->Reset();
-  return lines;
+    ++lines;
+    ++linecount;
+    if ((linecount % 1000) == 0) {
+      printf("[!] Parsed %d lines, saw %d features ...\n", linecount,
+        result->size());
+    }
+  }
+  return linecount;
 }
 
 void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,

@@ -1,0 +1,211 @@
+<html>
+<head>
+  <title>Split screen CFG visualisation using mxGraph</title>
+
+  <!-- Includes the JSON data for the 6 graphs to be displayed. -->
+  <script type="application/json" id="graph0">
+  <!-- %%GRAPH0%% -->
+  </script>
+  <script type="application/json" id="graph1">
+  <!-- %%GRAPH1%% -->
+  </script>
+  <script type="application/json" id="graph2">
+  <!-- %%GRAPH2%% -->
+  </script>
+  <script type="application/json" id="graph3">
+  <!-- %%GRAPH3%% -->
+  </script>
+  <script type="application/json" id="graph4">
+  <!-- %%GRAPH4%% -->
+  </script>
+  <script type="application/json" id="graph5">
+  <!-- %%GRAPH5%% -->
+  </script>
+
+  <!-- Sets the basepath for the library if not in same directory -->
+  <script type="text/javascript">
+    mxBasePath = 'https://jgraph.github.io/mxgraph/javascript/src/';
+  </script>
+  <!-- Loads and initializes the library -->
+  <script type="text/javascript" src="https://jgraph.github.io/mxgraph/javascript/src/js/mxClient.js"></script>
+
+  <!-- The actual code for loading & rendering the graphs, and rudimentary
+    navigation of the graphs. -->
+  <script type="text/javascript">
+
+    // An extremely hacky function to provide the most rudimentary syntax
+    // highlighting of the x86 assembly. TODO(thomasdullien): Replace with
+    // proper use of highlight.js or something similar.
+    function operand_to_html(operand) {
+      // Perform a bunch of string replacements to obtain syntax highlighting.
+      var temp = "<em style=\"color: green\">" + operand + "</em>";
+      var temp = temp.replace("[", "<strong style=\"color: blue\">[</strong>");
+      var temp = temp.replace("]", "<strong style=\"color: blue\">]</strong>");
+      var temp = temp.replace("+", "<strong style=\"color: blue\">+</strong>");
+
+      prefixes = [ "E", "R" ]
+      registers = [ "AX", "BX", "CX", "DX", "SI", "DI", "BP", "SP", "IP", "AL",
+        "AH", "BL", "BH", "CL", "CH", "DL", "DH" ]
+      for (prefix of prefixes) {
+        for (register of registers) {
+          var str = prefix + register;
+          var temp = temp.replace(str, "<strong>"+str+"</strong>");
+        }
+      }
+      for (register of [ "R8", "R9", "R10", "R11", "R12" ]) {
+        var temp = temp.replace(register, "<strong>"+register+"</strong>");
+      }
+      var temp = temp.replace(
+        "/(R[A-ZA-Z])/", "<strong style=\"color: blue\">reg</strong>");
+
+      return temp;
+    }
+
+    function node_to_html(node) {
+      var result = "<pre style=\"text-align:left\"><b style=\"color:green\">  "
+        + "0x" + node.address.toString(16) + "</b></pre>" +
+        "<pre style=\"text-align:left;\">";
+      // Insert the individual mnemonics.
+      for (var index = 0; index < node.instructions.length; ++index) {
+        result += "  <strong style=\"color:blue\">" + node.instructions[index].mnemonic.padEnd(10, " ") + "</strong>";
+        result += " ";
+        for (var opindex = 0; opindex < node.instructions[index].operands.length; ++opindex) {
+          result += operand_to_html(node.instructions[index].operands[opindex]);
+          if (opindex != node.instructions[index].operands.length-1) {
+            result += "<strong style=\"color:blue\">, </strong>";
+          }
+        }
+        result += "  \n";
+      }
+      result += "</pre>"
+      return result;
+    }
+
+    function load_and_populate_cfg_with_json_object(graph, data) {
+      var address_to_node_dictionary = {};
+      var defaultparent = graph.getDefaultParent();
+      var y = 20;
+      graph.setHtmlLabels(true);
+      graph.autoSizeCellsOnAdd = true;
+      graph.isCellResizable = function(cell) { return true; }
+      graph.setAutoSizeCells(true);
+      graph.setPanning(true);
+      graph.getModel().beginUpdate();
+
+      try {
+        data.nodes.map(function(node) {
+          address_to_node_dictionary[node.address] =
+          graph.insertVertex(defaultparent, null, node_to_html(node), 20, y,
+            14*30, 30 + 14*(node.instructions.length));
+          y += 40;
+          graph.updateCellSize(address_to_node_dictionary[node.address]);
+        });
+
+        data.edges.map(function(edge) {
+          var source = address_to_node_dictionary[edge.source];
+          var target = address_to_node_dictionary[edge.destination];
+          graph.insertEdge(defaultparent, null, '', source, target);
+        });
+      } finally {
+        var layoutA = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_NORTH);
+        layoutA.interRankCellSpacing = 25;
+        layoutA.execute(graph.getDefaultParent());
+        graph.fit(20, false);
+        graph.getModel().endUpdate();
+      }
+    }
+
+    function load_and_populate_cfg_from_embedded_json(graph, dom_id) {
+      var data = JSON.parse(document.getElementById(dom_id).innerHTML);
+      load_and_populate_cfg_with_json_object(graph, data);
+    }
+
+    function load_and_populate_cfg(graph, url) {
+    fetch(url, {cache:"no-cache"})
+        .then((resp) => resp.json())
+        .then(function(data) {
+          load_and_populate_cfg_with_json_object(graph, data);
+        });
+      console.log("Graph loaded from " + url.toString());
+    }
+
+    // Program starts here. Creates a sample graph in the
+    // DOM node with the specified ID. This function is invoked
+    // from the onLoad event handler of the document (see below).
+    function main(containerA, containerB) {
+      // Checks if the browser is supported
+      if (!mxClient.isBrowserSupported()) {
+        // Displays an error message if the browser is not supported.
+        mxUtils.error('Browser is not supported!', 200, false);
+      }
+      else {
+        container_ids = [ "graphContainerLeft", "graphContainerRight",
+          "graphContainer3", "graphContainer4", "graphContainer5", "graphContainer6" ];
+        graph_data_ids = [ "graph0", "graph1", "graph2", "graph3", "graph4", "graph5" ];
+
+        graphs = [];
+
+        for (let container of container_ids) {
+          let element = document.getElementById(container);
+          mxEvent.disableContextMenu(element);
+          let graph = new mxGraph(element);
+          graphs.push(graph);
+        }
+
+        mxEvent.addMouseWheelListener(function(evt, up) {
+          if (up) {
+            for (let graph of graphs) {
+              graph.zoomIn();
+            }
+          } else {
+            for (let graph of graphs) {
+              graph.zoomOut();
+            }
+          }
+          mxEvent.consume(evt);
+        });
+
+        for (let graph of graphs) {
+          new mxRubberband(graph);
+        }
+
+        for (let index = 0; index < 6; ++index) {
+          load_and_populate_cfg_from_embedded_json(graphs[index],
+            graph_data_ids[index]);
+        }
+      }
+    };
+  </script>
+</head>
+
+<!-- Page passes the container for the graph to the program -->
+<body onload="main(document.getElementById('graphContainerLeft'), document.getElementById('graphContainerRight'))">
+
+<div id="graphContainerLeft"
+  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;left:0;background-color:#CCCCCC;cursor:default;">
+</div>
+<div id="graphContainerRight"
+  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBBB;cursor:default;">
+</div>
+<div id="graphContainer3"
+  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBCCBB;cursor:default;">
+</div>
+<div id="graphContainer4"
+  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBDD;cursor:default;">
+</div>
+<div id="graphContainer5"
+  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#EEBBBB;cursor:default;">
+</div>
+<div id="graphContainer6"
+  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBFFBB;cursor:default;">
+</div>
+
+
+
+
+
+
+
+
+</body>
+</html>

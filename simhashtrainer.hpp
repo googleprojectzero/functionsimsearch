@@ -5,23 +5,6 @@
 
 #include "util.hpp"
 
-// The code expects the following files to be present inside the data directory
-// (which is passed in as first argument):
-//
-//  functions.txt - a text file formed by concatenating the output of the
-//                  functionfingerprints tool in verbose mode. Each line starts
-//                  with [file_id]:[address], and is followed by the various
-//                  features that make up the function.
-//  attract.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
-//                  indicating which functions should be the same.
-//  repulse.txt   - a file with pairs of [file_id]:[address] [file_id]:[address]
-//                  indicating which functions should NOT be the same
-bool LoadTrainingData(const std::string& directory,
-   std::vector<FunctionFeatures>* all_functions,
-   std::vector<FeatureHash>* all_features_vector,
-   std::vector<std::pair<uint32_t, uint32_t>>* attractionset,
-   std::vector<std::pair<uint32_t, uint32_t>>* repulsionset);
-
 // Convenience function. Expects the data described in LoadTrainingData, outputs
 // a file full of weights.
 bool TrainSimHashFromDataDirectory(const std::string& directory,

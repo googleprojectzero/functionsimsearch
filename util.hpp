@@ -48,4 +48,6 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   const std::string& filename, const std::string& mode, uint64_t address,
   std::vector<FeatureHash>* feature_hashes = nullptr);
 
+std::vector<std::string> Tokenize(const char *str, const char c);
+
 #endif // UTIL_HPP

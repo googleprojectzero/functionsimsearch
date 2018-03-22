@@ -18,7 +18,6 @@
 #include <string>
 #include "CodeObject.h"
 
-
 // A thin wrapper class around Dyninst to deal with some boilerplate code
 // required for switching between PE and ELF files. Will be obsoleted when
 // DynInst acquires "native" PE parsing capability.
@@ -38,6 +37,11 @@ private:
   Dyninst::ParseAPI::CodeObject* code_object_;
   Dyninst::ParseAPI::CodeSource* code_source_;
 };
+
+// A helper function used to detect functions which have shared basic blocks
+// with other functions. This is mainly used to detect situations where 
+// Dyninst failed to properly disassembly a binary.
+bool ContainsSharedBasicBlocks(Dyninst::ParseAPI::Function* function);
 
 #endif // DISASSEMBLY_HPP
 

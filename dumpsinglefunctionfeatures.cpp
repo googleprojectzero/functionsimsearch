@@ -32,6 +32,8 @@
 DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(function_address, "", "Address of function");
+DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -80,6 +82,11 @@ int main(int argc, char** argv) {
   // Given that we are only indexing one function, the following code is clearly
   // overkill.
   for (Function* function : functions) {
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+      continue;
+    }
+
     pool.Push(
       [mutex_pointer, &binary_path_string, &hasher, file_id, function,
         target_address](int threadid) {

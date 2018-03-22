@@ -4,6 +4,7 @@
 #include "sgdsolver.hpp"
 #include "simhashtrainer.hpp"
 #include "testutil.hpp"
+#include "trainingdata.hpp"
 #include "util.hpp"
 #include <array>
 
