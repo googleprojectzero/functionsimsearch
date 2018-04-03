@@ -11,9 +11,27 @@ from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 from collections import defaultdict
 
-work_directory="/mnt/storage/functionsimsearch/data"
-shutil.rmtree(work_directory)
-os.mkdir(work_directory)
+work_directory="/mnt/storage2/functionsimsearch/data_no_mnem"
+
+#=============================================================================
+# A number of boolean variables to allow skipping of certain processing steps.
+
+# Generate the fingerprint hashes.
+generate_fingerprints = False
+
+# Generate full disassemblies in JSON, too. This is not necessary for any of
+# the tools in this repository, but may be useful if you wish to experiment
+# with disassembly data in other machine-learning contexts.
+generate_json_data = False
+
+# Disable the use of mnemonic data.
+disable_mnemonic = True
+#=============================================================================
+
+
+if generate_fingerprints and generate_json_data:
+  shutil.rmtree(work_directory)
+  os.mkdir(work_directory)
 
 def FindELFTrainingFiles():
   """ Returns the list of ELF files that should be used for training. These
@@ -21,7 +39,7 @@ def FindELFTrainingFiles():
 
   """
   dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'),
-    ('./ffmpeg.3.2.9.amd64.builds', '*libav*.so') ]
+    ('./ffmpeg.3.2.10.sos', '*lib*.so.*') ]
 
   filenames = []
   for dirname, mask in dirnames_and_masks:
@@ -35,10 +53,66 @@ def FindPETrainingFiles():
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
   return [
-   "./unrar.5.5.3.builds/VS2015/unrar32/Release/UnRAR.exe",
-   "./unrar.5.5.3.builds/VS2015/unrar32/Debug/UnRAR.exe",
-   "./unrar.5.5.3.builds/VS2015/unrar64/Release/UnRAR.exe",
-   "./unrar.5.5.3.builds/VS2015/unrar64/Debug/UnRAR.exe" ]
+    "./unrar.5.5.3.builds/VS2015/unrar32/Release/UnRAR.exe",
+    "./unrar.5.5.3.builds/VS2015/unrar32/Debug/UnRAR.exe",
+    "./unrar.5.5.3.builds/VS2015/unrar64/Release/UnRAR.exe",
+    "./unrar.5.5.3.builds/VS2015/unrar64/Debug/UnRAR.exe",
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avutil.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swresample-2.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avfilter.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swresample.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swscale.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avfilter-6.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avdevice.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avutil-55.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avdevice-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avformat-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avcodec.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swscale-4.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avcodec-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avformat.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avutil.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swresample-2.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avfilter.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swresample.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swscale.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avfilter-6.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avdevice.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avutil-55.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avdevice-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avformat-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avcodec.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swscale-4.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avcodec-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avformat.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avutil.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swresample-2.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avfilter.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swresample.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swscale.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avfilter-6.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avdevice.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avutil-55.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avdevice-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avformat-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avcodec.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swscale-4.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avcodec-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avformat.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avutil.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swresample-2.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avfilter.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swresample.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swscale.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avfilter-6.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avdevice.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avutil-55.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avdevice-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avformat-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avcodec.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swscale-4.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avcodec-57.dll',
+    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avformat.dll']
 
 def ObtainFunctionSymbols(training_file, file_format):
   if file_format == "ELF":
@@ -85,13 +159,22 @@ def ObtainPEFunctionSymbols(training_file):
     default_base = 0x140000000
   elif filetype == "PE32 executable (console) Intel 80386, for MS Windows\n":
     default_base = 0x400000
+  elif filetype == "PE32 executable (DLL) (GUI) Intel 80386, for MS Windows\n":
+    default_base = 0x10000000
+  else:
+    print("Problem: %s has unknown file type" % training_file)
+    print("Filetype is: %s" % filetype)
   function_lines = [
-    line for line in open(training_file + ".debugdump", "rt").readlines() if
+    line for line in open(training_file + ".debugdump", "rt", errors='ignore').readlines() if
     line.find("Function") != -1 and line.find("static") != -1
     and line.find("crt") == -1 ]
   for line in function_lines:
     symbol = line[ find_nth(line, ", ", 3) + 2 :]
-    address = int(line.split("[")[1].split("]")[0], 16) + default_base
+    try:
+      address = int(line.split("[")[1].split("]")[0], 16) + default_base
+    except:
+      print("Invalid line, failed to split - %s" % line)
+      continue
     # We still need to stem and encode the symbol.
     stemmed_symbol = subprocess.run(["../bin/stemsymbol"], stdout=PIPE,
       input=bytes(symbol, encoding="utf-8")).stdout
@@ -102,11 +185,43 @@ def ObtainPEFunctionSymbols(training_file):
 def ObtainDisassembledFunctions(training_file_id):
   """ Returns a sorted list with the functions that the disassembler found.
   """
-  inputdata = open( work_directory + "/" + "functions_%s.txt" % training_file_id,
-    "rt" ).readlines()
+  try:
+    inputdata = open( work_directory + "/" + "functions_%s.txt" % training_file_id,
+      "rt" ).readlines()
+  except:
+    print("Could not open functions_%s.txt, returning empty list." % training_file_id)
+    return []
   data = [ int(line.split()[0].split(":")[1], 16) for line in inputdata ]
   data.sort()
   return data
+
+def RunJSONDotgraphs(argument_tuple):
+  """ Run the bin/dotgraphs utility to generate JSON output from the
+  disassembly and write the output to a directory named after the file id. """
+  training_file = argument_tuple[0]
+  file_id = argument_tuple[1]
+  file_format = argument_tuple[2]
+
+  # Make the directory.
+  directory_name = work_directory + "/" + "json_%s" % file_id
+  shutil.rmtree(directory_name, ignore_errors=True)
+  try:
+    os.mkdir(directory_name)
+  except OSError:
+    print("Directory %s exists already." % directory_name)
+
+  try:
+    fingerprints = subprocess.check_call(
+      [ "../bin/dotgraphs", "--no_shared_blocks", "--json",
+      "--format=%s" % file_format, "--input=%s" % training_file, 
+      "--output=%s" % directory_name])
+  except:
+    print("Failure to run dotgraphs (%s:%s->%s)" % \
+      (file_format, training_file, file_id))
+
+
+  print("Done with dotgraphs. (%s:%s->%s)" % \
+    (file_format, training_file, file_id))
 
 def RunFunctionFingerprints(argument_tuple):
   """ Run the bin/functionfingerprints utility to generate features from the
@@ -114,16 +229,27 @@ def RunFunctionFingerprints(argument_tuple):
   training_file = argument_tuple[0]
   file_id = argument_tuple[1]
   file_format = argument_tuple[2]
+  if disable_mnemonic:
+    mnemonic = "--disable_instructions=true"
+  else:
+    mnemonic = "--disable_instructions=false"
  
   write_fingerprints = open(
     work_directory + "/" + "functions_%s.txt" % file_id, "wt")
  
-  fingerprints = subprocess.check_call(
-    [ "../bin/functionfingerprints", "--format=%s" % file_format,
-      "--input=%s" % training_file, "--minimum_function_size=5",
-      "--verbose=true" ], stdout = write_fingerprints)
+  try:
+    fingerprints = subprocess.check_call(
+      [ "../bin/functionfingerprints", "--no_shared_blocks",
+      "--format=%s" % file_format, "--input=%s" % training_file, 
+      "--minimum_function_size=5", "--verbose=true", mnemonic ], 
+      stdout = write_fingerprints)
+  except:
+    print("Failure to run functionfingerprints (%s:%s->%s)" % \
+      (file_format, training_file, file_id))
+
   write_fingerprints.close()
-  print("Done.")
+  print("Done with functionfingerprints. (%s:%s->%s)" % \
+    (file_format, training_file, file_id))
 
 def ProcessTrainingFiles(training_files, file_format):
   # Begin by launching a pool of parallel processes to call
@@ -133,17 +259,26 @@ def ProcessTrainingFiles(training_files, file_format):
     sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
     file_id = sha256sum[0:16].decode("utf-8")
     argument_tuples.append((training_file, file_id, file_format))
-  pool = multiprocessing.Pool(32)
-  pool.map(RunFunctionFingerprints, argument_tuples)
+  # Use a quarter of the available cores.
+  pool = multiprocessing.Pool(max(1, int(multiprocessing.cpu_count() / 8)))
+  if generate_fingerprints:
+    print("Running functionfingerprints on all files.")
+    pool.map(RunFunctionFingerprints, argument_tuples)
+  if generate_json_data:
+    print("Running dotgraphs on all files.")
+    pool.map(RunJSONDotgraphs, argument_tuples)
 
   for training_file in training_files:
     sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
     file_id = sha256sum[0:16].decode("utf-8")
     # Run objdump
+    print("Running objdump on %s... " % training_file, end='')
     objdump_symbols = ObtainFunctionSymbols(training_file, file_format)
     # Get the functions that our disassembly could find.
+    print("Getting disassembled functions. ", end='')
     disassembled_functions = ObtainDisassembledFunctions(file_id)
     # Write the symbols for the functions that the disassembly found.
+    print("Opening and writing extracted_symbols_%s.txt. " % file_id, end='')
     output_file = open( work_directory + "/" +
       "extracted_symbols_%s.txt" % file_id, "wt" )
     symbols_to_write = []
@@ -151,13 +286,16 @@ def ProcessTrainingFiles(training_files, file_format):
       if function_address in objdump_symbols:
         symbols_to_write.append((function_address,
           objdump_symbols[function_address]))
+    print("Sorting...", end='')
     symbols_to_write.sort(key=lambda a: a[1].lower())
     # symbols_to_write contains only those functions that are both in the dis-
     # assembly and that we have symbols for.
+    print("Writing...", end='')
     for address, symbol in symbols_to_write:
       output_string = "%s %s %16.16lx %s false\n" % (file_id, training_file,
         address, symbol)
       output_file.write(output_string)
+    print("Done")
     output_file.close()
 
 def BuildSymbolToFileAddressMapping():
