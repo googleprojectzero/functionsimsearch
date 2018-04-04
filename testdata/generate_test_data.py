@@ -11,18 +11,19 @@ from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 from collections import defaultdict
 
-work_directory="/mnt/storage2/functionsimsearch/data_no_mnem"
+# Make sure you have a trailing slash.
+work_directory="/mnt/storage2/functionsimsearch/data_no_mnem/"
 
 #=============================================================================
 # A number of boolean variables to allow skipping of certain processing steps.
 
 # Generate the fingerprint hashes.
-generate_fingerprints = False
+generate_fingerprints = True
 
 # Generate full disassemblies in JSON, too. This is not necessary for any of
 # the tools in this repository, but may be useful if you wish to experiment
 # with disassembly data in other machine-learning contexts.
-generate_json_data = False
+generate_json_data = True
 
 # Disable the use of mnemonic data.
 disable_mnemonic = True
