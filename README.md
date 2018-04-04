@@ -14,7 +14,7 @@ docker build -t functionsimsearch .
 After the container is built, you can run all relevant commands by doing
 ```bash
 sudo docker run -it --rm -v $(pwd):/pwd functionsimsearch COMMAND ARGUMENTS_TO_COMMAND
-sudo docker run -it --rm -v $(pwd):/pwd functionsimsearch disassemble ELF /pwd/elf_file
+sudo docker run -it --rm -v $(pwd):/pwd functionsimsearch disassemble --format=ELF --input=/bin/tar
 ```
 
 The last command should dump the disassembly of ./elf_file to stdout.
