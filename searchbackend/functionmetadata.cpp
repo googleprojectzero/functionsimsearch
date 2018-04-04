@@ -17,7 +17,7 @@
 #include <string>
 #include <boost/tokenizer.hpp>
 
-#include "functionmetadata.hpp"
+#include "searchbackend/functionmetadata.hpp"
 
 std::vector<std::string> split(const char* string, char c = ' ') {
   std::vector<std::string> result;

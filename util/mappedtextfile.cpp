@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "buffertokeniterator.hpp"
-#include "mappedtextfile.hpp"
+#include "util/buffertokeniterator.hpp"
+#include "util/mappedtextfile.hpp"
 
 MappedTextFile::MappedTextFile(const std::string& inputfile) :
   inputfile_(inputfile.c_str(), boost::interprocess::read_only),

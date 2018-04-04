@@ -1,4 +1,4 @@
-#include "bitpermutation.hpp"
+#include "util/bitpermutation.hpp"
 
 // A 128-bit bitwise random permutation that should take ~65 cycles. Generated
 // using the absolutely fantastic permutation generator code that can be found

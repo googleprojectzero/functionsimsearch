@@ -20,7 +20,7 @@
 #include <typeinfo>
 #include <vector>
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 // Two useful functions for debugging the learning process (allow conversion
 // to double) during loss function calculation.

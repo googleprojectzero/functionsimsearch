@@ -5,11 +5,11 @@
 #include <map>
 
 #include "CodeObject.h"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "functionfeaturegenerator.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/functionfeaturegenerator.hpp"
 #include "InstructionDecoder.h"
-#include "util.hpp"
+#include "util/util.hpp"
 
 class DyninstFeatureGenerator : public FunctionFeatureGenerator {
 public:

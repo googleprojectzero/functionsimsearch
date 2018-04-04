@@ -24,8 +24,8 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
-#include "util.hpp"
-#include "simhashtrainer.hpp"
+#include "util/util.hpp"
+#include "learning/simhashtrainer.hpp"
 
 DEFINE_string(data, "./data", "Data directory");
 DEFINE_string(weights, "weights.txt", "Feature weights file");

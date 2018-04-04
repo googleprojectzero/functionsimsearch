@@ -9,12 +9,12 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
-#include "mappedtextfile.hpp"
+#include "util/mappedtextfile.hpp"
 #include "sgdsolver.hpp"
 #include "simhashweightslossfunctor.hpp"
-#include "util.hpp"
-#include "simhashtrainer.hpp"
-#include "trainingdata.hpp"
+#include "util/util.hpp"
+#include "learning/simhashtrainer.hpp"
+#include "learning/trainingdata.hpp"
 
 SimHashTrainer::SimHashTrainer(
   const std::vector<FunctionFeatures>* all_functions,

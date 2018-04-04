@@ -15,10 +15,10 @@
 #include <tuple>
 #include <vector>
 
-#include "bitpermutation.hpp"
-#include "simhashsearchindex.hpp"
-#include "threadtimer.hpp"
-#include "util.hpp"
+#include "util/bitpermutation.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
+#include "util/threadtimer.hpp"
+#include "util/util.hpp"
 
 SimHashSearchIndex::SimHashSearchIndex(const std::string& indexname,
   bool create, uint8_t buckets) :

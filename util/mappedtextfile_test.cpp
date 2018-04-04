@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "mappedtextfile.hpp"
+#include "util/mappedtextfile.hpp"
 
 TEST(mappedtextfile, count_lines) {
   MappedTextFile mapped("../testdata/training/functions.txt");

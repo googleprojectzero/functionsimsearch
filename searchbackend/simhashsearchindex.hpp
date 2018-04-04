@@ -18,7 +18,7 @@
 
 #include <cstdint>
 #include <mutex>
-#include "persistentmap.hpp"
+#include "util/persistentmap.hpp"
 
 // Pretend uint128_t was a standard type already.
 typedef __uint128_t uint128_t;

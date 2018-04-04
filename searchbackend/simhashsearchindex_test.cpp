@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
-#include "simhashsearchindex.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
 
 TEST(simhashsearchindex, initialize) {
   // Run the constructor.

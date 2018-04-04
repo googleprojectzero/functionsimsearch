@@ -8,7 +8,7 @@
 #include <sstream>
 #include <vector>
 
-#include "mappedtextfile.hpp"
+#include "util/mappedtextfile.hpp"
 
 class FunctionSimHasher;
 

@@ -1,11 +1,11 @@
 #include <spii/solver.h>
 #include "gtest/gtest.h"
-#include "functionsimhash.hpp"
+#include "searchbackend/functionsimhash.hpp"
 #include "sgdsolver.hpp"
-#include "simhashtrainer.hpp"
-#include "testutil.hpp"
-#include "trainingdata.hpp"
-#include "util.hpp"
+#include "learning/simhashtrainer.hpp"
+#include "util/testutil.hpp"
+#include "learning/trainingdata.hpp"
+#include "util/util.hpp"
 #include <array>
 
 void DumpFloatVector(const std::vector<float>& vector) {

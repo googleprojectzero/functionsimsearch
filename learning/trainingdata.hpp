@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 // The code expects the following files to be present inside the data directory
 // (which is passed in as first argument):

@@ -16,8 +16,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "buffertokeniterator.hpp"
-#include "trainingdata.hpp"
+#include "util/buffertokeniterator.hpp"
+#include "learning/trainingdata.hpp"
 
 TrainingData::TrainingData(const std::string& directory) :
   directory_(directory), loaded_(false) {};

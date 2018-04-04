@@ -15,7 +15,7 @@
 
 #include "InstructionDecoder.h"
 
-#include "flowgraphutil.hpp"
+#include "disassembly/flowgraphutil.hpp"
 
 uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
   Flowgraph* graph) {

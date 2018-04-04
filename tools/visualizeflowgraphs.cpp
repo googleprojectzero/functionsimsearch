@@ -21,11 +21,11 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "disassembly.hpp"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "pecodesource.hpp"
-#include "util.hpp"
+#include "disassembly/disassembly.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/pecodesource.hpp"
+#include "util/util.hpp"
 
 // A command-line tool that writes HTML files that allow the side-by-side
 // visualisation of up to 6 different CFGs.

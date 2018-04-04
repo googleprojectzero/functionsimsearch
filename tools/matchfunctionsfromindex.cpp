@@ -20,16 +20,16 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "disassembly.hpp"
-#include "dyninstfeaturegenerator.hpp"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "functionsimhash.hpp"
-#include "functionmetadata.hpp"
-#include "simhashsearchindex.hpp"
-#include "pecodesource.hpp"
-#include "threadpool.hpp"
-#include "util.hpp"
+#include "disassembly/disassembly.hpp"
+#include "disassembly/dyninstfeaturegenerator.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "searchbackend/functionsimhash.hpp"
+#include "searchbackend/functionmetadata.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
+#include "disassembly/pecodesource.hpp"
+#include "util/threadpool.hpp"
+#include "util/util.hpp"
 
 DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");

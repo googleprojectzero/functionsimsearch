@@ -20,8 +20,8 @@
 #include <vector>
 #include "third_party/json/src/json.hpp"
 
-#include "flowgraphutil.hpp"
-#include "flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/flowgraph.hpp"
 
 using json = nlohmann::json;
 

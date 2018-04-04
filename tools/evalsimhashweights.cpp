@@ -24,10 +24,10 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
-#include "util.hpp"
-#include "functionsimhash.hpp"
-#include "simhashtrainer.hpp"
-#include "trainingdata.hpp"
+#include "util/util.hpp"
+#include "searchbackend/functionsimhash.hpp"
+#include "learning/simhashtrainer.hpp"
+#include "learning/trainingdata.hpp"
 
 DEFINE_string(data, "./data", "Directory for sourcing data");
 DEFINE_string(weights, "weights.txt", "Feature weights file");

@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "buffertokeniterator.hpp"
+#include "util/buffertokeniterator.hpp"
 
 TEST(buffertokeniterator, iterate_words) {
   const char buf[] =

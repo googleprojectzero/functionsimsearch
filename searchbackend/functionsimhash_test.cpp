@@ -3,9 +3,9 @@
 #include <set>
 
 #include "gtest/gtest.h"
-#include "functionsimhash.hpp"
-#include "testutil.hpp"
-#include "util.hpp"
+#include "searchbackend/functionsimhash.hpp"
+#include "util/testutil.hpp"
+#include "util/util.hpp"
 
 TEST(functionsimhash, check_feature_uniqueness) {
   FunctionSimHasher hasher("");

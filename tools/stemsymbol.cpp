@@ -28,7 +28,7 @@
 #include <spii/solver.h>
 #include <spii/term.h>
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 using namespace std;
 

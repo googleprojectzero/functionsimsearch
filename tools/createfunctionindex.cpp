@@ -19,11 +19,11 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "disassembly.hpp"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "simhashsearchindex.hpp"
-#include "pecodesource.hpp"
+#include "disassembly/disassembly.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
+#include "disassembly/pecodesource.hpp"
 
 DEFINE_string(index, "./similarity.index", "Index file");
 // The google namespace is there for compatibility with legacy gflags and will

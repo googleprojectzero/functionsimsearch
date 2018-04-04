@@ -19,8 +19,8 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "disassembly.hpp"
-#include "pecodesource.hpp"
+#include "disassembly/disassembly.hpp"
+#include "disassembly/pecodesource.hpp"
 
 DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "", "File to disassemble");

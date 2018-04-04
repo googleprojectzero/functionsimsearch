@@ -24,10 +24,10 @@
 #include <vector>
 
 #include "CodeObject.h"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "functionfeaturegenerator.hpp"
-#include "util.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/functionfeaturegenerator.hpp"
+#include "util/util.hpp"
 
 // A class to perform per-function SimHash calculation.
 //

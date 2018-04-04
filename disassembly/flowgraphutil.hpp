@@ -18,7 +18,7 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "flowgraph.hpp"
+#include "disassembly/flowgraph.hpp"
 
 // Some primes between 2^63 and 2^64 from CityHash.
 static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;

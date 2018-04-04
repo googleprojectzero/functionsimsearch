@@ -1,4 +1,4 @@
-#include "testutil.hpp"
+#include "util/testutil.hpp"
 
 // Data describing where to find RarVM::ExecuteStandardFilter in various
 // optimization settings and compilers.

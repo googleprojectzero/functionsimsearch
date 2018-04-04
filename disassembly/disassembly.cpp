@@ -16,9 +16,9 @@
 #include <map>
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
-#include "pecodesource.hpp"
+#include "disassembly/pecodesource.hpp"
 
-#include "disassembly.hpp"
+#include "disassembly/disassembly.hpp"
 
 using namespace std;
 using namespace Dyninst;

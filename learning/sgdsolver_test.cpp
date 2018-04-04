@@ -3,7 +3,7 @@
 
 #include "gtest/gtest.h"
 #include "sgdsolver.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 class BasicTestLossTerm {
 public:

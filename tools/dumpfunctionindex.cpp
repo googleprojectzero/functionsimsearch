@@ -16,7 +16,7 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "simhashsearchindex.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
 
 DEFINE_string(index, "./similarity.index", "Index file");
 DEFINE_bool(verbose, false, "Verbose dump");

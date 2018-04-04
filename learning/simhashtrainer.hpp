@@ -3,7 +3,7 @@
 
 #include <spii/function.h>
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 // Convenience function. Expects the data described in LoadTrainingData, outputs
 // a file full of weights.

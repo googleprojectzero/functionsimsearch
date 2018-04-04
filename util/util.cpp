@@ -5,13 +5,13 @@
 #include "InstructionDecoder.h"
 #include "third_party/PicoSHA2/picosha2.h"
 
-#include "disassembly.hpp"
-#include "dyninstfeaturegenerator.hpp"
-#include "flowgraph.hpp"
-#include "flowgraphutil.hpp"
-#include "functionsimhash.hpp"
-#include "mappedtextfile.hpp"
-#include "util.hpp"
+#include "disassembly/disassembly.hpp"
+#include "disassembly/dyninstfeaturegenerator.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/flowgraphutil.hpp"
+#include "searchbackend/functionsimhash.hpp"
+#include "util/mappedtextfile.hpp"
+#include "util/util.hpp"
 
 std::vector<std::string> Tokenize(const char *str, const char c) {
   std::vector<std::string> result;

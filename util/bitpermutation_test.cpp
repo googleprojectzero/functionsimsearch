@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "bitpermutation.hpp"
+#include "util/bitpermutation.hpp"
 #include <array>
 
 TEST(bitpermutation, is_permutation) {

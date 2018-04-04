@@ -18,7 +18,7 @@
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
-#include "buffertokeniterator.hpp"
+#include "util/buffertokeniterator.hpp"
 
 // A class to allow convenient zero-copy parsing of large text files.
 class MappedTextFile {

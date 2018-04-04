@@ -1,4 +1,4 @@
-#include "dyninstfeaturegenerator.hpp"
+#include "disassembly/dyninstfeaturegenerator.hpp"
 
 DyninstFeatureGenerator::DyninstFeatureGenerator(
   Dyninst::ParseAPI::Function* function) {

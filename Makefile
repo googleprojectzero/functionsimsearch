@@ -1,7 +1,7 @@
 CPP = g++
 CPPFLAGS += -ggdb -O0 -std=c++11 -fPIE
 LIBDIR = -L./third_party/pe-parse/pe-parser-library -L./third_party/libdwarf/libdwarf
-INCLUDEDIR = -Ithird_party/spii/include -Ithird_party/spii/thirdparty/Eigen
+INCLUDEDIR = -Ithird_party/spii/include -I./ -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii -lgflags
 
@@ -35,6 +35,8 @@ TEST = tests/runtests
 
 SLOWTEST = tests/slowtests
 
+VPATH = disassembly:learning:searchbackend:tools:util
+
 directory/%:
 	mkdir -p $(@F)
 
@@ -48,15 +50,15 @@ tests/runtests: $(TESTS) tests
 tests/slowtests: $(SLOWTESTS) slowtests
 
 slowtests: $(ALL) $(OBJ) $(SLOWTESTS)
-	$(CPP) $(CPPFLAGS) -o tests/slowtests runtests.cpp $(OBJ) $(SLOWTESTS) \
+	$(CPP) $(CPPFLAGS) -o tests/slowtests tools/runtests.cpp $(OBJ) $(SLOWTESTS) \
 		$(LIBDIR) $(LIBS) -lgtest
 
 tests: $(ALL) $(OBJ) $(TESTS)
-	$(CPP) $(CPPFLAGS) -o tests/runtests runtests.cpp $(OBJ) $(TESTS) $(LIBDIR) \
+	$(CPP) $(CPPFLAGS) -o tests/runtests tools/runtests.cpp $(OBJ) $(TESTS) $(LIBDIR) \
 		$(LIBS) -lgtest
 
 bin/%: $(OBJ)
-	$(CPP) $(INCLUDEDIR) $(CPPFLAGS) -o $@ $(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
+	$(CPP) $(INCLUDEDIR) $(CPPFLAGS) -o $@ tools/$(@F).cpp $(OBJ) $(LIBDIR) $(LIBS)
 
 clean:
 	rm -f ./build/*.o ./tests/* $(ALL)

@@ -16,7 +16,7 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "simhashsearchindex.hpp"
+#include "searchbackend/simhashsearchindex.hpp"
 
 DEFINE_string(index, "./similarity.index", "Index file");
 // The google namespace is there for compatibility with legacy gflags and will

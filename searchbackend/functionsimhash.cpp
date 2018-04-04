@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "InstructionDecoder.h"
-#include "util.hpp"
-#include "functionsimhash.hpp"
+#include "util/util.hpp"
+#include "searchbackend/functionsimhash.hpp"
 
 uint64_t FunctionSimHasher::FloatsToBits(const std::vector<float>& floats) {
   std::vector<uint64_t> temp;

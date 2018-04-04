@@ -16,7 +16,7 @@
 #include "third_party/pe-parse/pe-parser-library/include/parser-library/nt-headers.h"
 
 
-#include "pecodesource.hpp"
+#include "disassembly/pecodesource.hpp"
 
 PECodeRegion::PECodeRegion(uint8_t* buffer, size_t length, Dyninst::Address
   section_base, const std::string& name, bool is_amd64) : base_(section_base),
