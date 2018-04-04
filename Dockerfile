@@ -50,7 +50,7 @@ RUN cd /code && \
     sed -i -e 's/isnan/std::isnan/g' ./third_party/spii/include/spii/large_auto_diff_term.h && \
     cd third_party && \
     mkdir json && mkdir json/src && cd json/src && \
-    wget https://raw.githubusercontent.com/nlohmann/json/develop/src/json.hpp && \
+    wget https://github.com/nlohmann/json/releases/download/v3.1.2/json.hpp && \
     cd ../../.. && \
     make -j 16
 
