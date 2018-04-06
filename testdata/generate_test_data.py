@@ -12,7 +12,7 @@ from operator import itemgetter
 from collections import defaultdict
 
 # Make sure you have a trailing slash.
-work_directory="/mnt/storage2/functionsimsearch/data_no_mnem/"
+work_directory="/media/thomasdullien/storage/functionsimsearch/train_data/"
 
 #=============================================================================
 # A number of boolean variables to allow skipping of certain processing steps.
@@ -26,9 +26,8 @@ generate_fingerprints = True
 generate_json_data = True
 
 # Disable the use of mnemonic data.
-disable_mnemonic = True
+disable_mnemonic = False
 #=============================================================================
-
 
 if generate_fingerprints and generate_json_data:
   shutil.rmtree(work_directory)
@@ -44,6 +43,8 @@ def FindELFTrainingFiles():
 
   filenames = []
   for dirname, mask in dirnames_and_masks:
+    if not os.path.exists(dirname):
+      continue
     filenames = filenames + [
       dirname + "/" + filename for filename in os.listdir(dirname)
       if fnmatch.fnmatch(filename, mask) ]
@@ -53,7 +54,7 @@ def FindPETrainingFiles():
   """ Returns the list of PE files that should be used for training. These
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
-  return [
+  pe_list = [
     "./unrar.5.5.3.builds/VS2015/unrar32/Release/UnRAR.exe",
     "./unrar.5.5.3.builds/VS2015/unrar32/Debug/UnRAR.exe",
     "./unrar.5.5.3.builds/VS2015/unrar64/Release/UnRAR.exe",
@@ -114,6 +115,8 @@ def FindPETrainingFiles():
     './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swscale-4.dll',
     './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avcodec-57.dll',
     './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avformat.dll']
+  pe_list = [ filename for filename in pe_list if os.path.exists(filename) ]
+  return pe_list
 
 def ObtainFunctionSymbols(training_file, file_format):
   if file_format == "ELF":
