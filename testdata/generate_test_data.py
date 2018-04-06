@@ -6,117 +6,61 @@
 # This Python script is meant to replace the horrible bash script that is
 # currently responsible for doing this.
 
-import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing
+import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing, glob, sys
+from absl import app
+from absl import flags
 from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 from collections import defaultdict
 
 # Make sure you have a trailing slash.
-work_directory="/media/thomasdullien/storage/functionsimsearch/train_data/"
-
-#=============================================================================
-# A number of boolean variables to allow skipping of certain processing steps.
+flags.DEFINE_string('work_directory',
+  "/media/thomasdullien/storage/functionsimsearch/train_data/",
+  "The directory into which the training data will be written")
 
 # Generate the fingerprint hashes.
-generate_fingerprints = True
+flags.DEFINE_boolean('generate_fingerprints', True, "Decides whether the " +
+  "hashes of all features should be extracted and written.")
 
 # Generate full disassemblies in JSON, too. This is not necessary for any of
 # the tools in this repository, but may be useful if you wish to experiment
 # with disassembly data in other machine-learning contexts.
-generate_json_data = True
+flags.DEFINE_boolean('generate_json_data', True, "Decides whether JSON output " +
+  "of the full disassembly should be extracted and written (not necessary for " +
+  "training, but useful for diagnostics and visualization.")
 
 # Disable the use of mnemonic data.
-disable_mnemonic = False
+flags.DEFINE_boolean('disable_mnemonic', False, "Disable the extraction of " +
+  "mnemonic-based features. Useful to test the power of mnemonics vs. graphs.")
+
+# Clobber existing data directory or not.
+flags.DEFINE_boolean('clobber', False, "Clobber output directory or not.")
+
 #=============================================================================
 
-if generate_fingerprints and generate_json_data:
-  shutil.rmtree(work_directory)
-  os.mkdir(work_directory)
+FLAGS = flags.FLAGS
 
 def FindELFTrainingFiles():
   """ Returns the list of ELF files that should be used for training. These
   ELF files need to contain objdump-able debug information.
 
   """
-  dirnames_and_masks = [ ('./unrar.5.5.3.builds', 'unrar.x??.O?'),
-    ('./ffmpeg.3.2.10.sos', '*lib*.so.*') ]
-
-  filenames = []
-  for dirname, mask in dirnames_and_masks:
-    if not os.path.exists(dirname):
-      continue
-    filenames = filenames + [
-      dirname + "/" + filename for filename in os.listdir(dirname)
-      if fnmatch.fnmatch(filename, mask) ]
-  return filenames
+  elf_files = [ filename for filename in glob.iglob('ELF/**/*', recursive=True)
+    if os.path.isfile(filename) ]
+  print("Returning list of files from ELF directory: %s" % elf_files)
+  return elf_files
 
 def FindPETrainingFiles():
   """ Returns the list of PE files that should be used for training. These
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
-  pe_list = [
-    "./unrar.5.5.3.builds/VS2015/unrar32/Release/UnRAR.exe",
-    "./unrar.5.5.3.builds/VS2015/unrar32/Debug/UnRAR.exe",
-    "./unrar.5.5.3.builds/VS2015/unrar64/Release/UnRAR.exe",
-    "./unrar.5.5.3.builds/VS2015/unrar64/Debug/UnRAR.exe",
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avutil.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swresample-2.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avfilter.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swresample.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swscale.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avfilter-6.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avdevice.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avutil-55.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avdevice-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avformat-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avcodec.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/swscale-4.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avcodec-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_standard/avformat.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avutil.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swresample-2.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avfilter.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swresample.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swscale.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avfilter-6.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avdevice.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avutil-55.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avdevice-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avformat-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avcodec.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/swscale-4.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avcodec-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2017_size_optimized/avformat.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avutil.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swresample-2.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avfilter.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swresample.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swscale.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avfilter-6.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avdevice.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avutil-55.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avdevice-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avformat-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avcodec.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/swscale-4.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avcodec-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_size_optimized/avformat.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avutil.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swresample-2.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avfilter.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swresample.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swscale.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avfilter-6.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avdevice.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avutil-55.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avdevice-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avformat-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avcodec.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/swscale-4.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avcodec-57.dll',
-    './ffmpeg.3.2.10.visual_studio_builds/vs_2015_standard/avformat.dll']
-  pe_list = [ filename for filename in pe_list if os.path.exists(filename) ]
-  return pe_list
+  exe_files = [ filename for filename in glob.iglob('PE/**/*.exe', recursive=True)
+    if os.path.isfile(filename) ]
+  dll_files = [ filename for filename in glob.iglob('PE/**/*.dll', recursive=True)
+    if os.path.isfile(filename) ]
+  result = exe_files + dll_files
+  print("Returning list of files from PE directory: %s" % result)
+  return result
 
 def ObtainFunctionSymbols(training_file, file_format):
   if file_format == "ELF":
@@ -190,7 +134,7 @@ def ObtainDisassembledFunctions(training_file_id):
   """ Returns a sorted list with the functions that the disassembler found.
   """
   try:
-    inputdata = open( work_directory + "/" + "functions_%s.txt" % training_file_id,
+    inputdata = open( FLAGS.work_directory + "/" + "functions_%s.txt" % training_file_id,
       "rt" ).readlines()
   except:
     print("Could not open functions_%s.txt, returning empty list." % training_file_id)
@@ -207,7 +151,7 @@ def RunJSONDotgraphs(argument_tuple):
   file_format = argument_tuple[2]
 
   # Make the directory.
-  directory_name = work_directory + "/" + "json_%s" % file_id
+  directory_name = FLAGS.work_directory + "/" + "json_%s" % file_id
   shutil.rmtree(directory_name, ignore_errors=True)
   try:
     os.mkdir(directory_name)
@@ -233,13 +177,13 @@ def RunFunctionFingerprints(argument_tuple):
   training_file = argument_tuple[0]
   file_id = argument_tuple[1]
   file_format = argument_tuple[2]
-  if disable_mnemonic:
+  if FLAGS.disable_mnemonic:
     mnemonic = "--disable_instructions=true"
   else:
     mnemonic = "--disable_instructions=false"
  
   write_fingerprints = open(
-    work_directory + "/" + "functions_%s.txt" % file_id, "wt")
+    FLAGS.work_directory + "/" + "functions_%s.txt" % file_id, "wt")
  
   try:
     fingerprints = subprocess.check_call(
@@ -265,10 +209,10 @@ def ProcessTrainingFiles(training_files, file_format):
     argument_tuples.append((training_file, file_id, file_format))
   # Use a quarter of the available cores.
   pool = multiprocessing.Pool(max(1, int(multiprocessing.cpu_count() / 8)))
-  if generate_fingerprints:
+  if FLAGS.generate_fingerprints:
     print("Running functionfingerprints on all files.")
     pool.map(RunFunctionFingerprints, argument_tuples)
-  if generate_json_data:
+  if FLAGS.generate_json_data:
     print("Running dotgraphs on all files.")
     pool.map(RunJSONDotgraphs, argument_tuples)
 
@@ -283,7 +227,7 @@ def ProcessTrainingFiles(training_files, file_format):
     disassembled_functions = ObtainDisassembledFunctions(file_id)
     # Write the symbols for the functions that the disassembly found.
     print("Opening and writing extracted_symbols_%s.txt. " % file_id, end='')
-    output_file = open( work_directory + "/" +
+    output_file = open( FLAGS.work_directory + "/" +
       "extracted_symbols_%s.txt" % file_id, "wt" )
     symbols_to_write = []
     for function_address in disassembled_functions:
@@ -309,7 +253,7 @@ def BuildSymbolToFileAddressMapping():
   """
   result = defaultdict(list)
   # Iterate over all the extracted_symbols_*.txt files.
-  for filename in os.listdir(work_directory):
+  for filename in os.listdir(FLAGS.work_directory):
     if fnmatch.fnmatch(filename, "extracted_symbols_*.txt"):
       contents = open( work_directory + "/" + filename, "rt" ).readlines()
       for line in contents:
@@ -392,41 +336,55 @@ def WriteFunctionsTxt( output_directory ):
       output_file.write(data)
   output_file.close()
 
-print("Processing ELF training files to extract features...")
-ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
-print("Processing PE training files to extract features...")
-ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+def main(argv):
+  del argv # unused.
 
-# We now have the extracted symbols in a set of files called
-# "extracted_symbols_*.txt"
+  # Refuse to run on Python less than 3.5 (unpredictable!).
 
-# Get a map that maps every symbol to the files in which it occurs.
-print("Loading all extracted symbols and grouping them...")
-symbol_to_files_and_names = BuildSymbolToFileAddressMapping()
+  if sys.version_info[0] < 3 or sys.version_info[1] < 5:
+    print("This script requires Python version 3.5 or higher.")
+    sys.exit(1)
 
-# Split off 10% of the symbols into a control map.
-print("Splitting into validation set and training set...")
-validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
-  symbol_to_files_and_names, 0.20)
+  if FLAGS.clobber:
+    shutil.rmtree(FLAGS.work_directory)
+    os.mkdir(FLAGS.work_directory)
 
-os.mkdir(work_directory + "/training_data")
-os.mkdir(work_directory + "/validation_data")
+  print("Processing ELF training files to extract features...")
+  ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+  print("Processing PE training files to extract features...")
+  ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+  # We now have the extracted symbols in a set of files called
+  # "extracted_symbols_*.txt"
 
-# Write the training set.
-print("Writing training attract.txt and repulse.txt...")
-WriteAttractAndRepulseFromMap( training_map, work_directory + "/training_data",
-  number_of_pairs=3000)
+  # Get a map that maps every symbol to the files in which it occurs.
+  print("Loading all extracted symbols and grouping them...")
+  symbol_to_files_and_names = BuildSymbolToFileAddressMapping()
 
-# Write the validation set.
-print("Writing validation attract.txt and repulse.txt...")
-WriteAttractAndRepulseFromMap( validation_map, work_directory +
-  "/validation_data", number_of_pairs=500 )
+  # Split off 10% of the symbols into a control map.
+  print("Splitting into validation set and training set...")
+  validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
+    symbol_to_files_and_names, 0.20)
 
-# Write functions.txt into both directories.
-print("Writing the function.txt files...")
-WriteFunctionsTxt( work_directory + "/training_data" )
-WriteFunctionsTxt( work_directory + "/validation_data" )
+  os.mkdir(work_directory + "/training_data")
+  os.mkdir(work_directory + "/validation_data")
 
-print("Done, ready to run training.")
+  # Write the training set.
+  print("Writing training attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( training_map, work_directory + "/training_data",
+    number_of_pairs=3000)
 
+  # Write the validation set.
+  print("Writing validation attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( validation_map, work_directory +
+    "/validation_data", number_of_pairs=500 )
+
+  # Write functions.txt into both directories.
+  print("Writing the function.txt files...")
+  WriteFunctionsTxt( work_directory + "/training_data" )
+  WriteFunctionsTxt( work_directory + "/validation_data" )
+
+  print("Done, ready to run training.")
+
+if __name__ == '__main__':
+  app.run(main)
 
