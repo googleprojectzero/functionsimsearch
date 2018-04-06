@@ -3,22 +3,22 @@
   <title>Split screen CFG visualisation using mxGraph</title>
 
   <!-- Includes the JSON data for the 6 graphs to be displayed. -->
-  <script type="application/json" id="graph0">
+  <script type="application/json" id="graph1">
   <!-- %%GRAPH0%% -->
   </script>
-  <script type="application/json" id="graph1">
+  <script type="application/json" id="graph2">
   <!-- %%GRAPH1%% -->
   </script>
-  <script type="application/json" id="graph2">
+  <script type="application/json" id="graph3">
   <!-- %%GRAPH2%% -->
   </script>
-  <script type="application/json" id="graph3">
+  <script type="application/json" id="graph4">
   <!-- %%GRAPH3%% -->
   </script>
-  <script type="application/json" id="graph4">
+  <script type="application/json" id="graph5">
   <!-- %%GRAPH4%% -->
   </script>
-  <script type="application/json" id="graph5">
+  <script type="application/json" id="graph6">
   <!-- %%GRAPH5%% -->
   </script>
 
@@ -132,34 +132,57 @@
     // Program starts here. Creates a sample graph in the
     // DOM node with the specified ID. This function is invoked
     // from the onLoad event handler of the document (see below).
-    function main(containerA, containerB) {
+    function main() {
       // Checks if the browser is supported
       if (!mxClient.isBrowserSupported()) {
         // Displays an error message if the browser is not supported.
         mxUtils.error('Browser is not supported!', 200, false);
       }
       else {
-        container_ids = [ "graphContainerLeft", "graphContainerRight",
-          "graphContainer3", "graphContainer4", "graphContainer5", "graphContainer6" ];
-        graph_data_ids = [ "graph0", "graph1", "graph2", "graph3", "graph4", "graph5" ];
-
+        parsed_graphs = [];
+        nonparsed_graphs = [];
         graphs = [];
 
-        for (let container of container_ids) {
-          let element = document.getElementById(container);
+        // Try to parse the embedded graphs.
+        for (index = 1; index <= 6; ++index) { 
+          var temp;
+          try {
+            temp = JSON.parse(document.getElementById("graph" + index.toString()).innerHTML);
+            parsed_graphs.push([index, temp]);
+          } catch (e) {
+            console.log("Failed to parse graph for ID " + "graph" + index.toString());
+            nonparsed_graphs.push(index);
+          }
+        }
+
+        console.log("Got " + parsed_graphs.length + " graphs");
+
+        // Disable the context menu and create the graph.
+        for (let parsed_graph of parsed_graphs) {
+          let element = document.getElementById("graphContainer" + parsed_graph[0].toString());
           mxEvent.disableContextMenu(element);
           let graph = new mxGraph(element);
-          graphs.push(graph);
+          graphs[parsed_graph[0]] = graph;
+        }
+
+        // Delete unneeded graph containers.
+        for (let index of nonparsed_graphs) {
+          element = document.getElementById("graphContainer");
+          element.removeChild(document.getElementById("graphContainer" + index.toString()));
         }
 
         mxEvent.addMouseWheelListener(function(evt, up) {
           if (up) {
             for (let graph of graphs) {
-              graph.zoomIn();
+              if (graph) {
+                graph.zoomIn();
+              }
             }
           } else {
             for (let graph of graphs) {
-              graph.zoomOut();
+              if (graph) {
+                graph.zoomOut();
+              }
             }
           }
           mxEvent.consume(evt);
@@ -169,9 +192,12 @@
           new mxRubberband(graph);
         }
 
-        for (let index = 0; index < 6; ++index) {
+        for (let [index, graph] of parsed_graphs) {
+        var domid = "graph" + index.toString();
+        console.log(domid);
+        console.log(document.getElementById(domid).innerHTML);
           load_and_populate_cfg_from_embedded_json(graphs[index],
-            graph_data_ids[index]);
+            domid);
         }
       }
     };
@@ -179,33 +205,27 @@
 </head>
 
 <!-- Page passes the container for the graph to the program -->
-<body onload="main(document.getElementById('graphContainerLeft'), document.getElementById('graphContainerRight'))">
+<body onload="main()">
 
-<div id="graphContainerLeft"
-  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;left:0;background-color:#CCCCCC;cursor:default;">
-</div>
-<div id="graphContainerRight"
-  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBBB;cursor:default;">
-</div>
-<div id="graphContainer3"
-  style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBCCBB;cursor:default;">
-</div>
-<div id="graphContainer4"
-  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBDD;cursor:default;">
-</div>
-<div id="graphContainer5"
-  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#EEBBBB;cursor:default;">
-</div>
-<div id="graphContainer6"
-  style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBFFBB;cursor:default;">
-</div>
-
-
-
-
-
-
-
-
+<div id="graphContainer">
+  <div id="graphContainer1"
+    style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;left:0;background-color:#CCCCCC;cursor:default;resize:both;">
+  </div>
+  <div id="graphContainer2"
+    style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBBB;cursor:default;resize:both;">
+  </div>
+  <div id="graphContainer3"
+    style="height:50%;width:33.33%;float:left;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBCCBB;cursor:default;resize:both;">
+  </div>
+  <div id="graphContainer4"
+    style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBBBDD;cursor:default;resize:both;">
+  </div>
+  <div id="graphContainer5"
+    style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#EEBBBB;cursor:default;resize:both;">
+  </div>
+  <div id="graphContainer6"
+    style="height:50%;width:33.33%;float:right;z-index:1;top:0;overflow-x:hidden;padding-top:20px;right:0;background-color:#BBFFBB;cursor:default;resize:both;">
+  </div>
+  </div>
 </body>
 </html>
