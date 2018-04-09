@@ -16,6 +16,7 @@
 #define FLOWGRAPH_HPP
 
 #include <functional>
+#include <map>
 #include <vector>
 
 /* A Flowgraph class designed to allow fast extraction of small subgraphs
@@ -76,10 +77,10 @@ public:
     uint64_t k1 = 0xb492b66fbe98f273ULL,
     uint64_t k2 = 0x9ae16a3b2f90404fULL);
 
-  void WriteDot(const std::string& output_file);
+  void WriteDot(const std::string& output_file) const;
   void WriteJSON(const std::string& output_file,
-    InstructionGetter block_getter);
-  void WriteJSON(std::ostream* output, InstructionGetter block_getter);
+    InstructionGetter block_getter) const;
+  void WriteJSON(std::ostream* output, InstructionGetter block_getter) const;
 };
 
  

@@ -15,6 +15,7 @@
 #include "InstructionDecoder.h"
 #include "util/util.hpp"
 #include "searchbackend/functionsimhash.hpp"
+#include "searchbackend/functionsimhashfeaturedump.hpp"
 
 uint64_t FunctionSimHasher::FloatsToBits(const std::vector<float>& floats) {
   std::vector<uint64_t> temp;
@@ -141,6 +142,12 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
   std::vector<uint64_t> hash;
   CalculateNBitGraphHash(graph, node, bits, hash_index, &hash);
 
+  // For diagnostics, it can be useful to write a DOT or JSON file with the
+  // structure of the graph. This is particularly helpful to analyze weights
+  // after the learning process.
+  if (dump_graphlet_dictionary_) {
+    WriteFeatureDictionaryEntry(hash[0], hash[1], *graph);
+  }
   if (feature_hashes) {
     feature_hashes->push_back(std::make_pair(hash[0], hash[1]));
   }
@@ -156,6 +163,13 @@ void FunctionSimHasher::ProcessMnemTuple(const MnemTuple &tup,
 
   std::vector<uint64_t> hash;
   CalculateNBitMnemTupleHash(tup, bits, hash_index, &hash);
+
+  // For diagnostics, it can be useful to write a DOT or JSON file with the
+  // structure of the graph. This is particularly helpful to analyze weights
+  // after the learning process.
+  if (dump_mnem_tuple_dictionary_) {
+    WriteFeatureDictionaryEntry(hash[0], hash[1], tup);
+  }
 
   if (feature_hashes) {
     feature_hashes->push_back(std::make_pair(hash[0], hash[1]));
@@ -294,12 +308,15 @@ inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
 }
 
 FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
-  bool disable_graphs, bool disable_mnemonic,
-  double default_mnemonic_weight, double default_graphlet_weight) :
+  bool disable_graphs, bool disable_mnemonic, bool dump_graphlet_dictionary,
+  bool dump_mnem_tuple_dictionary, double default_mnemonic_weight, 
+  double default_graphlet_weight) :
     default_mnemonic_weight_(default_mnemonic_weight),
     default_graphlet_weight_(default_graphlet_weight),
     disable_graph_hashes_(disable_graphs),
-    disable_mnemonic_hashes_(disable_mnemonic) {
+    disable_mnemonic_hashes_(disable_mnemonic),
+    dump_graphlet_dictionary_(dump_graphlet_dictionary),
+    dump_mnem_tuple_dictionary_(dump_mnem_tuple_dictionary) {
   std::vector<std::vector<std::string>> tokenized_lines;
 
   if (weight_file == "") {

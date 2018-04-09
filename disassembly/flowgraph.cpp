@@ -53,7 +53,7 @@ void Flowgraph::GetNodes(std::vector<address>* nodes) const {
   }
 }
 
-void Flowgraph::WriteDot(const std::string& output_file) {
+void Flowgraph::WriteDot(const std::string& output_file) const {
   std::ofstream dotfile;
   dotfile.open(output_file);
   dotfile << "digraph G {\n";
@@ -66,7 +66,7 @@ void Flowgraph::WriteDot(const std::string& output_file) {
   dotfile << "}\n";
 }
 
-void Flowgraph::WriteJSON(std::ostream* output, InstructionGetter block_getter) {
+void Flowgraph::WriteJSON(std::ostream* output, InstructionGetter block_getter) const {
   std::vector<address> nodes;
   json out_graph = {
     {"name", "CFG"},
@@ -101,7 +101,7 @@ void Flowgraph::WriteJSON(std::ostream* output, InstructionGetter block_getter) 
 }
 
 void Flowgraph::WriteJSON(const std::string& output_file,
-  InstructionGetter block_getter) {
+  InstructionGetter block_getter) const {
   std::ofstream jsonfile;
   jsonfile.open(output_file);
   WriteJSON(&jsonfile, block_getter);

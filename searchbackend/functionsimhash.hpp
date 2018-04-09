@@ -54,6 +54,8 @@ public:
   FunctionSimHasher(const std::string& weight_file,
     bool disable_graphs = false,
     bool disable_mnemonic = false,
+    bool dump_graphlet_dictionary = false,
+    bool dump_mnem_tuple_dictionary = false,
     double default_mnemomic_weight = 0.05,
     double default_graphlet_weight = 1.0);
 
@@ -144,6 +146,8 @@ private:
 
   bool disable_graph_hashes_;
   bool disable_mnemonic_hashes_;
+  bool dump_graphlet_dictionary_;
+  bool dump_mnem_tuple_dictionary_;
 
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;
