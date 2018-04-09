@@ -255,7 +255,7 @@ def BuildSymbolToFileAddressMapping():
   # Iterate over all the extracted_symbols_*.txt files.
   for filename in os.listdir(FLAGS.work_directory):
     if fnmatch.fnmatch(filename, "extracted_symbols_*.txt"):
-      contents = open( work_directory + "/" + filename, "rt" ).readlines()
+      contents = open( FLAGS.work_directory + "/" + filename, "rt" ).readlines()
       for line in contents:
         file_id, filename, address, symbol, vuln = line.split()
         result[symbol].append((file_id, address))
@@ -330,9 +330,9 @@ def WriteFunctionsTxt( output_directory ):
   directory.
   """
   output_file = open( output_directory + "/functions.txt", "wt" )
-  for filename in os.listdir(work_directory):
+  for filename in os.listdir(FLAGS.work_directory):
     if fnmatch.fnmatch(filename, "functions_????????????????.txt"):
-      data = open(work_directory + "/" + filename, "rt").read()
+      data = open(FLAGS.work_directory + "/" + filename, "rt").read()
       output_file.write(data)
   output_file.close()
 
@@ -365,23 +365,23 @@ def main(argv):
   validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
     symbol_to_files_and_names, 0.20)
 
-  os.mkdir(work_directory + "/training_data")
-  os.mkdir(work_directory + "/validation_data")
+  os.mkdir(FLAGS.work_directory + "/training_data")
+  os.mkdir(FLAGS.work_directory + "/validation_data")
 
   # Write the training set.
   print("Writing training attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( training_map, work_directory + "/training_data",
+  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data",
     number_of_pairs=3000)
 
   # Write the validation set.
   print("Writing validation attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( validation_map, work_directory +
+  WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
     "/validation_data", number_of_pairs=500 )
 
   # Write functions.txt into both directories.
   print("Writing the function.txt files...")
-  WriteFunctionsTxt( work_directory + "/training_data" )
-  WriteFunctionsTxt( work_directory + "/validation_data" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data" )
 
   print("Done, ready to run training.")
 
