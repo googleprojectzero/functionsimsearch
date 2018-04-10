@@ -39,41 +39,62 @@ This code has a few external dependencies. The dependencies are:
 
 ### Installing
 
-You should be able to build the code by doing the following:
+You should be able to build on a Debian stretch machine by running the following
+bash script in the directory where you checked out everything:
 
-1. Download, build and install DynInst 9.3. This may involve building boost from
-   source inside the DynInst directory tree (at least it did for me), and building
-   libdwarf from scratch.
-2. Get the dependencies:
 ```bash
+#!/bin/bash
+source_dir=$(pwd)
+
 # Install gtest and gflags. It's a bit fidgety, but works:
-sudo apt-get install libgtest-dev libgflags-dev cmake
+sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++
 cd /usr/src/gtest
 sudo cmake CMakeLists
 sudo make
 sudo cp *.a /usr/lib
-# Now get the other dependencies
+
+# Now get and the other dependencies
+cd $source_dir
 mkdir third_party
 cd third_party
+
+# Download Dyninst.
+wget https://github.com/dyninst/dyninst/archive/v9.3.2.tar.gz
+tar xvf ./v9.3.2.tar.gz
+# Download PicoSHA, pe-parse, SPII and the C++ JSON library.
 git clone https://github.com/okdshin/PicoSHA2.git
 git clone https://github.com/trailofbits/pe-parse.git
 git clone https://github.com/PetterS/spii.git
-# Alternatively just get the single file:
 mkdir json
 mkdir json/src
 cd json/src
-wget https://raw.githubusercontent.com/nlohmann/json/develop/src/json.hpp
-cd ..
-cd ..
-cd pe-parse
-cmake ./CMakeLists
-make
-cd ..
-cd spii
-cmake ./CMakeLists
-make
+wget https://github.com/nlohmann/json/releases/download/v3.1.2/json.hpp 
 cd ../..
-make
+
+# Build PE-Parse.
+cd pe-parse
+cmake ./CMakeLists.txt
+make -j8
+cd ..
+
+# Build SPII.
+cd spii
+cmake ./CMakeLists.txt
+make -j8
+sudo make install
+cd ..
+
+# Build Dyninst
+cd dyninst-9.3.2
+cmake ./CMakeLists.txt
+make -j8
+sudo make install
+sudo ldconfig
+cd ..
+
+# Finally build functionsimsearch tools
+cd ..
+make -j8
 ```
 This should build the relevant executables to try. On Debian stretch and later,
 you may have to add '-fPIC' into the pe-parse CMakeLists.txt to make sure your
