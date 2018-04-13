@@ -65,10 +65,6 @@ public:
   // values, number_of_outputs describes how many bits of SimHash should be
   // calculated. Reasonable use is usually 128.
   void CalculateFunctionSimHash(
-    Dyninst::ParseAPI::Function* function, uint64_t number_of_outputs,
-    std::vector<FeatureHash>* output_simhash_values);
-
-  void CalculateFunctionSimHash(
     FunctionFeatureGenerator* generator, uint64_t number_of_outputs,
     std::vector<uint64_t>* output_simhash_values,
     std::vector<FeatureHash>* feature_hashes=nullptr);

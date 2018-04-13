@@ -37,6 +37,8 @@ DEFINE_string(function_address, "", "Address of function");
 DEFINE_bool(disable_graphs, false, "Disable graphs as features");
 DEFINE_bool(disable_instructions, false, "Disable instructions as features");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+DEFINE_bool(dump_graphlet_features, false, "Dump graphlet features into /var/tmp.");
+DEFINE_bool(dump_instruction_features, false, "Dump instruction features into /var/tmp.");
 
 //
 // The google namespace is there for compatibility with legacy gflags and will
@@ -82,7 +84,8 @@ int main(int argc, char** argv) {
   }
 
   FunctionSimHasher sim_hasher(FLAGS_weights, FLAGS_disable_graphs,
-    FLAGS_disable_instructions);
+    FLAGS_disable_instructions, FLAGS_dump_graphlet_features,
+    FLAGS_dump_instruction_features);
   Dyninst::InstructionAPI::Instruction::Ptr instruction;
   for (Function* function : functions) {
     Flowgraph graph;

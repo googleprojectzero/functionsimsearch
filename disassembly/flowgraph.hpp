@@ -83,5 +83,4 @@ public:
   void WriteJSON(std::ostream* output, InstructionGetter block_getter) const;
 };
 
- 
 #endif // FLOWGRAPH_HPP
