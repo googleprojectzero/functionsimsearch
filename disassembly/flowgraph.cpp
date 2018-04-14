@@ -101,7 +101,7 @@ void Flowgraph::WriteJSON(std::ostream* output, InstructionGetter block_getter) 
 }
 
 void Flowgraph::WriteJSON(const std::string& output_file,
-  InstructionGetter block_getter) {
+  InstructionGetter block_getter) const {
   std::ofstream jsonfile;
   jsonfile.open(output_file);
   WriteJSON(&jsonfile, block_getter);

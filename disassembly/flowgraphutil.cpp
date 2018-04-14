@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
+#include "CodeObject.h"
 #include "InstructionDecoder.h"
+
+#include "disassembly/disassembly.hpp"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/pecodesource.hpp"
+#include "util/util.hpp"
 
 #include "disassembly/flowgraphutil.hpp"
 
@@ -72,3 +77,80 @@ InstructionGetter MakeDyninstInstructionGetter(
   };
   return getter;
 }
+
+// TODO(thomasdullien): The following two functions share more than a little
+// bit of code and should probably be consolidated (e.g. the common code should
+// be factored out).
+bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
+  &inputfile, uint64_t address, std::string* result) {
+
+  Disassembly disassembly(format, inputfile);
+  if (!disassembly.Load(false)) {
+    return false;
+  }
+  disassembly.DisassembleFromAddress(address, true);
+
+  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
+  // Obtain the list of all functions in the binary.
+  const Dyninst::ParseAPI::CodeObject::funclist &functions = code_object->funcs();
+  if (functions.size() == 0) {
+    printf("No functions found.\n");
+    return false;
+  }
+
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
+  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
+  for (Dyninst::ParseAPI::Function* function : functions) {
+
+    Flowgraph graph;
+    Dyninst::Address function_address = function->addr();
+    if (function_address == address) {
+      BuildFlowgraph(function, &graph);
+      std::stringstream json_data;
+      graph.WriteJSON(&json_data, get_block);
+      *result = json_data.str();
+      return true;
+    }
+  }
+  return false;
+}
+
+FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
+  const std::string& format, const std::string &inputfile,
+  uint64_t func_address) {
+
+  Disassembly disassembly(format, inputfile);
+  if (!disassembly.Load(false)) {
+    return nullptr;
+  }
+  disassembly.DisassembleFromAddress(func_address, true);
+
+  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
+  // Obtain the list of all functions in the binary.
+  const Dyninst::ParseAPI::CodeObject::funclist &functions = code_object->funcs();
+  if (functions.size() == 0) {
+    printf("No functions found.\n");
+    return nullptr;
+  }
+
+  Dyninst::InstructionAPI::Instruction::Ptr instruction;
+  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
+  for (Dyninst::ParseAPI::Function* function : functions) {
+    Dyninst::Address function_address = function->addr();
+    if (function_address == func_address) {
+      FlowgraphWithInstructions* graph = new FlowgraphWithInstructions();
+      BuildFlowgraph(function, graph);
+      std::vector<address> nodes;
+      graph->GetNodes(&nodes);
+      for (const address& node_address : nodes) {
+        std::vector<Instruction> instructions;
+        get_block(node_address, &instructions);
+        graph->AddInstructions(node_address, instructions);
+      }
+      return graph;
+    }
+  }
+  return nullptr;
+}
+
+

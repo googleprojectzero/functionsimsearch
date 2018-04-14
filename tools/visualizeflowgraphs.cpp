@@ -49,40 +49,6 @@ using namespace Dyninst;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
-bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
-  &inputfile, uint64_t address, std::string* result) {
-
-  Disassembly disassembly(format, inputfile);
-  if (!disassembly.Load(false)) {
-    return false;
-  }
-  disassembly.DisassembleFromAddress(address, true);
-
-  CodeObject* code_object = disassembly.getCodeObject();
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
-    printf("No functions found.\n");
-    return false;
-  }
-
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
-  for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
-    if (function_address == address) {
-      BuildFlowgraph(function, &graph);
-      std::stringstream json_data;
-      graph.WriteJSON(&json_data, get_block);
-      *result = json_data.str();
-      return true;
-    }
-  }
-  return false;
-}
-
-
 int main(int argc, char** argv) {
   SetUsageMessage(
     "Writes interactive visualisation of CFGs into an HTML file.");

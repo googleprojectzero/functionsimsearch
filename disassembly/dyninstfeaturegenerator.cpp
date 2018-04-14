@@ -29,7 +29,7 @@ void DyninstFeatureGenerator::BuildMnemonicNgrams(
   // the mutex is gone here. If crashes or problems come up, we need to re-
   // introduce it.
   {
-    // Perform the calculation of the mnemonic-n-gram-hashes.
+    // Iterate over each block and extract the instructions.
     for (const auto& block : function->blocks()) {
       Dyninst::ParseAPI::Block::Insns block_instructions;
       block->getInsns(block_instructions);

@@ -18,7 +18,9 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
+#include "pybindings/flowgraphwithinstructions.hpp"
 #include "disassembly/flowgraph.hpp"
+
 
 // Some primes between 2^63 and 2^64 from CityHash.
 static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;
@@ -32,6 +34,18 @@ uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
 // Return a std::function that retrieves instruction strings from DynInst.
 InstructionGetter MakeDyninstInstructionGetter(
   Dyninst::ParseAPI::CodeObject* codeobject);
+
+// Get a single CFG as JSON.
+bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
+  &inputfile, uint64_t address, std::string* result);
+
+// Get a FlowgraphWithInstructions for a single CFG. It is the responsibility
+// of the caller to free this pointer.
+FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
+  const std::string& format, const std::string &inputfile,
+  uint64_t address);
+
+// Convenience function to get a single flowgraph from a single executable
 
 inline uint64_t rotl64 ( uint64_t x, int8_t r ) {
   return (x << r) | (x >> (64 - r));

@@ -6,6 +6,7 @@ LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii -lgflags
 
 OBJ = build/util.o build/disassembly.o build/pecodesource.o build/flowgraph.o \
+      build/flowgraphwithinstructions.o \
       build/buffertokeniterator.o \
       build/flowgraphutil.o build/functionsimhash.o \
       build/functionsimhashfeaturedump.o \
@@ -36,7 +37,7 @@ TEST = tests/runtests
 
 SLOWTEST = tests/slowtests
 
-VPATH = disassembly:learning:searchbackend:tools:util
+VPATH = disassembly:learning:searchbackend:tools:util:pybindings
 
 directory/%:
 	mkdir -p $(@F)
