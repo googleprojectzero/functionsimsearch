@@ -35,6 +35,9 @@ uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
 InstructionGetter MakeDyninstInstructionGetter(
   Dyninst::ParseAPI::CodeObject* codeobject);
 
+InstructionGetter FlowgraphWithInstructionInstructionGetter(
+  FlowgraphWithInstructions* flowgraph);
+
 // Get a single CFG as JSON.
 bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
   &inputfile, uint64_t address, std::string* result);

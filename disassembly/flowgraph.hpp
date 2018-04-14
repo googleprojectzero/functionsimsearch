@@ -46,7 +46,7 @@ private:
 };
 
 // A callback to get the instructions for a basic block at a given address.
-typedef std::function<bool(uint64_t, std::vector<Instruction>*)> 
+typedef std::function<bool(uint64_t, std::vector<Instruction>*)>
   InstructionGetter;
 
 class Flowgraph {

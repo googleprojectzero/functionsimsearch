@@ -128,7 +128,8 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   std::vector<FeatureHash>* feature_hashes) {
   Disassembly disassembly(mode, filename);
   if (!disassembly.Load()) {
-    exit(1);
+    printf("Failure to load %s\n", filename.c_str());
+    return std::make_pair(0, 0);
   }
   Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
 

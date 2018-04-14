@@ -40,6 +40,20 @@ uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
   return count;
 }
 
+InstructionGetter FlowgraphWithInstructionInstructionGetter(
+  FlowgraphWithInstructions* flowgraph) {
+  InstructionGetter getter = [flowgraph](uint64_t address,
+    std::vector<Instruction>* results) -> bool {
+    const auto& iter = flowgraph->GetInstructions().find(address);
+    if (iter == flowgraph->GetInstructions().end()) {
+      return false;
+    }
+    *(results) = iter->second;
+    return true;
+  };
+  return getter;
+}
+
 // A helper function to provide an InstructionGetter that abstracts away the
 // DynInst API.
 InstructionGetter MakeDyninstInstructionGetter(
