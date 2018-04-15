@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "disassembly/flowgraph.hpp"
-#include "pybindings/flowgraphwithinstructions.hpp"
+#include "disassembly/flowgraphwithinstructions.hpp"
 
 bool FlowgraphWithInstructions::AddInstructions(address node_address,
   const std::vector<Instruction>& instructions) {
