@@ -18,7 +18,7 @@
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
 
-#include "pybindings/flowgraphwithinstructions.hpp"
+#include "disassembly/flowgraphwithinstructions.hpp"
 #include "disassembly/flowgraph.hpp"
 
 

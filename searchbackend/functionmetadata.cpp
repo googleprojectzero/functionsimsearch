@@ -50,6 +50,7 @@ FunctionMetadataStore::FunctionMetadataStore(const std::string& csvfile) {
     std::string& functionname = tokens[3];
     std::string& vulnerable = tokens[4];
     file_id_to_name_[file_id] = filename;
+    // Function names are read in base64-encoded format.
     function_to_name_[std::make_pair(file_id, function_address)] =
       functionname;
     function_to_vuln_[std::make_pair(file_id, function_address)] =
