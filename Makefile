@@ -5,10 +5,12 @@ INCLUDEDIR = -Ithird_party/spii/include -I./ -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii -lgflags
 
-OBJ = build/util.o build/disassembly.o build/pecodesource.o build/flowgraph.o \
+OBJ = build/util.o build/util_with_dyninst.o build/disassembly.o \
+      build/pecodesource.o build/flowgraph.o \
       build/flowgraphwithinstructions.o \
       build/buffertokeniterator.o \
-      build/flowgraphutil.o build/functionsimhash.o \
+      build/flowgraphutil.o build/flowgraphutil_dyninst.o \
+      build/functionsimhash.o \
       build/functionsimhashfeaturedump.o \
       build/simhashsearchindex.o build/bitpermutation.o \
       build/threadtimer.o build/functionmetadata.o \

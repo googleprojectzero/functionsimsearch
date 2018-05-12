@@ -35,6 +35,7 @@ bool FunctionSimHasher::FloatsToBits(const std::vector<float>& floats,
     }
     ++index;
   }
+  return true;
 }
 
 void FunctionSimHasher::DumpFloatState(std::vector<float>* output_floats) {

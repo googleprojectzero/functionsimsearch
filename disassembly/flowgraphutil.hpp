@@ -21,7 +21,6 @@
 #include "disassembly/flowgraphwithinstructions.hpp"
 #include "disassembly/flowgraph.hpp"
 
-
 // Some primes between 2^63 and 2^64 from CityHash.
 static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;
 static constexpr uint64_t k1 = 0xb492b66fbe98f273ULL;

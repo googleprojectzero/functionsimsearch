@@ -41,7 +41,7 @@ typedef __uint128_t uint128_t;
 // A: Approximate number of functions in our index: 50 million
 // B: Maximum "distance" from the query that we wish to find: 20% ~ 0.2
 // C: Maximum acceptable odds of missing an item when querying: 5% ~ 0.05
-// D: Maximum number of items we wish to "touch" on each query: 2 million
+// D: Maximum number of items we wish to "touch" on each query: ~5 million
 //    (this will determine per-item query latency)
 //
 // The value B leads us to 0.2 * 128 ~= 26 bits difference -- so we need to
@@ -74,7 +74,7 @@ typedef __uint128_t uint128_t;
 // So we want to achieve (1.0 - 0.1547)^buckets < 0.05
 // We find that (1.0 - 0.1547)^18 ~= 0.049 < 0.05, so we see that with 18
 // buckets the odds of missing one item goes below 5%. If we wanted the odds
-// of missing one item to go below 1%, we would need 28 buckets.
+// of missing one item to go below 1%, we will need 28 buckets.
 //
 // The 50 million entries will be split using the 8-bit bucket IDs, leading to
 // expected 50m / 256.0 elements per bucket (about 200k). If we look at 18

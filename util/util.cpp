@@ -1,8 +1,5 @@
 #include <sstream>
 
-// DynInst headers.
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
 #include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly/disassembly.hpp"
@@ -65,7 +62,7 @@ uint32_t ReadFeatureSet(MappedTextFile* input, std::set<FeatureHash>* result) {
     ++lines;
     ++linecount;
     if ((linecount % 1000) == 0) {
-      printf("[!] Parsed %d lines, saw %d features ...\n", linecount,
+      printf("[!] Parsed %d lines, saw %ld features ...\n", linecount,
         result->size());
     }
   }
@@ -76,7 +73,6 @@ void ReadFeatureSet(const std::vector<std::vector<std::string>>& inputlines,
   std::set<FeatureHash>* result) {
   for (const std::vector<std::string>& line : inputlines) {
     for (uint32_t index = 1; index < line.size(); ++index) {
-      FeatureHash foo = StringToFeatureHash(line[index]);
       result->insert(StringToFeatureHash(line[index]));
     }
   }
@@ -89,7 +85,6 @@ bool FileToLineTokens(const std::string& filename,
     return false;
   }
 
-  uint32_t line_index = 0;
   std::string line;
   while (std::getline(inputfile, line)) {
     std::vector<std::string> tokens;
@@ -123,54 +118,4 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   return std::make_pair(hashA, hashB);
 }
 
-FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
-  const std::string& filename, const std::string& mode, uint64_t address,
-  std::vector<FeatureHash>* feature_hashes) {
-  Disassembly disassembly(mode, filename);
-  if (!disassembly.Load()) {
-    printf("Failure to load %s\n", filename.c_str());
-    return std::make_pair(0, 0);
-  }
-  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
-
-  // Obtain the list of all functions in the binary.
-  const Dyninst::ParseAPI::CodeObject::funclist &functions =
-    code_object->funcs();
-
-  bool contains_function = false;
-  for (Dyninst::ParseAPI::Function* function : functions) {
-    Dyninst::Address function_address = function->addr();
-    if (function_address == address) {
-      contains_function = true;
-      break;
-    }
-  }
-
-  if (!contains_function) {
-    // Make sure the function-to-index is in fact getting indexed.
-    printf("[!] Warning: Did not find %lx during auto-analysis of %s, adding.\n",
-      address, filename.c_str());
-    disassembly.DisassembleFromAddress(address, true);
-  }
-
-  if (functions.size() == 0) {
-    return std::make_pair(0,0);
-  }
-
-  for (Dyninst::ParseAPI::Function* function : functions) {
-    Flowgraph graph;
-    Dyninst::Address function_address = function->addr();
-    if (function_address == address) {
-      BuildFlowgraph(function, &graph);
-
-      std::vector<uint64_t> hashes;
-      DyninstFeatureGenerator generator(function);
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, feature_hashes);
-      uint64_t hash_A = hashes[0];
-      uint64_t hash_B = hashes[1];
-      return std::make_pair(hash_A, hash_B);
-    }
-  }
-  return std::make_pair(0,0);
-}
 
