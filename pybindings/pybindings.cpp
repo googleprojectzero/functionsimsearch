@@ -106,6 +106,23 @@ static PyObject* PyFlowgraphWithInstructions__to_json(PyObject* self,
   return PyUnicode_FromString(json.str().c_str());
 }
 
+static PyObject* PyFlowgraphWithInstructions__from_json(PyObject* self,
+  PyObject* args) {
+  const char* json = nullptr;
+  if (!PyArg_ParseTuple(args, "s", &json)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse string argument");
+    return NULL;
+  }
+ 
+  std::ostringstream json;
+  PyFlowgraphWithInstructions* this_ = (PyFlowgraphWithInstructions*)self;
+
+  this_->flowgraph_with_instructions_->WriteJSON(&json,
+    FlowgraphWithInstructionInstructionGetter(
+      this_->flowgraph_with_instructions_));
+  return PyUnicode_FromString(json.str().c_str());
+}
+
 static PyObject* PyFlowgraphWithInstructions__add_instructions(PyObject* self,
   PyObject* args) {
   // Extract arguments. The arguments are Tuples-of-Tuples of the form:
@@ -185,6 +202,8 @@ static PyMethodDef PyFlowgraphWithInstructions_methods[] = {
     (PyCFunction)PyFlowgraphWithInstructions__add_instructions, METH_VARARGS,
     NULL },
   { "to_json", (PyCFunction)PyFlowgraphWithInstructions__to_json,
+    METH_VARARGS, NULL },
+  { "from_json", (PyCFunction)PyFlowgraphWithInstructions__from_json,
     METH_VARARGS, NULL },
   { NULL, NULL, 0, NULL },
 };
