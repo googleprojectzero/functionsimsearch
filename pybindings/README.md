@@ -1,6 +1,5 @@
 ## FunctionSimSearch Python Bindings
 
-
 The FunctionSimSearch C++ code is built with two primary concerns: Follow the
 UNIX philosophy of many different command line tools that can be combined on
 the shell, and speed / efficiency.
@@ -12,6 +11,17 @@ against it.
 
 At the moment, the Python API is extremely rudimentary, exposing just the bare
 functionality of SimHashing and nearest neighbor search.
+
+In order to build & install the Python extension, please issue:
+```
+  python ./setup.py install --user
+```
+in the main FunctionSimSearch directory after you have built the rest of
+FunctionSimSearch.
+
+Note that the Python extensions should build even if DynInst does not build (the
+extension is meant to work inside other disassemblers, and therefore does not
+need DynInst).
 
 ```
 # Interface for easy use of other disassembly engines.
