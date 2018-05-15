@@ -37,4 +37,7 @@ private:
   std::queue<MnemTuple> mnem_tuples_;
 };
 
+bool FlowgraphWithInstructionsFromJSON(const char* json,
+  FlowgraphWithInstructions* graph);
+
 #endif // FLOWGRAPHWITHINSTRUCTIONS_HPP

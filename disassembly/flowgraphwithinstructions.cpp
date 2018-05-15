@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 
+#include "third_party/json/src/json.hpp"
+
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
 
@@ -66,4 +68,49 @@ MnemTuple FlowgraphWithInstructionsFeatureGenerator::GetNextMnemTuple() {
   MnemTuple tuple = mnem_tuples_.front();
   mnem_tuples_.pop();
   return tuple;
+}
+
+bool FlowgraphWithInstructionsFromJSON(const char* json,
+  FlowgraphWithInstructions* graph) {
+  auto json_graph = nlohmann::json::parse(json);
+
+  if ((json_graph.find("nodes") == json_graph.end()) ||
+      (json_graph.find("edges") == json_graph.end())) {
+    return false;
+  }
+
+  // Parse nodes.
+  for (const auto& node : json_graph["nodes"]) {
+    if ((node.find("address") == node.end()) ||
+      (node.find("instructions") == node.end())) {
+      return false;
+    }
+    uint64_t address = node["address"].get<uint64_t>();
+    std::vector<Instruction> instructions;
+    for (const auto& instruction : node["instructions"]) {
+      if (instruction.find("mnemonic") == instruction.end() ||
+        instruction.find("operands") == instruction.end()) {
+        return false;
+      }
+      std::string mnemonic = instruction["mnemonic"].get<std::string>();
+      std::vector<std::string> operands;
+      for (const auto& operand : instruction["operands"]) {
+        operands.push_back(operand.get<std::string>());
+      }
+      instructions.emplace_back(mnemonic, operands);
+    }
+    graph->AddNode(address);
+    graph->AddInstructions(address, instructions);
+  }
+  // Parse edges.
+  for (const auto& edge : json_graph["edges"]) {
+    if ((edge.find("source") == edge.end()) || 
+      (edge.find("destination") == edge.end())) {
+      return false;
+    }
+    uint64_t source = edge["source"].get<uint64_t>();
+    uint64_t destination = edge["destination"].get<uint64_t>();
+    graph->AddEdge(source, destination);
+  }
+  return true;
 }

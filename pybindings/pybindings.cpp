@@ -113,14 +113,15 @@ static PyObject* PyFlowgraphWithInstructions__from_json(PyObject* self,
     PyErr_SetString(functionsimsearch_error, "Failed to parse string argument");
     return NULL;
   }
- 
-  std::ostringstream json;
-  PyFlowgraphWithInstructions* this_ = (PyFlowgraphWithInstructions*)self;
 
-  this_->flowgraph_with_instructions_->WriteJSON(&json,
-    FlowgraphWithInstructionInstructionGetter(
-      this_->flowgraph_with_instructions_));
-  return PyUnicode_FromString(json.str().c_str());
+  PyFlowgraphWithInstructions* this_ = (PyFlowgraphWithInstructions*)self;
+  if(!FlowgraphWithInstructionsFromJSON(json,
+    this_->flowgraph_with_instructions_)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse JSON");
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
 }
 
 static PyObject* PyFlowgraphWithInstructions__add_instructions(PyObject* self,
@@ -174,7 +175,7 @@ static PyObject* PyFlowgraphWithInstructions__add_instructions(PyObject* self,
       }
       std::string operand;
       if (!PyObjectToString(element, &operand)) {
-        printf("Failed to convert op to string");
+        PyErr_SetString(functionsimsearch_error, "Failed to convert op to string");
         return NULL;
       }
       operands.push_back(operand);
@@ -230,7 +231,8 @@ typedef struct PySimHasher {
   FunctionSimHasher* function_simhasher_;
 } PySimHasher;
 
-static PyObject* PySimHasher_new(PyTypeObject *type, PyObject* args, PyObject* kwds) {
+static PyObject* PySimHasher_new(PyTypeObject *type, PyObject* args, 
+  PyObject* kwds) {
   PySimHasher* self;
   self = (PySimHasher*) type->tp_alloc(type, 0);
   return (PyObject*) self;
@@ -243,7 +245,13 @@ static void PySimHasher_dealloc(PySimHasher* self) {
 
 static int PySimHasher_init(PySimHasher* self, PyObject* args, PyObject *kwds) {
   // No arguments, so no need to parse any.
-  self->function_simhasher_ = new FunctionSimHasher("weights.txt");
+  static char* kwlist[] = { (char*)"weights", NULL };
+  char* weightsfile = (char*)"weights.txt";
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", kwlist, &weightsfile)) {
+    PyErr_SetString(functionsimsearch_error, "Expected string argument");
+    return NULL;
+  }
+  self->function_simhasher_ = new FunctionSimHasher(weightsfile);
   return 0;
 }
 
@@ -252,19 +260,19 @@ static PyObject* PySimHasher__calculate_hash(PyObject* self,
   PyFlowgraphWithInstructions* flowgraph;
   if (!PyArg_ParseTuple(args, "O!", &PyFlowgraphWithInstructionsType,
     &flowgraph)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments.");
     return NULL;
   }
   FlowgraphWithInstructionsFeatureGenerator feature_gen(
     *(flowgraph->flowgraph_with_instructions_));
   std::vector<uint64_t> output_hashes;
   PySimHasher* this_ = (PySimHasher*)self;
-  this_->function_simhasher_->CalculateFunctionSimHash(&feature_gen, 2,
+  this_->function_simhasher_->CalculateFunctionSimHash(&feature_gen, 128,
     &output_hashes);
 
   PyObject* return_tuple = PyTuple_New(2);
-  printf("%lx - %lx\n", output_hashes[0], output_hashes[1]);
-  PyTuple_SetItem(return_tuple, 0, PyLong_FromLong(output_hashes[0]));
-  PyTuple_SetItem(return_tuple, 1, PyLong_FromLong(output_hashes[1]));
+  PyTuple_SetItem(return_tuple, 0, PyLong_FromUnsignedLong(output_hashes[0]));
+  PyTuple_SetItem(return_tuple, 1, PyLong_FromUnsignedLong(output_hashes[1]));
 
   return return_tuple;
 }
@@ -317,9 +325,20 @@ static void PySimHashSearchIndex_dealloc(PySimHashSearchIndex* self) {
 }
 
 static int PySimHashSearchIndex_init(PySimHashSearchIndex* self,
-  PyObject* args) {
-  // No arguments, so no need to parse any.
-  self->search_index_ = new SimHashSearchIndex("search.index", false);
+  PyObject* args, PyObject *kwds) {
+  // Parse keyword arguments.
+  static char* kwlist[] = { (char*)"indexfile", (char*)"create", 
+    (char*)"buckets", NULL };
+  char* indexfile = nullptr;
+  bool create = false;
+  uint32_t buckets = 28;
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|bi", kwlist, &indexfile,
+    &create, &buckets)) {
+    //PyErr_SetString(functionsimsearch_error, "Expected string argument");
+    return -1;
+  }
+
+  self->search_index_ = new SimHashSearchIndex(indexfile, create, buckets);
   return 0;
 }
 
@@ -340,7 +359,8 @@ static PyObject* PySimHashSearchIndex__add_function(PyObject* self,
   // Arguments are hash_A, hash_B (both uint64_t), a 128-bit FileID, and an
   // address of the function in question.
   uint64_t hash_A, hash_B, file_id, address;
-  if (!PyArg_ParseTuple(args, "kkkkk", &hash_A, &hash_B, &file_id, &address)) {
+  if (!PyArg_ParseTuple(args, "kkkk", &hash_A, &hash_B, &file_id, &address)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments.");
     return NULL;
   }
   PySimHashSearchIndex* index = (PySimHashSearchIndex*)self;
@@ -354,6 +374,7 @@ static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self,
   uint64_t hash_A, hash_B;
   std::vector<std::pair<float, SimHashSearchIndex::FileAndAddress>> results;
   if (!PyArg_ParseTuple(args, "kkI", &hash_A, &hash_B, &how_many)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments."); 
     return NULL;
   }
   PySimHashSearchIndex* index = (PySimHashSearchIndex*)self;
@@ -361,6 +382,7 @@ static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self,
   // Convert the vector to a list of python floats & strings.
   PyObject* result_list = PyList_New(results.size());
   if (!result_list) {
+    PyErr_SetString(functionsimsearch_error, "Failed to alloc result_list.");
     return NULL;
   }
 
@@ -369,6 +391,7 @@ static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self,
     PyObject* result_tuple = PyTuple_New(3);
     if (!result_tuple) {
       Py_DECREF(result_list);
+      PyErr_SetString(functionsimsearch_error, "Failed to alloc result_tuple.");
       return NULL;
     }
     // Place it into the list. This steals the reference, destruction of the

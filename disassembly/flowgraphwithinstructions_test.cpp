@@ -1,5 +1,7 @@
 #include <memory>
 #include "gtest/gtest.h"
+#include "third_party/json/src/json.hpp"
+
 #include "disassembly/flowgraphutil.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
@@ -86,3 +88,22 @@ TEST(flowgraphwithinstructions, creategraph) {
   }
 }
 
+
+TEST(flowgraphwithinstructions, parsejson) {
+  const char* json_string = 
+  R"json({"edges":[{"destination":1518838580,"source":1518838565},{"destination":1518838572,"source":1518838565},{"destination":1518838578,"source":1518838572},{"destination":1518838574,"source":1518838572},{"destination":1518838580,"source":1518838574},{"destination":1518838578,"source":1518838574},{"destination":1518838580,"source":1518838578}],"name":"CFG","nodes":[{"address":1518838565,"instructions":[{"mnemonic":"xor","operands":["EAX","EAX"]},{"mnemonic":"cmp","operands":["[ECX + 4]","EAX"]},{"mnemonic":"jnle","operands":["5a87a334"]}]},{"address":1518838572,"instructions":[{"mnemonic":"jl","operands":["5a87a332"]}]},{"address":1518838574,"instructions":[{"mnemonic":"cmp","operands":["[ECX]","EAX"]},{"mnemonic":"jnb","operands":["5a87a334"]}]},{"address":1518838578,"instructions":[{"mnemonic":"mov","operands":["AL","1"]}]},{"address":1518838580,"instructions":[{"mnemonic":"ret near","operands":["[ESP]"]}]}]})json";
+
+  std::unique_ptr<FlowgraphWithInstructions> ptr(new FlowgraphWithInstructions());
+  FlowgraphWithInstructions* temp = ptr.get();
+  EXPECT_TRUE(FlowgraphWithInstructionsFromJSON(json_string, temp));
+
+  EXPECT_TRUE(ptr->HasNode(1518838565));
+  EXPECT_TRUE(ptr->HasNode(1518838572));
+
+  FunctionSimHasher hasher("", false);
+  FlowgraphWithInstructionsFeatureGenerator feature_gen(*ptr);
+  std::vector<uint64_t> output_hashes;
+  hasher.CalculateFunctionSimHash(&feature_gen, 128, &output_hashes);
+
+  EXPECT_EQ(output_hashes[0], 0xa7ef296fa5dea3ee);
+}
