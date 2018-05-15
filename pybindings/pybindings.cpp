@@ -368,13 +368,13 @@ static PyObject* PySimHashSearchIndex__add_function(PyObject* self,
   Py_RETURN_NONE;
 }
 
-static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self, 
+static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self,
   PyObject* args) {
   uint32_t how_many;
   uint64_t hash_A, hash_B;
   std::vector<std::pair<float, SimHashSearchIndex::FileAndAddress>> results;
   if (!PyArg_ParseTuple(args, "kkI", &hash_A, &hash_B, &how_many)) {
-    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments."); 
+    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments.");
     return NULL;
   }
   PySimHashSearchIndex* index = (PySimHashSearchIndex*)self;
