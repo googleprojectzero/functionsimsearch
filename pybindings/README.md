@@ -10,47 +10,27 @@ a good Python API. Furthermore, a Python API should be an API in the sense that
 it should provide at least a modicum of stability for programmers programming
 against it.
 
-The Python API is split in two halves: A high-level API that is very similar
-to what the command-line tools provide, and a more low-level API that is meant
-for environments where someone wishes to embed FunctionSimSearch into existing
-disassembly tools (e.g. without using DynInst).
+At the moment, the Python API is extremely rudimentary, exposing just the bare
+functionality of SimHashing and nearest neighbor search.
 
-
-High-level API: The functionsimsearch.tools module:
 ```
-  functionsimsearch.tools.addfunctionstoindex(
-  functionsimsearch.tools.addsinglefunctiontoindex(
-  functionsimsearch.tools.createfunctionindex(
-  functionsimsearch.tools.disassemble(
-  functionsimsearch.tools.dotgraphs(
-  functionsimsearch.tools.dumpfunctionindex(
-  functionsimsearch.tools.dumpfunctionindexinfo(
-  functionsimsearch.tools.dumpsinglefunctionfeatures(
-  functionsimsearch.tools.functionfingerprints
-  functionsimsearch.tools.graphhashes
-  functionsimsearch.tools.growfunctionindex
-  functionsimsearch.tools.trainsimhashweights
-
-
 # Interface for easy use of other disassembly engines.
 
 functionsimsearch.FlowGraphWithInstructions class:
-  .add_node(address, array_of_instructions)
+  .add_node(address)
+  .add_instructions(address, (("mnem", ("op1", "op2")), ...))
   .add_edge(address, address)
 
 functionsimsearch.SimHasher class:
-  .calculate_hash(functionsimsearch.FlowGraphWithInstructions)
+  .calculate_hash(some_FlowGraphWithInstructions)
 
 functionsimsearch.SimHashSearchIndex class:
-  .get_free_size()
-  .get_used_size()
   .query_top_N(hash_a, hash_b, N)
 
-functionsimsearch.growsearchindex function?
-
-
-
 ```
+
+Please refer to the example IDA Plugin and the Python test code for example
+usage.
 
 
 
