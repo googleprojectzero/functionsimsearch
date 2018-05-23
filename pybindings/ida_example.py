@@ -11,6 +11,20 @@
 """
 import functionsimsearch
 import idaapi
+import base64
+
+def parse_function_meta_data(filename):
+  # Returns a dictionary mapping (id, address) tuples to 
+  # (filename, functionname) tuples.
+  result = {}
+  for line in file(filename, "rt").readlines():
+    tokens = line.split()
+    exe_id = long(tokens[0], 16)
+    address = long(tokens[2], 16)
+    function_name = base64.decodestring(tokens[3])
+    file_name = tokens[1]
+    result[(exe_id, address)] = (file_name, function_name)
+  return result
 
 def split_instruction_list(instructions, split_mnemonic):
   """
@@ -75,20 +89,31 @@ def save_function():
 def load_function():
   search_index
   sim_hasher
+  meta_data
   flowgraph = get_flowgraph_from(here())
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
-  address = idaapi.get_func(here()).start_ea
+  address = long(idaapi.get_func(here()).start_ea)
   results = search_index.query_top_N(hashes[0], hashes[1], 5)
   if len(results) == 0:
     print("%lx:%lx %lx-%lx No search results" %
       (executable_id, address, hashes[0], hashes[1]))
   for result in results:
-    print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx" %
-      (executable_id, address, hashes[0], hashes[1],
-      max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
-      result[1], result[2]))
-
+    if not meta_data.has_key((result[1], result[2])):
+      print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx" %
+        (executable_id, address, hashes[0], hashes[1],
+        max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        result[1], result[2]))
+    else:
+      filename, functionname = meta_data[(result[1], result[2])]
+      functionname = functionname.replace('\n', '')
+      functionname = functionname.replace('\r', '')
+      print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx %s '%s'" %
+        (executable_id, address, hashes[0], hashes[1],
+        max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        result[1], result[2], filename, functionname))
+  print("--------------------------------------")
+ 
 try:
   hotkey_context_S
   if idaapi.del_hotkey(hotkey_context_S):
@@ -118,6 +143,14 @@ except:
   create_index = True
   if os.path.isfile('/tmp/example.simhash'):
     create_index = False
+  if os.path.isfile('/tmp/example.simhash.meta'):
+    print("Parsing meta_data")
+    meta_data = parse_function_meta_data('/tmp/example.simhash.meta')
+    print("Parsed meta_data")
+    for i in meta_data.keys()[0:10]:
+      print("%lx:%lx" %i )
+  else:
+    meta_data = {}
   search_index = functionsimsearch.SimHashSearchIndex("/tmp/example.simhash",
     create_index, 28)
   sim_hasher = functionsimsearch.SimHasher()
