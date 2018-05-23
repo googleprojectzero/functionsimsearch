@@ -5,7 +5,7 @@
 #include "learning/simhashtrainer.hpp"
 #include "util/testutil.hpp"
 #include "learning/trainingdata.hpp"
-#include "util/util.hpp"
+#include "util/util_with_dyninst.hpp"
 #include <array>
 
 void DumpFloatVector(const std::vector<float>& vector) {
