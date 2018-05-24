@@ -321,7 +321,7 @@ def WritePairsFile( set_of_pairs, output_name ):
   result = open(output_name, "wt")
   for pair in set_of_pairs:
     result.write("%s:%s %s:%s\n" % (pair[0][0], pair[0][1], pair[1][0],
-      pair[0][0]))
+      pair[1][1]))
   result.close()
 
 def WriteFunctionsTxt( output_directory ):
