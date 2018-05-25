@@ -29,13 +29,11 @@ RUN cd /usr/src/gtest && \
 RUN cd /code && \
     git clone https://github.com/google/functionsimsearch.git && \
     cd functionsimsearch && \
-    mv third_party third_party_temp && \
     mkdir third_party && \
     cd third_party && \
     git clone https://github.com/okdshin/PicoSHA2.git && \
     git clone https://github.com/trailofbits/pe-parse.git && \
     git clone https://github.com/PetterS/spii.git && \
-    cp -R ../third_party_temp/* ./ && \
     cd pe-parse && \
     cmake -D CMAKE_CXX_FLAGS=-Wstrict-overflow=1 . && \
     sed -i -e 's/overflow\=5/overflow\=1/g' ./cmake/compilation_flags.cmake && \
