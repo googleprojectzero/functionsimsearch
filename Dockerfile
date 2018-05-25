@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 
 RUN apt-get update
 RUN apt-get install -y git wget cmake gcc build-essential libz-dev
