@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 #include "searchbackend/functionsimhash.hpp"
 #include "util/testutil.hpp"
-#include "util/util.hpp"
+#include "util/util_with_dyninst.hpp"
 
 TEST(functionsimhash, check_feature_uniqueness) {
   FunctionSimHasher hasher("");
