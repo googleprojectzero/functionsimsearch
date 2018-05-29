@@ -43,11 +43,18 @@ You should be able to build on a Debian stretch machine by running the following
 bash script in the directory where you checked out everything:
 
 ```bash
+./build_dependencies.sh
+```
+
+The script does the following:
+
+```bash
 #!/bin/bash
 source_dir=$(pwd)
 
 # Install gtest and gflags. It's a bit fidgety, but works:
 sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++
+sudo apt-get install libboost-system-dev libboost-date-time-dev libboost-thread-dev
 cd /usr/src/gtest
 sudo cmake CMakeLists
 sudo make
