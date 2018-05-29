@@ -1,3 +1,4 @@
+#include "disassembly/flowgraphutil_dyninst.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 
 DyninstFeatureGenerator::DyninstFeatureGenerator(
