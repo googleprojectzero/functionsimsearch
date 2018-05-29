@@ -12,7 +12,7 @@ TEST(flowgraphwithinstructions, creategraph) {
   // Get function 0x806C811 from ./testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os
   std::unique_ptr<FlowgraphWithInstructions> fg_dyninst(
     GetCFGWithInstructionsFromBinary(
-        "ELF", "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os",
+        "ELF", "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os.ELF",
         0x806C811));
 
   // Expect that the loading of the disassembly worked.

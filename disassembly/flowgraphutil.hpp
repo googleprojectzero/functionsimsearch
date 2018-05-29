@@ -15,9 +15,6 @@
 #ifndef FLOWGRAPHUTIL_HPP
 #define FLOWGRAPHUTIL_HPP
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/flowgraphwithinstructions.hpp"
 #include "disassembly/flowgraph.hpp"
 
@@ -26,28 +23,8 @@ static constexpr uint64_t k0 = 0xc3a5c85c97cb3127ULL;
 static constexpr uint64_t k1 = 0xb492b66fbe98f273ULL;
 static constexpr uint64_t k2 = 0x9ae16a3b2f90404fULL;
 
-// Builds a CFG using a Dyninst Function* as input.
-uint64_t BuildFlowgraph(Dyninst::ParseAPI::Function* function,
-  Flowgraph* graph);
-
-// Return a std::function that retrieves instruction strings from DynInst.
-InstructionGetter MakeDyninstInstructionGetter(
-  Dyninst::ParseAPI::CodeObject* codeobject);
-
 InstructionGetter FlowgraphWithInstructionInstructionGetter(
   FlowgraphWithInstructions* flowgraph);
-
-// Get a single CFG as JSON.
-bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
-  &inputfile, uint64_t address, std::string* result);
-
-// Get a FlowgraphWithInstructions for a single CFG. It is the responsibility
-// of the caller to free this pointer.
-FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
-  const std::string& format, const std::string &inputfile,
-  uint64_t address);
-
-// Convenience function to get a single flowgraph from a single executable
 
 inline uint64_t rotl64 ( uint64_t x, int8_t r ) {
   return (x << r) | (x >> (64 - r));
