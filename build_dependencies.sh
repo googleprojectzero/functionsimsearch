@@ -2,7 +2,8 @@
 source_dir=$(pwd)
 
 # Install gtest and gflags. It's a bit fidgety, but works:
-sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ libbost-system-dev liboost-thread-dev libboost-date-time-dev
+sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ 
+sudo apt-get install libboost-system-dev liboost-thread-dev libboost-date-time-dev
 cd /usr/src/gtest
 sudo cmake CMakeLists
 sudo make
