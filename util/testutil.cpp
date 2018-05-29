@@ -3,14 +3,14 @@
 // Data describing where to find RarVM::ExecuteStandardFilter in various
 // optimization settings and compilers.
 std::map<uint64_t, const std::string> id_to_filename = {
-  { 0xf89b73cc72cd02c7ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O0" },
-  { 0x5ae018cfafb410f5ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O2" },
-  { 0x51f3962ff93c1c1eULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O3" },
-  { 0x584e2f1630b21cfaULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.Os" },
-  { 0xf7f94f1cdfbe0f98ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O0" },
-  { 0x83fe3244c90314f4ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O2" },
-  { 0x396063026eaac371ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O3" },
-  { 0x924daa0b17c6ae64ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os" },
+  { 0xf89b73cc72cd02c7ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O0.ELF" },
+  { 0x5ae018cfafb410f5ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O2.ELF" },
+  { 0x51f3962ff93c1c1eULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.O3.ELF" },
+  { 0x584e2f1630b21cfaULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x64.Os.ELF" },
+  { 0xf7f94f1cdfbe0f98ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O0.ELF" },
+  { 0x83fe3244c90314f4ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O2.ELF" },
+  { 0x396063026eaac371ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O3.ELF" },
+  { 0x924daa0b17c6ae64ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os.ELF" },
   { 0xb9b4ecb0faefd8cfULL, "../testdata/PE/unrar.5.5.3.builds/VS2015/"
     "unrar32/Release/UnRAR.exe" },
   { 0x720c272a7261ec7eULL, "../testdata/PE/unrar.5.5.3.builds/VS2015/"
