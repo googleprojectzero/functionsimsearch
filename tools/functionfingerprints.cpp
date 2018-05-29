@@ -23,7 +23,7 @@
 #include "disassembly/disassembly.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
-#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "disassembly/pecodesource.hpp"
 #include "util/util.hpp"

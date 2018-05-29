@@ -23,7 +23,7 @@
 
 #include "disassembly/disassembly.hpp"
 #include "disassembly/flowgraph.hpp"
-#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/flowgraphutil_dyninst.hpp"
 #include "disassembly/pecodesource.hpp"
 #include "util/util.hpp"
 

@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "third_party/json/src/json.hpp"
 
-#include "disassembly/flowgraphutil.hpp"
+#include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
 

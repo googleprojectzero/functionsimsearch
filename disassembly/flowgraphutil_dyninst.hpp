@@ -20,5 +20,9 @@ InstructionGetter MakeDyninstInstructionGetter(
 bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
   &inputfile, uint64_t address, std::string* result);
 
+FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
+  const std::string& format, const std::string &inputfile,
+  uint64_t func_address);
+
 #endif // FLOWGRAPHUTIL_DYNINST_HPP
 
