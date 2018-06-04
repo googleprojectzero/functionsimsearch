@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
-# A Python script to generate test data given ELF or PE files including their
+# A Python script to generate training data given ELF or PE files including their
 # relevant debug info.
 #
 # This Python script is meant to replace the horrible bash script that is
 # currently responsible for doing this.
 
-import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing, glob, sys
+import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing, glob
+import sys
 from absl import app
 from absl import flags
 from subprocess import Popen, PIPE, STDOUT
@@ -54,10 +55,10 @@ def FindPETrainingFiles():
   """ Returns the list of PE files that should be used for training. These
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
-  exe_files = [ filename for filename in glob.iglob('PE/**/*.exe', recursive=True)
-    if os.path.isfile(filename) ]
-  dll_files = [ filename for filename in glob.iglob('PE/**/*.dll', recursive=True)
-    if os.path.isfile(filename) ]
+  exe_files = [ filename for filename in glob.iglob('PE/**/*.exe',
+    recursive=True) if os.path.isfile(filename) ]
+  dll_files = [ filename for filename in glob.iglob('PE/**/*.dll',
+    recursive=True) if os.path.isfile(filename) ]
   result = exe_files + dll_files
   print("Returning list of files from PE directory: %s" % result)
   return result
