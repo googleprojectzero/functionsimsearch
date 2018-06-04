@@ -5,7 +5,7 @@ source_dir=$(pwd)
 sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ 
 sudo apt-get install libboost-system-dev libboost-thread-dev libboost-date-time-dev
 cd /usr/src/gtest
-sudo cmake CMakeLists
+sudo cmake ./CMakeLists.txt
 sudo make
 sudo cp *.a /usr/lib
 
