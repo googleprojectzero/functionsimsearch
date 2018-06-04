@@ -161,11 +161,11 @@ int main(int argc, char** argv) {
   DumpHistogram("attraction trained", attraction_trained_histogram);
   DumpHistogram("repulsion trained", repulsion_trained_histogram);
 
-  printf("# Attraction mean trained: %.10e\n", attraction_mean_trained);
-  printf("# Attraction mean untrained: %.10e\n", attraction_mean_untrained);
-  printf("# Repulsion mean trained: %.10e\n", repulsion_mean_trained);
-  printf("# Repulsion mean untrained: %.10e\n", repulsion_mean_untrained);
-  printf("# Difference in means: %10e (untrained) -> %10e (trained)\n",
+  printf("# Attraction mean trained: %2.5f\n", attraction_mean_trained);
+  printf("# Attraction mean untrained: %2.5f\n", attraction_mean_untrained);
+  printf("# Repulsion mean trained: %2.5f\n", repulsion_mean_trained);
+  printf("# Repulsion mean untrained: %2.5f\n", repulsion_mean_untrained);
+  printf("# Difference in means: %2.5f (untrained) -> %2.4f (trained)\n",
     repulsion_mean_untrained - attraction_mean_untrained,
     repulsion_mean_trained - attraction_mean_trained);
 }
