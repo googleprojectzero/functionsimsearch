@@ -52,7 +52,7 @@ def FindELFTrainingFiles():
 
   """
   elf_files = [ filename for filename in glob.iglob(
-    executable_directory + 'ELF/**/*', recursive=True)
+    FLAGS.executable_directory + 'ELF/**/*', recursive=True)
     if os.path.isfile(filename) ]
   print("Returning list of files from ELF directory: %s" % elf_files)
   return elf_files
@@ -62,10 +62,10 @@ def FindPETrainingFiles():
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
   exe_files = [ filename for filename in glob.iglob(
-    executable_directory + 'PE/**/*.exe',
+    FLAGS.executable_directory + 'PE/**/*.exe',
     recursive=True) if os.path.isfile(filename) ]
   dll_files = [ filename for filename in glob.iglob(
-    executable_directory + 'PE/**/*.dll',
+    FLAGS.executable_directory + 'PE/**/*.dll',
     recursive=True) if os.path.isfile(filename) ]
   result = exe_files + dll_files
   print("Returning list of files from PE directory: %s" % result)
