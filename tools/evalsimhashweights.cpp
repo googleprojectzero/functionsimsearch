@@ -165,7 +165,8 @@ int main(int argc, char** argv) {
   printf("# Attraction mean untrained: %.10e\n", attraction_mean_untrained);
   printf("# Repulsion mean trained: %.10e\n", repulsion_mean_trained);
   printf("# Repulsion mean untrained: %.10e\n", repulsion_mean_untrained);
-  printf("# Difference in means: %10e\n", repulsion_mean_trained, 
-    attraction_mean_trained);
+  printf("# Difference in means: %10e (untrained) -> %10e (trained)\n",
+    repulsion_mean_untrained - attraction_mean_untrained,
+    repulsion_mean_trained - attraction_mean_trained);
 }
 
