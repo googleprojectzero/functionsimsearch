@@ -37,6 +37,11 @@ flags.DEFINE_boolean('disable_mnemonic', False, "Disable the extraction of " +
 # Clobber existing data directory or not.
 flags.DEFINE_boolean('clobber', False, "Clobber output directory or not.")
 
+# Directory for executable files to train on.
+flags.DEFINE_string('executable_directory', './',
+  "The directory where the ELF and PE executables to train on can be found " +\
+  "in their relevant subdirectories ELF/**/* and PE/**/*")
+
 #=============================================================================
 
 FLAGS = flags.FLAGS
@@ -46,7 +51,8 @@ def FindELFTrainingFiles():
   ELF files need to contain objdump-able debug information.
 
   """
-  elf_files = [ filename for filename in glob.iglob('ELF/**/*', recursive=True)
+  elf_files = [ filename for filename in glob.iglob(
+    executable_directory + 'ELF/**/*', recursive=True)
     if os.path.isfile(filename) ]
   print("Returning list of files from ELF directory: %s" % elf_files)
   return elf_files
@@ -55,9 +61,11 @@ def FindPETrainingFiles():
   """ Returns the list of PE files that should be used for training. These
   PE files need to have associated text files (with suffix .debugdump) that
   contains the output of dia2dump in the same directory. """
-  exe_files = [ filename for filename in glob.iglob('PE/**/*.exe',
+  exe_files = [ filename for filename in glob.iglob(
+    executable_directory + 'PE/**/*.exe',
     recursive=True) if os.path.isfile(filename) ]
-  dll_files = [ filename for filename in glob.iglob('PE/**/*.dll',
+  dll_files = [ filename for filename in glob.iglob(
+    executable_directory + 'PE/**/*.dll',
     recursive=True) if os.path.isfile(filename) ]
   result = exe_files + dll_files
   print("Returning list of files from PE directory: %s" % result)
