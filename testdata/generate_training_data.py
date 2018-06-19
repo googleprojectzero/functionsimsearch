@@ -229,7 +229,7 @@ def ProcessTrainingFiles(training_files, file_format):
     sha256sum = subprocess.check_output(["sha256sum", training_file]).split()[0]
     file_id = sha256sum[0:16].decode("utf-8")
     # Run objdump
-    print("Running objdump on %s... " % training_file, end='')
+    print("Obtaining function symbols from %s... " % training_file, end='')
     objdump_symbols = ObtainFunctionSymbols(training_file, file_format)
     # Get the functions that our disassembly could find.
     print("Getting disassembled functions. ", end='')
@@ -273,7 +273,8 @@ def BuildSymbolToFileAddressMapping():
 def SplitPercentageOfSymbolToFileAddressMapping( symbol_dict, percentage ):
   """
   Split the dictionary into two randomly chosen sub-dictionaries of a given
-  percentage.
+  percentage. This means that the given percentage of functions will be placed
+  in the validation dictionary, the rest in the training dictionary.
   """
   result_validation = defaultdict(list)
   result_training = defaultdict(list)
@@ -292,11 +293,15 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
   """
   Writes repulse.txt and attract.txt into output_directory. Each file will
   contain number_of_pairs many pairs.
+
+  The function is probabilistic with potentially infinite runtime, so we
+  induce a brutal upper limit of number_of_pairs**3 max loop iterations.
   """
   # Construct a set of things that should be the same.
   attraction_set = set()
   symbols_as_list = list(input_map.keys())
-  while len(attraction_set) != number_of_pairs:
+  max_loop_iterations = number_of_pairs**3
+  while len(attraction_set) != number_of_pairs and max_loop_iterations > 0:
     symbol = random.choice( symbols_as_list )
     while len( input_map[symbol] ) == 1:
       symbol = random.choice( symbols_as_list )
@@ -306,9 +311,11 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
       element_two = random.choice( input_map[symbol] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     attraction_set.add(ordered_pair)
+    max_loop_iterations = max_loop_iterations - 1
   # Construct a set of things that should not be the same.
   repulsion_set = set()
-  while len(repulsion_set) != number_of_pairs:
+  max_loop_iterations = number_of_pairs**3
+  while len(repulsion_set) != number_of_pairs and max_loop_iterations > 0:
     symbol_one = random.choice( symbols_as_list )
     symbol_two = symbol_one
     while symbol_one == symbol_two:
@@ -317,6 +324,7 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
     element_two = random.choice( input_map[symbol_two] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     repulsion_set.add(ordered_pair)
+    max_loop_iterations = max_loop_iterations - 1
   # Write the files.
   WritePairsFile( attraction_set, output_directory + "/attract.txt" )
   WritePairsFile( repulsion_set, output_directory + "/repulse.txt" )
@@ -367,30 +375,72 @@ def main(argv):
 
   # Get a map that maps every symbol to the files in which it occurs.
   print("Loading all extracted symbols and grouping them...")
-  symbol_to_files_and_names = BuildSymbolToFileAddressMapping()
+  symbol_to_files_and_address = BuildSymbolToFileAddressMapping()
 
-  # Split off 10% of the symbols into a control map.
+  # First, generate the training and validation data for performance on unseen
+  # functions - to test how well we generalize beyond things we have already
+  # seen variants of.
+
+  # Split off 20% of the symbols into a control map.
   print("Splitting into validation set and training set...")
   validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
-    symbol_to_files_and_names, 0.20)
+    symbol_to_files_and_address, 0.20)
 
-  os.mkdir(FLAGS.work_directory + "/training_data")
-  os.mkdir(FLAGS.work_directory + "/validation_data")
+  os.mkdir(FLAGS.work_directory + "/training_data_unseen")
+  os.mkdir(FLAGS.work_directory + "/validation_data_unseen")
 
   # Write the training set.
-  print("Writing training attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data",
+  print("Writing unseen training attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data_unseen",
     number_of_pairs=3000)
 
   # Write the validation set.
-  print("Writing validation attract.txt and repulse.txt...")
+  print("Writing unseen validation attract.txt and repulse.txt...")
   WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
-    "/validation_data", number_of_pairs=500 )
+    "/validation_data_unseen", number_of_pairs=500 )
+
+  # Secondly, generate the training and validation data for performance on 'seen'
+  # functions -- e.g. how well we perform if we need to spot a variant of a function
+  # we have not seen before.
+
+  os.mkdir(FLAGS.work_directory + "/training_data_seen")
+  os.mkdir(FLAGS.work_directory + "/validation_data_seen")
+  
+  # Each function is implemented in a number of different executables - and
+  # symbol_to_files_and_address gives us that mapping. In order to evaluate
+  # our performance on seen functions, split 20% of each function into the
+  # validation map.
+  
+  validation_map = defaultdict(list)
+  training_map = defaultdict(list)
+  for symbol, files_and_address in symbol_to_files_and_address.items():
+    # Make a copy of files_and_address.
+    temp = [x for x in files_and_address]
+    # Shuffle the copy.
+    random.shuffle(temp)
+    # Take the first few elements for the validation dictionary, the rest
+    # for the training dictionary
+    fraction = int(float(len(temp)) * 0.3)
+    if fraction > 1:
+      validation_map[symbol] = temp[0:fraction]
+      training_map[symbol] = temp[fraction:]
+  
+  # Write the training set.
+  print("Writing seen training attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data_seen",
+    number_of_pairs=2000)
+
+  # Write the validation set.
+  print("Writing seen validation attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
+    "/validation_data_seen", number_of_pairs=150 )
 
   # Write functions.txt into both directories.
   print("Writing the function.txt files...")
-  WriteFunctionsTxt( FLAGS.work_directory + "/training_data" )
-  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_unseen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_seen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_seen" )
 
   print("Done, ready to run training.")
 
