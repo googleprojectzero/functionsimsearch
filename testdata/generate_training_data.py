@@ -428,7 +428,7 @@ def main(argv):
   # Write the training set.
   print("Writing seen training attract.txt and repulse.txt...")
   WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data_seen",
-    number_of_pairs=2000)
+    number_of_pairs=1500)
 
   # Write the validation set.
   print("Writing seen validation attract.txt and repulse.txt...")
