@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Low-dimensional visualization of function distances</title>
+
+<script type="application/json" id="point_data">
+<!-- %%SCATTER_DATA%% -->
+</script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<!-- Styles for our vis  -->
+<style>
+ body {
+   font: 15px sans-serif;
+ }
+ .axis path,
+ .axis line {
+   fill: none;
+   stroke: #000;
+   shape-rendering: crispEdges;
+ }
+ .dot {
+   stroke: none;
+ }
+ .tooltip {
+   position: absolute;
+   font-size: 12px;
+   width:  auto;
+   height: auto;
+   pointer-events: none;
+   background-color: white;
+ }
+</style>
+</head>
+<body>
+<div id="vis-container"></div>
+
+<script type="text/javascript">
+var data = JSON.parse(document.getElementById("point_data").innerHTML);
+var makeVis = function(data) {
+  // Common pattern for defining vis size and margins
+  var margin = { top: 20, right: 20, bottom: 30, left: 40 },
+  width  = window.innerWidth - margin.left - margin.right,
+  height = window.innerHeight - margin.top - margin.bottom;
+
+  // Add the visualization svg canvas to the vis-container <div>
+  var canvas = d3.select("#vis-container").append("svg")
+    .attr("width",  width  + margin.left + margin.right)
+    .attr("height", height + margin.top  + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  
+  // Define our scales
+  var colorScale = d3.scale.category10();
+
+  var xScale = d3.scale.linear()
+    .domain([ d3.min(data, function(d) { return d.x; }) - 1,
+              d3.max(data, function(d) { return d.x; }) + 1 ])
+    .range([0, width]);
+
+  var yScale = d3.scale.linear()
+    .domain([ d3.min(data, function(d) { return d.y; }) - 1,
+              d3.max(data, function(d) { return d.y; }) + 1 ])
+    .range([0, height]);
+
+  // Define our axes
+  var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient('bottom');
+
+  var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient('left');
+
+  // Add x-axis to the canvas
+  canvas.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")") // axis at bottom
+    .call(xAxis)
+    .append("text")
+    .attr("class", "label")
+    .attr("x", width) // x-offset from the xAxis, move label all the way to the right
+    .attr("y", -6)    // y-offset from the xAxis, moves text UPWARD!
+    .style("text-anchor", "end") // right-justify text
+    .text("");
+
+  // Add y-axis to the canvas
+  canvas.append("g")
+    .attr("class", "y axis") // .orient('left') took care of axis positioning for us
+    .call(yAxis)
+    .append("text")
+    .attr("class", "label")
+    .attr("transform", "rotate(-90)") // although axis is rotated, text is not
+    .attr("y", 15) // y-offset from yAxis
+    .style("text-anchor", "end")
+    .text("");
+
+  // Add the tooltip container to the vis container
+  // it's invisible and its position/contents are defined during mouseover
+  var tooltip = d3.select("#vis-container").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+  // tooltip mouseover event handler
+  var tipMouseover = function(d) {
+    var color = colorScale(d.function_name);
+    var html  = d.file_name + "<br/>" +
+      "<span style='color:" + color + ";'>" + d.function_name + "</span><br/>";
+
+    tooltip.html(html)
+      .style("left", (d3.event.pageX + 15) + "px")
+      .style("top", (d3.event.pageY - 28) + "px")
+      .transition()
+      .duration(200) // ms
+      .style("opacity", .9);
+  };
+
+  // tooltip mouseout event handler
+  var tipMouseout = function(d) {
+    tooltip.transition()
+      .duration(300) // ms
+      .style("opacity", 0); // don't care about position!
+  };
+
+  // Add data points!
+  canvas.selectAll(".dot")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("r", 5.5) // radius size, could map to another data dimension
+    .attr("cx", function(d) { return xScale( d.x ); })  // x position
+    .attr("cy", function(d) { return yScale( d.y ); })  // y position
+    .style("fill", function(d) { return colorScale(d.function_name); })
+    .on("mouseover", tipMouseover)
+    .on("mouseout", tipMouseout);
+};
+makeVis(data);
+</script>
+</body>
+</html> 
