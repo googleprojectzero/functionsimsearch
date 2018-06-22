@@ -418,49 +418,6 @@ def GenerateRepulsionPairs( input_map, number_of_pairs ):
     max_loop_iterations = max_loop_iterations - 1
   return repulsion_set
 
-"""
-def WriteAttractAndRepulseFromMap( input_map, output_directory,
-  number_of_pairs=1000 ):
-  "
-  Writes repulse.txt and attract.txt into output_directory. Each file will
-  contain number_of_pairs many pairs.
-
-  The function is probabilistic with potentially infinite runtime, so we
-  induce a brutal upper limit of number_of_pairs**3 max loop iterations.
-  "
-  # Construct a set of things that should be the same.
-  attraction_set = set()
-  symbols_as_list = list(input_map.keys())
-  max_loop_iterations = number_of_pairs**3
-  while len(attraction_set) != number_of_pairs and max_loop_iterations > 0:
-    symbol = random.choice( symbols_as_list )
-    while len( input_map[symbol] ) == 1:
-      symbol = random.choice( symbols_as_list )
-    element_one = random.choice( input_map[symbol] )
-    element_two = element_one
-    while element_one == element_two:
-      element_two = random.choice( input_map[symbol] )
-    ordered_pair = tuple(sorted([element_one, element_two]))
-    attraction_set.add(ordered_pair)
-    max_loop_iterations = max_loop_iterations - 1
-  # Construct a set of things that should not be the same.
-  repulsion_set = set()
-  max_loop_iterations = number_of_pairs**3
-  while len(repulsion_set) != number_of_pairs and max_loop_iterations > 0:
-    symbol_one = random.choice( symbols_as_list )
-    symbol_two = symbol_one
-    while symbol_one == symbol_two:
-      symbol_two = random.choice( symbols_as_list )
-    element_one = random.choice( input_map[symbol_one] )
-    element_two = random.choice( input_map[symbol_two] )
-    ordered_pair = tuple(sorted([element_one, element_two]))
-    repulsion_set.add(ordered_pair)
-    max_loop_iterations = max_loop_iterations - 1
-  # Write the files.
-  WritePairsFile( attraction_set, output_directory + "/attract.txt" )
-  WritePairsFile( repulsion_set, output_directory + "/repulse.txt" )
-"""
-
 def WritePairsFile( set_of_pairs, output_name ):
   """
   Take a set of pairs ((file_idA, addressA), (file_idB, addressB)) and write them
@@ -572,9 +529,9 @@ def main(argv):
     os.mkdir(FLAGS.work_directory)
 
   print("Processing ELF training files to extract features...")
-  #ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+  ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
   print("Processing PE training files to extract features...")
-  #ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+  ProcessTrainingFiles(FindPETrainingFiles(), "PE")
 
   # We now have the extracted symbols in a set of files called
   # "extracted_symbols_*.txt"
