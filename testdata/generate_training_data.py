@@ -462,11 +462,13 @@ def WriteUnseenTrainingAndValidationData(symbol_to_files_and_address, FLAGS):
   WriteAttractAndRepulseFromMap( training_map,
     FLAGS.work_directory + "/training_data_unseen",
     number_of_pairs=FLAGS.unseen_training_samples)
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
 
   # Write the validation set.
   print("Writing unseen validation attract.txt and repulse.txt...")
   WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
     "/validation_data_unseen", number_of_pairs=FLAGS.unseen_validation_samples )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_unseen" )
 
 def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
   """
@@ -514,6 +516,9 @@ def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
     FLAGS.work_directory + "validation_data_seen/attract.txt" )
   WritePairsFile( validation_repulsion_set,
     FLAGS.work_directory + "validation_data_seen/repulse.txt" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_seen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
+
 
 def main(argv):
   del argv # unused.
