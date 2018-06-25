@@ -367,6 +367,8 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
   # Choose a random subset of number_of_pairs size of these pairs. We choose
   # indices first, and then generate the pairs thereafter.
   indices = set()
+  print("Requested %d pairs with %d available." % (number_of_pairs,
+    int(total_number_of_pairs)))
   if (total_number_of_attraction_pairs > 0x7FFFFFFFFFFFFFFF):
     # We cannot use numpy.choice on numbers that do not fit into int64, so
     # generate a list of regular integers of the sufficient size
@@ -376,10 +378,12 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
       # practice.
       indices.add(random.randrange(total_number_of_attraction_pairs))
   elif number_of_pairs < total_number_of_attraction_pairs:
+    # Request is for fewer pairs than are available.
     indices = set(numpy.random.choice(int(total_number_of_attraction_pairs),
       number_of_pairs, replace=False))
   else:
-    indices = set(range(total_number_of_attraction_pairs))
+    # Request is for the maximum number of pairs available.
+    indices = set(range(int(total_number_of_attraction_pairs)))
   # We should have a set of indices for the attract.txt pairs. Now generate
   # the actual pairs.
   attraction_set = set()
