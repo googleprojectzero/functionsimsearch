@@ -43,9 +43,9 @@ flags.DEFINE_string('executable_directory', './',
   "in their relevant subdirectories ELF/**/* and PE/**/*")
 
 # Number of training samples for the 'unseen' case to generate.
-flags.DEFINE_integer('unseen_training_samples', 5000, "Number of pairs for " +
+flags.DEFINE_integer('unseen_training_samples', 200000, "Number of pairs for " +
   "the training of the unseen case")
-flags.DEFINE_integer('unseen_validation_samples', 300, "Number of pairs for " +
+flags.DEFINE_integer('unseen_validation_samples', 500, "Number of pairs for " +
   "the validation. Pick something sensible (enough to estimate means, a few " +
   "hundred at max?")
 
