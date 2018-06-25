@@ -17,8 +17,6 @@
 #include <iterator>
 #include <map>
 #include <deque>
-#include <regex>
-#include <sstream>
 #include <string>
 
 #include "util/util.hpp"
