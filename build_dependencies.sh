@@ -2,8 +2,13 @@
 source_dir=$(pwd)
 
 # Install gtest and gflags. It's a bit fidgety, but works:
-sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ 
+sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ python3-pip
 sudo apt-get install libboost-system-dev libboost-thread-dev libboost-date-time-dev
+
+# Required for the training data generation python script.
+pip3 install numpy absl-py
+
+# Build the C++ libraries.
 cd /usr/src/gtest
 sudo cmake ./CMakeLists.txt
 sudo make
@@ -30,25 +35,25 @@ cd ../..
 # Build PE-Parse.
 cd pe-parse
 cmake ./CMakeLists.txt
-make -j8
+make -j
 cd ..
 
 # Build SPII.
 cd spii
 cmake ./CMakeLists.txt
-make -j8
+make -j
 sudo make install
 cd ..
 
 # Build Dyninst
 cd dyninst-9.3.2
 cmake ./CMakeLists.txt
-make -j8
+make -j
 sudo make install
 sudo ldconfig
 cd ..
 
 # Finally build functionsimsearch tools
 cd ..
-make -j8
+make -j
 

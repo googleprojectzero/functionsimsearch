@@ -7,7 +7,7 @@
 # currently responsible for doing this.
 
 import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing, glob
-import sys
+import sys, bisect, numpy
 from absl import app
 from absl import flags
 from subprocess import Popen, PIPE, STDOUT
@@ -41,6 +41,17 @@ flags.DEFINE_boolean('clobber', False, "Clobber output directory or not.")
 flags.DEFINE_string('executable_directory', './',
   "The directory where the ELF and PE executables to train on can be found " +\
   "in their relevant subdirectories ELF/**/* and PE/**/*")
+
+# Number of training samples for the 'unseen' case to generate.
+flags.DEFINE_integer('unseen_training_samples', 200000, "Number of pairs for " +
+  "the training of the unseen case")
+flags.DEFINE_integer('unseen_validation_samples', 500, "Number of pairs for " +
+  "the validation. Pick something sensible (enough to estimate means, a few " +
+  "hundred at max?")
+
+flags.DEFINE_integer('max_seen_training_samples', 500000, "Maximum number of " +
+  "pairs to generate for the 'seen' case. This may be needed if you are " +
+  "training on lots of data at once and fear running out of memory.")
 
 #=============================================================================
 
@@ -288,46 +299,128 @@ def SplitPercentageOfSymbolToFileAddressMapping( symbol_dict, percentage ):
       result_training[key] = value
   return (result_validation, result_training)
 
+def IndexToRowColumn(index, n):
+  """
+    Given an index into the non-zero elements of an upper triangular matrix,
+    returns a tuple of integers indicating the row, column of that entry.
+
+    n is the number of elements in the family we are dealing with.
+  """
+  if n & 1:
+    # Code for uneven n. Illustration using n=5.
+    #
+    # 01234      A1234
+    # 00567      98567
+    # 00089  =>
+    # 0000A
+    # 00000
+    #
+    row_index = index / n
+    column_index = index % n
+    if column_index <= row_index:
+      row_index = n - row_index - 2
+      column_index = n - column_index - 1
+    else:
+      row_index = row_index
+      column_index = column_index
+    return (row_index, column_index)
+  else:
+    # Code for even n. Illustration using n=6. The matrix we care about looks
+    # like this, but can be transformed into a square with n=5.
+    #
+    # 012345    12345
+    # 006789    F6789
+    # 000ABC => EDABC
+    # 0000DE
+    # 00000F
+    # 000000
+    #
+    row_index = index / (n-1)
+    column_index = index % (n-1)
+    if column_index < row_index:
+      # Deal with the mirroring. Our row index is now the index from the end.
+      row_index = n - row_index - 1
+      column_index = n - column_index - 1
+    else:
+      row_index = row_index
+      column_index = column_index + 1
+    return (row_index, column_index)
+
+def FamilySize(n):
+  return (n**2 - n) / 2
+
 def WriteAttractAndRepulseFromMap( input_map, output_directory,
   number_of_pairs=1000 ):
   """
-  Writes repulse.txt and attract.txt into output_directory. Each file will
-  contain number_of_pairs many pairs.
-
-  The function is probabilistic with potentially infinite runtime, so we
-  induce a brutal upper limit of number_of_pairs**3 max loop iterations.
+  Creates attraction and repulsion pairs (and writes attract.txt and repulse.txt
+  to the output_directory, for the case of "generalization performance to unseen
+  samples".
   """
-  # Construct a set of things that should be the same.
+  # Begin by calculating the total number of possible attraction pairs.
+  symbol_to_index = []
+  total_number_of_attraction_pairs = 0
+  for symbol, file_and_address in input_map.items():
+    n = len(file_and_address)
+    symbol_to_index.append((total_number_of_attraction_pairs, symbol))
+    total_number_of_attraction_pairs = total_number_of_attraction_pairs +\
+      FamilySize(n)
+  # Choose a random subset of number_of_pairs size of these pairs. We choose
+  # indices first, and then generate the pairs thereafter.
+  indices = set()
+  print("Requested %d pairs with %d available." % (number_of_pairs,
+    int(total_number_of_pairs)))
+  if (total_number_of_attraction_pairs > 0x7FFFFFFFFFFFFFFF):
+    # We cannot use numpy.choice on numbers that do not fit into int64, so
+    # generate a list of regular integers of the sufficient size
+    # probabilistically.
+    while len(indices) != number_of_pairs:
+      # From a CS-perspective, this could loop forever, but should not in
+      # practice.
+      indices.add(random.randrange(total_number_of_attraction_pairs))
+  elif number_of_pairs < total_number_of_attraction_pairs:
+    # Request is for fewer pairs than are available.
+    indices = set(numpy.random.choice(int(total_number_of_attraction_pairs),
+      number_of_pairs, replace=False))
+  else:
+    # Request is for the maximum number of pairs available.
+    indices = set(range(int(total_number_of_attraction_pairs)))
+  # We should have a set of indices for the attract.txt pairs. Now generate
+  # the actual pairs.
   attraction_set = set()
-  symbols_as_list = list(input_map.keys())
-  max_loop_iterations = number_of_pairs**3
-  while len(attraction_set) != number_of_pairs and max_loop_iterations > 0:
-    symbol = random.choice( symbols_as_list )
-    while len( input_map[symbol] ) == 1:
-      symbol = random.choice( symbols_as_list )
-    element_one = random.choice( input_map[symbol] )
-    element_two = element_one
-    while element_one == element_two:
-      element_two = random.choice( input_map[symbol] )
-    ordered_pair = tuple(sorted([element_one, element_two]))
-    attraction_set.add(ordered_pair)
-    max_loop_iterations = max_loop_iterations - 1
-  # Construct a set of things that should not be the same.
+  for index in indices:
+    # First find the symbol into whose family the index falls.
+    family_index = max(bisect.bisect(symbol_to_index, (index, 'a')) - 1, 0)
+    family_start, family_symbol = symbol_to_index[family_index]
+    n = len(input_map[family_symbol])
+    family_size = FamilySize(n)
+    within_family_index = index - family_start
+    family_size = len(input_map[family_symbol])
+    row, column = IndexToRowColumn(within_family_index, n)
+    row = int(row)
+    column = int(column)
+    attraction_set.add((input_map[family_symbol][row],
+      input_map[family_symbol][column]))
+  # The next step is generating repulsion pairs.
+  repulsion_set = GenerateRepulsionPairs( input_map, number_of_pairs )
+  # Write the files.
+  WritePairsFile( attraction_set, output_directory + "/attract.txt" )
+  WritePairsFile( repulsion_set, output_directory + "/repulse.txt" )
+  return
+
+def GenerateRepulsionPairs( input_map, number_of_pairs ):
   repulsion_set = set()
   max_loop_iterations = number_of_pairs**3
+  symbols_as_list = list(input_map.keys())
+  symbols_as_list.sort()
   while len(repulsion_set) != number_of_pairs and max_loop_iterations > 0:
-    symbol_one = random.choice( symbols_as_list )
-    symbol_two = symbol_one
-    while symbol_one == symbol_two:
-      symbol_two = random.choice( symbols_as_list )
+    symbol_one, symbol_two = numpy.random.choice( symbols_as_list, 2,
+      replace=False )
     element_one = random.choice( input_map[symbol_one] )
     element_two = random.choice( input_map[symbol_two] )
     ordered_pair = tuple(sorted([element_one, element_two]))
     repulsion_set.add(ordered_pair)
     max_loop_iterations = max_loop_iterations - 1
-  # Write the files.
-  WritePairsFile( attraction_set, output_directory + "/attract.txt" )
-  WritePairsFile( repulsion_set, output_directory + "/repulse.txt" )
+  return repulsion_set
 
 def WritePairsFile( set_of_pairs, output_name ):
   """
@@ -353,6 +446,84 @@ def WriteFunctionsTxt( output_directory ):
       output_file.write(data)
   output_file.close()
 
+def WriteUnseenTrainingAndValidationData(symbol_to_files_and_address, FLAGS):
+  """
+  Split 20% of the functions into a separate set, then generate attraction and
+  repulsion pairs from each set & write them out.
+  """
+  # Split off 20% of the symbols into a control map.
+  print("Splitting into validation set and training set...")
+  validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
+    symbol_to_files_and_address, 0.20)
+
+  if not os.path.exists(FLAGS.work_directory + "/training_data_unseen"):
+    os.mkdir(FLAGS.work_directory + "/training_data_unseen")
+  if not os.path.exists(FLAGS.work_directory + "/validation_data_unseen"):
+    os.mkdir(FLAGS.work_directory + "/validation_data_unseen")
+
+  # Write the training set.
+  print("Writing unseen training attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( training_map,
+    FLAGS.work_directory + "/training_data_unseen",
+    number_of_pairs=FLAGS.unseen_training_samples)
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
+
+  # Write the validation set.
+  print("Writing unseen validation attract.txt and repulse.txt...")
+  WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
+    "/validation_data_unseen", number_of_pairs=FLAGS.unseen_validation_samples )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_unseen" )
+
+def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
+  """
+  For each function family, do:
+     Remove random element R for the validation set
+     Generate all pairs of attraction for the family without R (training)
+     Generate all pairs of attraction between family members and R (validation)
+
+     Now generate as many random repulsion pairs.
+  """
+  training_attraction_set = set()
+  validation_attraction_set = set()
+  for function_family, elements in symbol_to_file_and_address.items():
+    validation_element = random.choice(elements)
+    training_elements = [ x for x in elements if x != validation_element ]
+    training_attraction_set.update(
+      [ (x, y) for x in training_elements for y in training_elements if
+        x < y ])
+    validation_attraction_set.update(
+      [ (x, y) for x in training_elements for y in [validation_element] ])
+  print("'Seen' case: Got %d training pairs, %d validation pairs" %
+    (len(training_attraction_set), len(validation_attraction_set)))
+  # Generate an equal number of repulsion pairs.
+  if len(training_attraction_set) > FLAGS.max_seen_training_samples:
+    print("[!] Excessive number of training samples (%d), cutting to %d." % (
+      len(training_attraction_set), FLAGS.max_seen_training_samples))
+    training_attraction_set = numpy.random.choice(list(training_attraction_set),
+      FLAGS.max_seen_training_samples, replace=False)
+  repulsion_set = GenerateRepulsionPairs( symbol_to_file_and_address,
+    len(training_attraction_set) + len(validation_attraction_set) )
+  repulsion_pairs = list(repulsion_set)
+  random.shuffle(repulsion_pairs)
+  training_repulsion_set = set(repulsion_pairs[0:len(training_attraction_set)])
+  validation_repulsion_set = set(repulsion_pairs[len(training_attraction_set):0])
+  # Write all the data.
+  if not os.path.exists(FLAGS.work_directory + "/training_data_seen"):
+    os.mkdir(FLAGS.work_directory + "/training_data_seen")
+  if not os.path.exists(FLAGS.work_directory + "/validation_data_seen"):
+    os.mkdir(FLAGS.work_directory + "/validation_data_seen")
+  WritePairsFile( training_attraction_set,
+    FLAGS.work_directory + "training_data_seen/attract.txt" )
+  WritePairsFile( training_repulsion_set,
+    FLAGS.work_directory + "training_data_seen/repulse.txt" )
+  WritePairsFile( validation_attraction_set,
+    FLAGS.work_directory + "validation_data_seen/attract.txt" )
+  WritePairsFile( validation_repulsion_set,
+    FLAGS.work_directory + "validation_data_seen/repulse.txt" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_seen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
+
+
 def main(argv):
   del argv # unused.
 
@@ -370,6 +541,7 @@ def main(argv):
   ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
   print("Processing PE training files to extract features...")
   ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+
   # We now have the extracted symbols in a set of files called
   # "extracted_symbols_*.txt"
 
@@ -380,67 +552,12 @@ def main(argv):
   # First, generate the training and validation data for performance on unseen
   # functions - to test how well we generalize beyond things we have already
   # seen variants of.
-
-  # Split off 20% of the symbols into a control map.
-  print("Splitting into validation set and training set...")
-  validation_map, training_map = SplitPercentageOfSymbolToFileAddressMapping(
-    symbol_to_files_and_address, 0.20)
-
-  os.mkdir(FLAGS.work_directory + "/training_data_unseen")
-  os.mkdir(FLAGS.work_directory + "/validation_data_unseen")
-
-  # Write the training set.
-  print("Writing unseen training attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data_unseen",
-    number_of_pairs=3000)
-
-  # Write the validation set.
-  print("Writing unseen validation attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
-    "/validation_data_unseen", number_of_pairs=500 )
+  WriteUnseenTrainingAndValidationData(symbol_to_files_and_address, FLAGS)
 
   # Secondly, generate the training and validation data for performance on 'seen'
   # functions -- e.g. how well we perform if we need to spot a variant of a function
   # we have not seen before.
-
-  os.mkdir(FLAGS.work_directory + "/training_data_seen")
-  os.mkdir(FLAGS.work_directory + "/validation_data_seen")
-  
-  # Each function is implemented in a number of different executables - and
-  # symbol_to_files_and_address gives us that mapping. In order to evaluate
-  # our performance on seen functions, split 20% of each function into the
-  # validation map.
-  
-  validation_map = defaultdict(list)
-  training_map = defaultdict(list)
-  for symbol, files_and_address in symbol_to_files_and_address.items():
-    # Make a copy of files_and_address.
-    temp = [x for x in files_and_address]
-    # Shuffle the copy.
-    random.shuffle(temp)
-    # Take the first few elements for the validation dictionary, the rest
-    # for the training dictionary
-    fraction = int(float(len(temp)) * 0.3)
-    if fraction > 1:
-      validation_map[symbol] = temp[0:fraction]
-      training_map[symbol] = temp[fraction:]
-  
-  # Write the training set.
-  print("Writing seen training attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( training_map, FLAGS.work_directory + "/training_data_seen",
-    number_of_pairs=1500)
-
-  # Write the validation set.
-  print("Writing seen validation attract.txt and repulse.txt...")
-  WriteAttractAndRepulseFromMap( validation_map, FLAGS.work_directory +
-    "/validation_data_seen", number_of_pairs=150 )
-
-  # Write functions.txt into both directories.
-  print("Writing the function.txt files...")
-  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
-  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_unseen" )
-  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_seen" )
-  WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_seen" )
+  WriteSeenTrainingAndValidationData(symbol_to_files_and_address, FLAGS)
 
   print("Done, ready to run training.")
 

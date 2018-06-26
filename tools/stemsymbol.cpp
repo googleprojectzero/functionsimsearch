@@ -17,21 +17,11 @@
 #include <iterator>
 #include <map>
 #include <deque>
-#include <regex>
-#include <sstream>
 #include <string>
-
-#include <spii/auto_diff_term.h>
-#include <spii/dynamic_auto_diff_term.h>
-#include <spii/large_auto_diff_term.h>
-#include <spii/function.h>
-#include <spii/solver.h>
-#include <spii/term.h>
 
 #include "util/util.hpp"
 
 using namespace std;
-
 
 void replaceAll(std::string& str, const std::string& from,
   const std::string& to) {

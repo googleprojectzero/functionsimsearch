@@ -67,7 +67,8 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   // A map to keep track of how often each feature has been seen during the
   // calculation of this SimHash. Needed to deal with multisets -- if one simply
   // adds the same per-feature-hash into the calculation the resulting SimHash
-  // will with high likelihood end up being just the per-feature hash.
+  // will with high likelihood end up being just the per-feature hash (adding
+  // the same value over and over again will 'dominate' the entire hash).
   std::map<uint64_t, uint64_t> feature_cardinalities;
 
   if (!disable_graph_hashes_) {
