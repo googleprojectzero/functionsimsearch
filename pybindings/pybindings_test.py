@@ -88,7 +88,13 @@ class TestFunctionSimSearch(unittest.TestCase):
 
   def test_hasher_with_weights(self):
     """ Tests whether the loading of a weights file works. """
-    pass
+    jsonstring = """{"edges":[{"destination":1518838580,"source":1518838565},{"destination":1518838572,"source":1518838565},{"destination":1518838578,"source":1518838572},{"destination":1518838574,"source":1518838572},{"destination":1518838580,"source":1518838574},{"destination":1518838578,"source":1518838574},{"destination":1518838580,"source":1518838578}],"name":"CFG","nodes":[{"address":1518838565,"instructions":[{"mnemonic":"xor","operands":["EAX","EAX"]},{"mnemonic":"cmp","operands":["[ECX + 4]","EAX"]},{"mnemonic":"jnle","operands":["5a87a334"]}]},{"address":1518838572,"instructions":[{"mnemonic":"jl","operands":["5a87a332"]}]},{"address":1518838574,"instructions":[{"mnemonic":"cmp","operands":["[ECX]","EAX"]},{"mnemonic":"jnb","operands":["5a87a334"]}]},{"address":1518838578,"instructions":[{"mnemonic":"mov","operands":["AL","1"]}]},{"address":1518838580,"instructions":[{"mnemonic":"ret near","operands":["[ESP]"]}]}]}"""
+
+    fg = functionsimsearch.FlowgraphWithInstructions()
+    fg.from_json(jsonstring)
+    hasher = functionsimsearch.SimHasher("../testdata/weights.txt")
+    function_hash = hasher.calculate_hash(fg)
+    self.assertTrue(function_hash[0] == 0xa6ef292a658e83ee)
 
 
 if __name__ == '__main__':
