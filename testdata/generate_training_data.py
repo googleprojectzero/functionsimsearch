@@ -102,14 +102,16 @@ def ObtainELFFunctionSymbols(training_file):
   dictionary for this file. """
   result = {}
   symbols = [ line for line in subprocess.check_output(
-    [ "objdump", "-C", "-t", training_file ] ).decode("utf-8").split("\n")
+    [ "objdump", "-t", training_file ] ).decode("utf-8").split("\n")
       if line.find(" F .text") != -1 ]
   syms_and_address = []
   for sym in symbols:
     tokens = sym.split()
     if tokens[2] == 'F':
       address = int(tokens[0], 16)
-      sym = SaneBase64(tokens[5])
+      # Run the string through c++filt
+      sym = subprocess.check_output([ "c++filt", tokens[5] ]).decode("utf-8")
+      sym = SaneBase64(sym)
       result[address] = sym
   return result
 
@@ -368,7 +370,7 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
   # indices first, and then generate the pairs thereafter.
   indices = set()
   print("Requested %d pairs with %d available." % (number_of_pairs,
-    int(total_number_of_pairs)))
+    int(total_number_of_attraction_pairs)))
   if (total_number_of_attraction_pairs > 0x7FFFFFFFFFFFFFFF):
     # We cannot use numpy.choice on numbers that do not fit into int64, so
     # generate a list of regular integers of the sufficient size
@@ -536,6 +538,9 @@ def main(argv):
   if FLAGS.clobber:
     shutil.rmtree(FLAGS.work_directory)
     os.mkdir(FLAGS.work_directory)
+
+  if FLAGS.work_directory[-1] != '/':
+    FLAGS.work_directory = FLAGS.work_directory + '/'
 
   print("Processing ELF training files to extract features...")
   ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
