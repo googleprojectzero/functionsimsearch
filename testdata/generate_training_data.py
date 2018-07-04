@@ -111,6 +111,7 @@ def ObtainELFFunctionSymbols(training_file):
       address = int(tokens[0], 16)
       # Run the string through c++filt
       sym = subprocess.check_output([ "c++filt", tokens[5] ]).decode("utf-8")
+      sym = sym.replace('\n', '')
       sym = SaneBase64(sym)
       result[address] = sym
   return result
@@ -501,8 +502,13 @@ def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
   if len(training_attraction_set) > FLAGS.max_seen_training_samples:
     print("[!] Excessive number of training samples (%d), cutting to %d." % (
       len(training_attraction_set), FLAGS.max_seen_training_samples))
-    training_attraction_set = numpy.random.choice(list(training_attraction_set),
+    # Choose 500k element subset.
+    training_attraction_list = list(training_attraction_set)
+    random_indices = numpy.random.choice(len(training_attraction_list),
       FLAGS.max_seen_training_samples, replace=False)
+    training_attraction_set = set([ training_attraction_list[i] for i in
+      random_indices])
+    print("[!] Done cutting.")
   repulsion_set = GenerateRepulsionPairs( symbol_to_file_and_address,
     len(training_attraction_set) + len(validation_attraction_set) )
   repulsion_pairs = list(repulsion_set)
@@ -543,9 +549,9 @@ def main(argv):
     FLAGS.work_directory = FLAGS.work_directory + '/'
 
   print("Processing ELF training files to extract features...")
-  ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+  #ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
   print("Processing PE training files to extract features...")
-  ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+  #ProcessTrainingFiles(FindPETrainingFiles(), "PE")
 
   # We now have the extracted symbols in a set of files called
   # "extracted_symbols_*.txt"
