@@ -10,6 +10,23 @@
 #include "searchbackend/functionsimhash.hpp"
 #include "searchbackend/simhashsearchindex.hpp"
 
+// Python3 / Python2 compatibility macros.
+#if PY_MAJOR_VERSION >= 3
+  #define MOD_ERROR_VAL NULL
+  #define MOD_SUCCESS_VAL(val) val
+  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          static struct PyModuleDef moduledef = { \
+            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+          ob = PyModule_Create(&moduledef);
+#else
+  #define MOD_ERROR_VAL
+  #define MOD_SUCCESS_VAL(val)
+  #define MOD_INIT(name) void init##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          ob = Py_InitModule3(name, methods, doc);
+#endif
+
 static PyObject* functionsimsearch_error;
 
 // Helper function to convert a Python object into a std::string. Used to min-
@@ -53,7 +70,7 @@ static PyObject* PyFlowgraphWithInstructions_new(PyTypeObject *type,
 static void PyFlowgraphWithInstructions_dealloc(
   PyFlowgraphWithInstructions* self) {
   delete self->flowgraph_with_instructions_;
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static int PyFlowgraphWithInstructions_init(PyFlowgraphWithInstructions* self,
@@ -240,7 +257,7 @@ static PyObject* PySimHasher_new(PyTypeObject *type, PyObject* args,
 
 static void PySimHasher_dealloc(PySimHasher* self) {
   delete self->function_simhasher_;
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static int PySimHasher_init(PySimHasher* self, PyObject* args, PyObject *kwds) {
@@ -321,7 +338,7 @@ static PyObject* PySimHashSearchIndex_new(PyTypeObject *type, PyObject* args,
 
 static void PySimHashSearchIndex_dealloc(PySimHashSearchIndex* self) {
   delete self->search_index_;
-  self->ob_type->tp_free((PyObject*)self);
+  Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static int PySimHashSearchIndex_init(PySimHashSearchIndex* self,
@@ -439,20 +456,20 @@ static PyMethodDef functionsimsearch_methods[] = {
   { NULL, NULL, NULL}
 };
 
-PyMODINIT_FUNC
-initfunctionsimsearch(void) {
+MOD_INIT(functionsimsearch) {
   PyObject *module;
 
   if (PyType_Ready(&PyFlowgraphWithInstructionsType) ||
     PyType_Ready(&PySimHasherType) ||
     PyType_Ready(&PySimHashSearchIndexType)) {
-    return;
+    return MOD_ERROR_VAL;
   }
 
-  module = Py_InitModule3("functionsimsearch", functionsimsearch_methods,
-    "FunctionSimSearch Python Bindings");
+  MOD_DEF(module, "functionsimsearch", "FunctionSimSearch Python Bindings",
+    functionsimsearch_methods);
+
   if (module == NULL) {
-    return;
+    return MOD_ERROR_VAL;
   }
 
   functionsimsearch_error = PyErr_NewException((char*)"functionsimsearch.error",
@@ -470,4 +487,6 @@ initfunctionsimsearch(void) {
   Py_INCREF(&PySimHashSearchIndexType);
   PyModule_AddObject(module, "SimHashSearchIndex",
     (PyObject*)&PySimHashSearchIndexType);
+ 
+  return MOD_SUCCESS_VAL(module);
 }
