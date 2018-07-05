@@ -153,7 +153,7 @@ except:
     meta_data = {}
   search_index = functionsimsearch.SimHashSearchIndex("/tmp/example.simhash",
     create_index, 28)
-  sim_hasher = functionsimsearch.SimHasher()
+  sim_hasher = functionsimsearch.SimHasher("/tmp/example.simhash.weights")
 
 
 

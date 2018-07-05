@@ -109,7 +109,10 @@ def ObtainELFFunctionSymbols(training_file):
     tokens = sym.split()
     if tokens[2] == 'F':
       address = int(tokens[0], 16)
-      sym = SaneBase64(tokens[5])
+      # Run the string through c++filt
+      sym = subprocess.check_output([ "c++filt", tokens[5] ]).decode("utf-8")
+      sym = sym.replace('\n', '')
+      sym = SaneBase64(sym)
       result[address] = sym
   return result
 
@@ -368,7 +371,7 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
   # indices first, and then generate the pairs thereafter.
   indices = set()
   print("Requested %d pairs with %d available." % (number_of_pairs,
-    int(total_number_of_pairs)))
+    int(total_number_of_attraction_pairs)))
   if (total_number_of_attraction_pairs > 0x7FFFFFFFFFFFFFFF):
     # We cannot use numpy.choice on numbers that do not fit into int64, so
     # generate a list of regular integers of the sufficient size
@@ -499,8 +502,13 @@ def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
   if len(training_attraction_set) > FLAGS.max_seen_training_samples:
     print("[!] Excessive number of training samples (%d), cutting to %d." % (
       len(training_attraction_set), FLAGS.max_seen_training_samples))
-    training_attraction_set = numpy.random.choice(list(training_attraction_set),
+    # Choose 500k element subset.
+    training_attraction_list = list(training_attraction_set)
+    random_indices = numpy.random.choice(len(training_attraction_list),
       FLAGS.max_seen_training_samples, replace=False)
+    training_attraction_set = set([ training_attraction_list[i] for i in
+      random_indices])
+    print("[!] Done cutting.")
   repulsion_set = GenerateRepulsionPairs( symbol_to_file_and_address,
     len(training_attraction_set) + len(validation_attraction_set) )
   repulsion_pairs = list(repulsion_set)
@@ -537,10 +545,13 @@ def main(argv):
     shutil.rmtree(FLAGS.work_directory)
     os.mkdir(FLAGS.work_directory)
 
+  if FLAGS.work_directory[-1] != '/':
+    FLAGS.work_directory = FLAGS.work_directory + '/'
+
   print("Processing ELF training files to extract features...")
-  ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+  #ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
   print("Processing PE training files to extract features...")
-  ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+  #ProcessTrainingFiles(FindPETrainingFiles(), "PE")
 
   # We now have the extracted symbols in a set of files called
   # "extracted_symbols_*.txt"
