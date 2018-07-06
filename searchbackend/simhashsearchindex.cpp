@@ -185,6 +185,8 @@ void SimHashSearchIndex::DumpIndexToStdout(bool all = false) const {
   std::lock_guard<std::mutex> lock(mutex_);
   const auto map = id_to_file_and_address_.getMap();
   const auto index = search_index_.getSet();
+  // Write a header.
+  printf("Permutation_ID Hash_A Hash_B File_ID Address\n");
   for (const IndexEntry& entry : *index) {
     FileAndAddress file_and_address = map->at(std::get<3>(entry));
 
