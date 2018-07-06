@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
   ParseCommandLineFlags(&argc, &argv, true);
 
   std::string index_file(FLAGS_index);
-  SimHashSearchIndex search_index(index_file, FLAGS_verbose);
+  SimHashSearchIndex search_index(index_file, false);
   printf("[!] Indexed %lu functions, total index has %lu elements\n",
     search_index.GetNumberOfIndexedFunctions(),
     search_index.GetIndexSetSize());
-  search_index.DumpIndexToStdout(false);
+  search_index.DumpIndexToStdout(FLAGS_verbose);
 }
