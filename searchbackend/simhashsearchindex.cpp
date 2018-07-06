@@ -31,6 +31,18 @@ SimHashSearchIndex::SimHashSearchIndex(const std::string& indexname,
   if (search_index_.getSet() == nullptr) {
     throw std::runtime_error("Loading search index set failed!");
   }
+  // Validate that the number of buckets specified was correct if loading an
+  // existing search index with data therein.
+  if ((search_index_.getSet()->size() != 0) && 
+    (GetNumberOfBuckets() != buckets)) {
+    throw std::runtime_error("Specified incorrect number of buckets for index!");
+  }
+}
+
+uint8_t SimHashSearchIndex::GetNumberOfBuckets() const {
+  const IndexEntry& last = *(search_index_.getSet()->rbegin());
+  uint8_t max_index = std::get<0>(last);
+  return max_index + 1;
 }
 
 uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,

@@ -103,7 +103,7 @@ public:
   typedef std::pair<FileID, Address> FileAndAddress;
 
   SimHashSearchIndex(const std::string& indexname,
-    bool create, uint8_t buckets = 28);
+    bool create, uint8_t buckets = /* 28 */ 50);
 
   uint64_t QueryTopN(uint64_t hash_A, uint64_t hash_B, uint32_t how_many,
     std::vector<std::pair<float, FileAndAddress>>* results);
@@ -115,6 +115,7 @@ public:
   uint64_t GetIndexFileFreeSpace();
   uint64_t GetIndexSetSize() const;
   uint64_t GetNumberOfIndexedFunctions() const;
+  uint8_t GetNumberOfBuckets() const;
 
   void DumpIndexToStdout(bool all) const;
 private:
