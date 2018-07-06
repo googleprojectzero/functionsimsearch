@@ -76,6 +76,11 @@ TEST(functionsimhash, zero_weight_hasher) {
   const std::map<uint64_t, float>* weights = hasher_trained.GetWeights();
 
   std::map<std::pair<uint64_t, uint64_t>, FeatureHash> hashes_trained;
+
+  // Goes through all functions in the id_to_address_function_1 map and checks
+  // if their hashes with the zero weights evaluate to all-bits-set, and that
+  // weights for every hash that is detected are set to zero in the incoming
+  // weights.txt file.
   for (const auto& hash_addr : id_to_address_function_1) {
     uint64_t file_hash = hash_addr.first;
     uint64_t address = hash_addr.second;
@@ -98,8 +103,13 @@ TEST(functionsimhash, zero_weight_hasher) {
       // Assume that each feature_id has an associated weight.
       EXPECT_TRUE(weights->find(feature_id) != weights->end());
       if (weights->find(feature_id) == weights->end()) {
-        printf("Bizarre, unknown feature at index %d %16.16lx\n",
-          index, feature_id);
+        // A feature was found in the set of features for the function that
+        // did not have a corresponding weight in the weights.txt that was
+        // loaded. This should not happen, and can be investigated by dumping
+        // the features extracted from that function using the
+        // dumpsinglefunctionfeature tool.
+        printf("Unknown feature for %16.16lx %16.16lx at index %d %16.16lx\n",
+          file_hash, address, index, feature_id);
         printf("Check with:\n");
         printf("./dumpsinglefunctionfeature %s %s %llx\n",
           id_to_mode[file_hash].c_str(), id_to_filename[file_hash].c_str(),
