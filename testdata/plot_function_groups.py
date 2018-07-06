@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
   A small python3 script to plot a t-SNE visualization of functions and
   their distances.
@@ -21,6 +22,7 @@
 import numpy, string, pandas, sys, base64, json
 from sklearn.manifold import TSNE
 from collections import defaultdict
+import functionsimsearchutil
 
 def hash_distance(v1, v2):
   """
@@ -32,38 +34,6 @@ def hash_distance(v1, v2):
 def distance_matrix(list_of_hashes):
   result = numpy.array(
     [[ hash_distance(x[0],y[0]) for x in list_of_hashes ] for y in list_of_hashes ])
-  return result
-
-def read_inputs(symbolfile, db_dump_file):
-  """
-    Reads the input files and returns a list of tuples of the form
-    [ (hash, function_name) ]
-  """
-  # Reads the symbols file for quick lookup of symbols for a given 
-  # fileID:address combination.
-  syms = open(symbolfile, "r").readlines()
-  sym_mapping = {}
-  result = []
-  for line in syms:
-    tokens = line.split()
-    file_id = tokens[0]
-    file_name = tokens[1]
-    address = tokens[2]
-    symbol = tokens[3]
-    sym_mapping[(file_id, address)] = (symbol, file_name)
-  print("[!] Read symbol file.")
-  # Reads the database dump.
-  db_dump = open(db_dump_file, "r").readlines()
-  for line in db_dump[3:]:
-    tokens = line.split()
-    file_id = tokens[3]
-    address = tokens[4]
-    simhash = int(tokens[1]+tokens[2], 16)
-    lookup = sym_mapping.get((file_id, address))
-    if lookup:
-      function_name, file_name = lookup
-      result.append((simhash, base64.b64decode(function_name)[:-1], file_name))
-  print("[!] Read DB dump.")
   return result
 
 def filter_inputs(inputlist, minimum_members, number_of_families):
@@ -83,14 +53,14 @@ def filter_inputs(inputlist, minimum_members, number_of_families):
   # Now choose a random subset of functions that remain.
   keys = [k for k in temp.keys()]
   keys.sort() # Necessary because of Python key order being nondeterministic.
+  # Deterministic seed for reproducibility.
   numpy.random.seed(0)
   subset = numpy.random.choice(keys, number_of_families, replace=False)
   for key in subset:
     result.extend([(simhash[0], key, simhash[1]) for simhash in temp[key]])
   return result
 
-# Deterministic seed for reproducibility.
-inputs = read_inputs(sys.argv[1], sys.argv[2])
+inputs = functionsimsearchutil.read_inputs(sys.argv[1], sys.argv[2])
 print("[!] Loaded %d functions." % len(inputs))
 print("[!] Removing functions with fewer than 4 datapoints")
 inputs = filter_inputs(inputs, 5, 10)
