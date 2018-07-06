@@ -1,6 +1,18 @@
 """ Some utility functions for handling the data. """
 import base64
 
+def hash_distance(v1, v2):
+  """
+  Most likely the most inefficient code to calculate hamming distance ever.
+  """
+  result = v1 ^ v2
+  return float(bin(result).count('1'))
+
+def distance_matrix(list_of_hashes):
+  result = numpy.array(
+    [[ hash_distance(x[0],y[0]) for x in list_of_hashes ] for y in list_of_hashes ])
+  return result
+
 def read_inputs(symbolfile, db_dump_file, file_id_and_address=False):
   """
     Reads the input files and returns a list of tuples of the form
