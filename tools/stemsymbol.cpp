@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
 
   replaceAll(input, "struct", "");
   replaceAll(input, "class", "");
+  replaceAll(input, "enum", "");
   replaceAll(input, "(void)", "()");
   replaceAll(input, "& ", "&");
   replaceAll(input, ",", ", ");

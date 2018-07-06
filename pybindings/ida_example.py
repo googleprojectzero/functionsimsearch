@@ -40,10 +40,16 @@ def split_instruction_list(instructions, split_mnemonic):
   index = 0
   results.append([])
   while index < len(instructions):
+    # Appends the current instruction under consideration to the last list in the
+    # list-of-lists 'results'.
     results[-1].append(instructions[index])
+    # Checks if the right mnemonic to 'split' on is encountered.
     if (instructions[index][1] == split_mnemonic):
+      # Time to split. Simply appends an empty list to 'results'.
       results.append([])
     index = index + 1
+  # It is possible to have appended an empty list if the instruction-to-split-on
+  # was the last instruction of the block. Remove it if this happens.
   if len(results[-1]) == 0:
     results.pop()
   return results
@@ -153,7 +159,7 @@ except:
     meta_data = {}
   search_index = functionsimsearch.SimHashSearchIndex("/tmp/example.simhash",
     create_index, 28)
-  sim_hasher = functionsimsearch.SimHasher()
+  sim_hasher = functionsimsearch.SimHasher("/tmp/example.simhash.weights")
 
 
 

@@ -24,18 +24,6 @@ from sklearn.manifold import TSNE
 from collections import defaultdict
 import functionsimsearchutil
 
-def hash_distance(v1, v2):
-  """
-  Most likely the most inefficient code to calculate hamming distance ever.
-  """
-  result = v1 ^ v2
-  return float(bin(result).count('1'))
-
-def distance_matrix(list_of_hashes):
-  result = numpy.array(
-    [[ hash_distance(x[0],y[0]) for x in list_of_hashes ] for y in list_of_hashes ])
-  return result
-
 def filter_inputs(inputlist, minimum_members, number_of_families):
   """
     Removes functions that have fewer than minimum_members different hashes,
@@ -67,7 +55,7 @@ inputs = filter_inputs(inputs, 5, 10)
 print("[!] %d total datapoints remain." % len(inputs))
 
 labels = [ i[1] for i in inputs ]
-distance_matrix = distance_matrix(inputs)
+distance_matrix = functionsimsearchutil.distance_matrix(inputs)
 
 print("[!] Calculated distance matric, starting t-SNE.")
 embedding = TSNE(n_components = 2, metric = "precomputed", random_state=0xDEADBEEF)

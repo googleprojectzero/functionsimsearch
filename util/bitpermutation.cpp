@@ -36,7 +36,9 @@ uint128_t permute_128_bit(uint128_t x) {
 
 void get_n_permutations(uint128_t value, uint32_t n, std::vector<uint128_t>*
   results) {
-  for (uint32_t index = 0; index < n; ++index) {
+  // The zeroth permutation is the identity.
+  results->push_back(value);
+  for (uint32_t index = 1; index < n; ++index) {
     value = permute_128_bit(value);
     results->push_back(value);
   }
