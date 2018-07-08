@@ -16,7 +16,8 @@ def distance_matrix(list_of_hashes):
 def read_inputs(symbolfile, db_dump_file, file_id_and_address=False):
   """
     Reads the input files and returns a list of tuples of the form
-    [ (hash, function_name, file_name) ]
+    [ (hash, function_name, file_name) ] or alternatively
+    [ (hash, function_name, file_name, file_id, address) ].
   """
   # Reads the symbols file for quick lookup of symbols for a given 
   # fileID:address combination.
