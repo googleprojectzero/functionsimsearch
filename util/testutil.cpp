@@ -11,7 +11,7 @@ std::map<uint64_t, const std::string> id_to_filename = {
   { 0x83fe3244c90314f4ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O2.ELF" },
   { 0x396063026eaac371ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.O3.ELF" },
   { 0x924daa0b17c6ae64ULL, "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os.ELF" },
-  { 0xb9b4ecb0faefd8cfULL, "../testdata/PE/unrar.5.5.3.builds/VS2015/"
+  { 0x38ec33c1d2961e79ULL, "../testdata/PE/unrar.5.5.3.builds/VS2015/"
     "unrar32/Release/UnRAR.exe" },
   { 0x720c272a7261ec7eULL, "../testdata/PE/unrar.5.5.3.builds/VS2015/"
     "unrar32/Debug/UnRAR.exe" },
@@ -30,7 +30,7 @@ std::map<uint64_t, const std::string> id_to_mode = {
   { 0x83fe3244c90314f4ULL, "ELF" },
   { 0x396063026eaac371ULL, "ELF" },
   { 0x924daa0b17c6ae64ULL, "ELF" },
-  { 0xb9b4ecb0faefd8cfULL, "PE" },
+  { 0x38ec33c1d2961e79ULL, "PE" },
   { 0x720c272a7261ec7eULL, "PE" },
   { 0x22b6ae5553ee8881ULL, "PE" },
   { 0x019beb40ff26b418ULL, "PE" }
@@ -47,9 +47,9 @@ std::map<uint64_t, uint64_t> id_to_address_function_1 = {
   { 0x83fe3244c90314f4ULL, 0x0000000008059f70 },
   { 0x396063026eaac371ULL, 0x000000000805e910 },
   { 0x924daa0b17c6ae64ULL, 0x00000000080566fc },
-  { 0xb9b4ecb0faefd8cfULL, 0x0000000000417bb0 },
-  { 0x720c272a7261ec7eULL, 0x000000000043e500 },
-  { 0x22b6ae5553ee8881ULL, 0x0000000140015AC8 },
+  { 0x38ec33c1d2961e79ULL, 0x0000000000417b00 },
+  { 0x720c272a7261ec7eULL, 0x000000000043e450 },
+  { 0x22b6ae5553ee8881ULL, 0x0000000140015AF8 },
   { 0x019beb40ff26b418ULL, 0x000000014004EA80 }
 };
 

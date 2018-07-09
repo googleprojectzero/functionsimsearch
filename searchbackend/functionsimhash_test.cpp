@@ -38,7 +38,7 @@ TEST(functionsimhash, check_feature_counts) {
     { 0x720c272a7261ec7eULL, 917 },
     { 0x83fe3244c90314f4ULL, 627 },
     { 0x924daa0b17c6ae64ULL, 544 },
-    { 0xb9b4ecb0faefd8cfULL, 659 },
+    { 0x38ec33c1d2961e79ULL, 641 },
     { 0xf7f94f1cdfbe0f98ULL, 811 },
     { 0xf89b73cc72cd02c7ULL, 819 }};
 
