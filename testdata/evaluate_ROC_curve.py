@@ -159,7 +159,9 @@ def main(argv):
     true_positive_rates_approx = []
     false_positive_rates_exact = []
     false_positive_rates_approx = []
- 
+    irrelevant_in_exact = []
+    irrelevant_in_approx = []
+
     for function in function_subset:
       implementation = data.random_implementation(function)
       simhash = implementation[0]
@@ -188,17 +190,24 @@ def main(argv):
       false_positive_rate_approx = count_of_irrelevant_approx_results / \
         total_irrelevant
 
+      percentage_of_irrelevant_exact = count_of_irrelevant_exact_results / len(exact)
+      percentage_of_irrelevant_approx = count_of_irrelevant_approx_results / len(approximate)
+
       true_positive_rates_exact.append(true_positive_rate_exact)
       true_positive_rates_approx.append(true_positive_rate_approx)
       false_positive_rates_exact.append(false_positive_rate_exact)
       false_positive_rates_approx.append(false_positive_rate_approx)
+      irrelevant_in_exact.append(percentage_of_irrelevant_exact)
+      irrelevant_in_approx.append(percentage_of_irrelevant_approx)
 
     tpr_exact = np.mean(true_positive_rates_exact)
     fpr_exact = np.mean(false_positive_rates_exact)
     tpr_approx = np.mean(true_positive_rates_approx)
     fpr_approx = np.mean(false_positive_rates_approx)
-    print("%d %f %f %f %f" % (distance, tpr_exact, fpr_exact, tpr_approx,
-      fpr_approx))
+    irrelevant_exact = np.mean(irrelevant_in_exact)
+    irrelevant_approx = np.mean(irrelevant_in_approx)
+    print("%d %f %f %f %f %f %f" % (distance, tpr_exact, fpr_exact, tpr_approx,
+      fpr_approx, irrelevant_exact, irrelevant_approx))
 
 if __name__ == '__main__':
   app.run(main)

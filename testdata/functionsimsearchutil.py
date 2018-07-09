@@ -1,5 +1,6 @@
 """ Some utility functions for handling the data. """
-import base64
+import base64, subprocess
+from subprocess import Popen, PIPE, STDOUT
 
 def hash_distance(v1, v2):
   """
@@ -42,11 +43,23 @@ def read_inputs(symbolfile, db_dump_file, file_id_and_address=False):
     lookup = sym_mapping.get((file_id, address))
     if lookup:
       function_name, file_name = lookup
+      decoded = SaneBase64Decode(function_name)
       if file_id_and_address:
-        result.append((simhash, base64.b64decode(function_name)[:-1], file_name,
+        result.append((simhash, decoded, file_name,
           file_id, address))
       else:
-        result.append((simhash, base64.b64decode(function_name)[:-1], file_name))
+        result.append((simhash, decoded, file_name))
   print("[!] Read DB dump.")
   return result
+
+def SaneBase64Decode(input_string):
+  """ Because Python3 attempts to win 'most idiotic language ever', not only
+  does encoding produce strange newlines added to the encoded version, but
+  decoding may or may not truncate the last character of the decoded string.
+  This code is an insane solution to obtain sane behavior: Call command line
+  base64 -d instead of dealing with Python. """
+  encoded_string = subprocess.run(["base64", "-d"], stdout=PIPE,
+    input=bytes(input_string, encoding="utf-8")).stdout.decode("utf-8")
+  return encoded_string
+
 
