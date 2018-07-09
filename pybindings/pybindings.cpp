@@ -425,6 +425,24 @@ static PyObject* PySimHashSearchIndex__query_top_N(PyObject* self,
   return result_list;
 }
 
+// Provide a fast Hamming-distance calculation to Python.
+static PyObject* PySimHashSearchIndex__distance(PyObject* self,
+  PyObject* args) {
+  uint64_t hash_A, hash_B, hash2_A, hash2_B;
+  std::vector<std::pair<float, SimHashSearchIndex::FileAndAddress>> results;
+  if (!PyArg_ParseTuple(args, "kkkk", &hash_A, &hash_B, &hash2_A, &hash2_B)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to parse arguments.");
+    return NULL;
+  }
+  uint32_t distance = HammingDistance(hash_A, hash_B, hash2_A, hash2_B);
+  PyObject* result = PyLong_FromLong(distance);
+  if(!result) {
+    PyErr_SetString(functionsimsearch_error, "Failed to alloc integer result.");
+    return NULL;
+  }
+  return result;
+}
+
 // No externally accessible members.
 static PyMemberDef PySimHashSearchIndex_members[] = {
   { NULL },
@@ -453,6 +471,7 @@ static PyTypeObject PySimHashSearchIndexType = []() -> PyTypeObject  {
 }();
 
 static PyMethodDef functionsimsearch_methods[] = {
+  { "distance", (PyCFunction)PySimHashSearchIndex__distance, METH_VARARGS, NULL},
   { NULL, NULL, NULL}
 };
 

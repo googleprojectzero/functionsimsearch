@@ -19,6 +19,7 @@
 #include <deque>
 #include <string>
 
+#include "util/cppsplitter.hpp"
 #include "util/util.hpp"
 
 using namespace std;
@@ -35,6 +36,7 @@ void replaceAll(std::string& str, const std::string& from,
     // In case 'to' contains 'from', like replacing 'x' with 'yx'
   }
 }
+
 
 // At tiny command line tool used to "stem" demangled symbols from visual-studio
 // compiled executables so they can be compared to GCC-generated symbols. It is
@@ -64,14 +66,23 @@ int main(int argc, char** argv) {
 
   // Now we need to stem off the return type.
   std::deque<std::string> tokens;
-  split(input, ' ', std::back_inserter(tokens));
+  CppSplitter(input, tokens);
+  //split(input, ' ', std::back_inserter(tokens));
   std::deque<std::string> tokens2(tokens);
 
+  // Remove tokens that describe the return value.
   while(tokens2.size() > 0) {
     if (tokens2[0].find("(") == string::npos) {
       tokens2.pop_front();
     } else {
       break;
+    }
+  }
+  // If the last token is enclosed in [..], remove it too.
+  if (tokens2.size() > 0) {
+    if ((tokens2[tokens2.size()-1][0] == '[') && 
+      tokens2[tokens.size()-1].size() > 2) {
+      tokens2.pop_back();
     }
   }
   std::stringstream ss;
