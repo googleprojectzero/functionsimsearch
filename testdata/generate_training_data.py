@@ -549,9 +549,9 @@ def main(argv):
     FLAGS.work_directory = FLAGS.work_directory + '/'
 
   print("Processing ELF training files to extract features...")
-  #ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
+  ProcessTrainingFiles(FindELFTrainingFiles(), "ELF")
   print("Processing PE training files to extract features...")
-  #ProcessTrainingFiles(FindPETrainingFiles(), "PE")
+  ProcessTrainingFiles(FindPETrainingFiles(), "PE")
 
   # We now have the extracted symbols in a set of files called
   # "extracted_symbols_*.txt"
