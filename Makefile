@@ -16,7 +16,8 @@ OBJ = build/util.o build/util_with_dyninst.o build/disassembly.o \
       build/threadtimer.o build/functionmetadata.o \
       build/mappedtextfile.o \
       build/simhashtrainer.o build/sgdsolver.o build/dyninstfeaturegenerator.o \
-      build/trainingdata.o
+      build/trainingdata.o build/cppsplitter.o
+
 
 ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/addsinglefunctiontoindex \
@@ -24,13 +25,16 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
       bin/matchfunctionsfromindex bin/dumpfunctionindexinfo \
       bin/growfunctionindex bin/dumpfunctionindex \
       bin/trainsimhashweights bin/dumpsinglefunctionfeatures \
-      bin/evalsimhashweights bin/stemsymbol bin/visualizeflowgraphs
+      bin/evalsimhashweights bin/stemsymbol bin/visualizeflowgraphs \
+      bin/queryindexforhash
 
-TESTS = build/bitpermutation_test.o build/simhashsearchindex_test.o \
+TESTS = build/bitpermutation_test.o \
+        build/simhashsearchindex_test.o \
         build/flowgraphwithinstructions_test.o \
         build/testutil.o \
         build/functionsimhash_test.o \
-        build/buffertokeniterator_test.o build/mappedtextfile_test.o
+        build/buffertokeniterator_test.o build/mappedtextfile_test.o \
+        build/cppsplitter_test.o
 
 SLOWTESTS = build/simhashtrainer_test.o build/testutil.o build/sgdsolver_test.o
 
