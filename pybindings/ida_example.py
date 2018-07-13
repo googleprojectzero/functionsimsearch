@@ -12,6 +12,7 @@
 import functionsimsearch
 import idaapi
 import base64
+import os
 
 def parse_function_meta_data(filename):
   # Returns a dictionary mapping (id, address) tuples to 
@@ -59,6 +60,7 @@ def get_flowgraph_from(address):
     Generates a flowgraph object that can be fed into FunctionSimSearch from a
     given address in IDA.
   """
+  call_instruction_string
   ida_flowgraph = idaapi.FlowChart(idaapi.get_func(here()))
   flowgraph = functionsimsearch.FlowgraphWithInstructions()
   for block in ida_flowgraph:
@@ -69,7 +71,7 @@ def get_flowgraph_from(address):
   for block in ida_flowgraph:
     instructions = [ (i, GetMnem(i), (print_operand(i, 0),
       print_operand(i, 1))) for i in Heads(block.start_ea, block.end_ea)]
-    small_blocks = split_instruction_list(instructions, "call")
+    small_blocks = split_instruction_list(instructions, call_instruction_string)
     for small_block in small_blocks:
       flowgraph.add_node(small_block[0][0])
       small_block_instructions = tuple(instruction[1:] for instruction 
@@ -80,6 +82,12 @@ def get_flowgraph_from(address):
     for successor_block in block.succs():
       flowgraph.add_edge(small_blocks[-1][0][0], successor_block.start_ea)
   return flowgraph
+
+def print_hash():
+  sim_hasher
+  flowgraph = get_flowgraph_from(here())
+  hashes = sim_hasher.calculate_hash(flowgraph)
+  print("Hash for flowgraph at %lx is %lx %lx" % (here(), hashes[0], hashes[1]))
 
 def save_function():
   search_index
@@ -119,7 +127,12 @@ def load_function():
         max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
         result[1], result[2], filename, functionname))
   print("--------------------------------------")
- 
+
+
+import ida_idp
+processor_to_call_instructions = { "arm" : "BLX", "pc" : "call" }
+call_instruction_string = processor_to_call_instructions[ida_idp.get_idp_name()]
+
 try:
   hotkey_context_S
   if idaapi.del_hotkey(hotkey_context_S):
@@ -133,33 +146,61 @@ try:
     del hotkey_context_L
   else:
     print("FunctionSimSearch: Failed to unregister hotkey L.")
+  hotkey_context_H
+  if idaapi.del_hotkey(hotkey_context_H):
+    print("FunctionSimSearch: Hotkey H unregistered.")
+    del hotkey_context_H
+  else:
+    print("FunctionSimSearch: Failed to unregister hotkey H.")
   search_index
   sim_hasher
   del search_index
   del sim_hasher
 except:
+  # Ask the user for a directory. The code expects the directory to contain
+  # a search index ("simhash.index"), a metadata file ("simhash.meta"), and
+  # optionally a feature weights file ("simhash.weights").
+  data_directory = AskStr("/var/tmp/functionsimsearch/",
+    "Please enter a data directory. If no index is found, it will be created.")
+  index_file = os.path.join(data_directory, "simhash.index")
+  metadata_file = os.path.join(data_directory, "simhash.meta")
+  weights_file = os.path.join(data_directory, "simhash.weights")
+
+  # Register the hotkeys for the plugin.
   hotkey_context_S = idaapi.add_hotkey("Shift-S", save_function)
   hotkey_context_L = idaapi.add_hotkey("Shift-L", load_function)
+  hotkey_context_H = idaapi.add_hotkey("Shift-H", print_hash)
   if hotkey_context_S is None or hotkey_context_L is None:
     print("FunctionSimSearch: Failed to register hotkeys.")
     del hotkey_context_S
     del hotkey_context_L
+    del hotkey_context_H
   else:
     print("FunctionSimSearch: Hotkeys registered.")
+
   create_index = True
-  if os.path.isfile('/tmp/example.simhash'):
+  if os.path.isfile(index_file):
     create_index = False
-  if os.path.isfile('/tmp/example.simhash.meta'):
-    print("Parsing meta_data")
-    meta_data = parse_function_meta_data('/tmp/example.simhash.meta')
-    print("Parsed meta_data")
+  if os.path.isfile(metadata_file):
+    print("Parsing meta_data from file %s" % metadata_file)
+    meta_data = parse_function_meta_data(metadata_file)
+    print("Parsed meta_data.")
     for i in meta_data.keys()[0:10]:
       print("%lx:%lx" %i )
   else:
     meta_data = {}
-  search_index = functionsimsearch.SimHashSearchIndex("/tmp/example.simhash",
-    create_index, 28)
-  sim_hasher = functionsimsearch.SimHasher("/tmp/example.simhash.weights")
+  print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, 28)" % (
+    index_file, create_index))
+  try:
+    search_index = functionsimsearch.SimHashSearchIndex(index_file,
+      create_index, 28)
+    if os.path.isfile(weights_file):
+      print("Calling functionsimsearch.SimHasher(\"%s\")" % weights_file)
+      sim_hasher = functionsimsearch.SimHasher(weights_file)
+    else:
+      sim_hasher = functionsimsearch.SimHasher()
+  except:
+    print("Failure to create/open the search index!")
 
 
 
