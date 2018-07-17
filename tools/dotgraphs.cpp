@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
   InstructionGetter get_block = disassembly.GetInstructionGetter();
   for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
     std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
-    Address function_address = disassembly.GetFunctionAddress(index);
+    uint64_t function_address = disassembly.GetAddressOfFunction(index);
 
     // Skip functions that contain shared basic blocks.
     if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
@@ -80,12 +80,12 @@ int main(int argc, char** argv) {
     char buf[200];
     sprintf(buf, "sub_%lx.dot", function_address);
     std::string filename = output_path_string + "/" + std::string(buf);
-    graph.WriteDot(filename);
+    graph->WriteDot(filename);
 
     if (FLAGS_json) {
       sprintf(buf, "sub_%lx.json", function_address);
       filename = output_path_string + "/" + std::string(buf);
-      graph.WriteJSON(filename, get_block);
+      graph->WriteJSON(filename, get_block);
     }
   }
 }

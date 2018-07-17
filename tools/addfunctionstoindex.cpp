@@ -85,14 +85,14 @@ int main(int argc, char** argv) {
     }
 
     pool.Push(
-      [&search_index, mutex_pointer, &binary_path_string, &hasher,
-      processed_functions, file_id, function, minimum_size,
+      [&search_index, &disassembly, mutex_pointer, &binary_path_string, &hasher,
+      processed_functions, file_id, index, minimum_size,
       number_of_functions](int threadid) {
       std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
       (*processed_functions)++;
 
       uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
-      Address function_address = disassembly.GetAddressOfFunction(index);
+      uint64_t function_address = disassembly.GetAddressOfFunction(index);
 
       if (branching_nodes <= minimum_size) {
         printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu "
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
         binary_path_string.c_str(), file_id, function_address, branching_nodes);
 
       std::vector<uint64_t> hashes;
-      std::unique_ptr<FeatureGenerator> generator =
+      std::unique_ptr<FunctionFeatureGenerator> generator =
         disassembly.GetFeatureGenerator(index);
 
       hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);

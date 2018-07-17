@@ -116,12 +116,12 @@ int main(int argc, char** argv) {
   threadpool::ThreadPool pool(1);
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
-  uint64_t number_of_functions = functions.size();
+  uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
   FunctionSimHasher hasher(FLAGS_weights);
 
   uint64_t function_index = 0;
 
-  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
+  for (uint32_t index = 0; index < number_of_functions; ++index) {
     // Skip functions that contain shared basic blocks.
     if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
@@ -130,20 +130,20 @@ int main(int argc, char** argv) {
     printf("Pushing function %lx\n", function_address);
     // Push the producer threads into the threadpool.
     pool.Push(
-      [&resultqueue, function_index, mutex_pointer, &search_index, &metadata,
-      file_id, function, minimum_size, max_matches, minimum_percentage,
+      [&resultqueue, &disassembly, index, mutex_pointer, &search_index, &metadata,
+      file_id, minimum_size, max_matches, minimum_percentage,
       number_of_functions, &hasher]
         (int threadid) {
       std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
       Address function_address = disassembly.GetAddressOfFunction(index);
 
-      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
-      if (graph.GetNumberOfBranchingNodes() <= minimum_size) {
+      uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
+      if (branching_nodes <= minimum_size) {
        return;
       }
 
       std::vector<uint64_t> hashes;
-      std::unique_ptr<FeatureGenerator> generator =
+      std::unique_ptr<FunctionFeatureGenerator> generator =
         disassembly.GetFeatureGenerator(index);
       hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
       uint64_t hash_A = hashes[0];
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
       for (const auto& result : results) {
         if (result.first > (minimum_percentage * 128.0)) {
           resultqueue.Push(
-            SearchResult(file_id, function_address, function_index,
+            SearchResult(file_id, function_address, index,
               branching_nodes, result.first, result.second.first,
               result.second.second));
         } else {

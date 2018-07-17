@@ -15,8 +15,11 @@
 #ifndef DISASSEMBLY_HPP
 #define DISASSEMBLY_HPP
 
+#include <mutex>
 #include <string>
 #include "CodeObject.h"
+#include "disassembly/flowgraph.hpp"
+#include "disassembly/functionfeaturegenerator.hpp"
 
 // A thin wrapper class around Dyninst to deal with some boilerplate code
 // required for switching between PE and ELF files and other inputs. Also helps
@@ -32,8 +35,8 @@ public:
   void DisassembleFromAddress(uint64_t address, bool recursive);
 
   // Allow users of this class to iterate through all functions in the binary.
-  std::unique_ptr<FeatureGenerator> GetFeatureGenerator(uint32_t function_index)
-    const;
+  std::unique_ptr<FunctionFeatureGenerator> GetFeatureGenerator(
+    uint32_t function_index) const;
   std::unique_ptr<Flowgraph> GetFlowgraph(uint32_t function_index) const;
   InstructionGetter GetInstructionGetter() const;
   uint64_t GetAddressOfFunction(uint32_t function_index) const;
@@ -48,8 +51,8 @@ private:
   const std::string type_;
   const std::string inputfile_;
   bool uses_dyninst_;
-  std::mutex dyninst_api_mutex_;
-  std::vector<Function*> dyninst_functions_;
+  mutable std::mutex dyninst_api_mutex_;
+  std::vector<Dyninst::ParseAPI::Function*> dyninst_functions_;
   Dyninst::ParseAPI::CodeObject* code_object_;
   Dyninst::ParseAPI::CodeSource* code_source_;
 };

@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS += -ggdb -O0 -std=c++11 -fPIE
+CPPFLAGS += -ggdb -O0 -std=c++17 -fPIE
 LIBDIR = -L./third_party/pe-parse/pe-parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -I./ -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \

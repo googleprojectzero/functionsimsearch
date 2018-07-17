@@ -2,6 +2,8 @@
 #define FUNCTIONFEATUREGENERATOR_HPP
 
 typedef std::tuple<std::string, std::string, std::string> MnemTuple;
+typedef uint64_t address;
+class Flowgraph;
 
 // In order to calculate a per-function SimHash, we need something that provides
 // graphlets and mnemonic-3-grams to the calculation. This file defines a simple

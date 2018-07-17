@@ -14,16 +14,17 @@
 
 #include <iostream>
 #include <map>
+#include <mutex>
 #include "CodeObject.h"
 #include "InstructionDecoder.h"
-#include "disassembly/pecodesource.hpp"
 
+#include "disassembly/flowgraphutil_dyninst.hpp"
+#include "disassembly/functionfeaturegenerator.hpp"
+#include "disassembly/dyninstfeaturegenerator.hpp"
+#include "disassembly/pecodesource.hpp"
 #include "disassembly/disassembly.hpp"
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 Disassembly::Disassembly(const std::string& filetype,
   const std::string& inputfile) : type_(filetype), inputfile_(inputfile) {
@@ -34,8 +35,8 @@ Disassembly::Disassembly(const std::string& filetype,
 Disassembly::~Disassembly() {
   delete code_object_;
   if (type_ == "ELF") {
-    SymtabCodeSource* symtab_code_source =
-      static_cast<SymtabCodeSource*>(code_source_);
+    Dyninst::ParseAPI::SymtabCodeSource* symtab_code_source =
+      static_cast<Dyninst::ParseAPI::SymtabCodeSource*>(code_source_);
     delete symtab_code_source;
   } else if (type_ == "PE") {
     PECodeSource* pe_code_source = static_cast<PECodeSource*>(code_source_);
@@ -44,72 +45,84 @@ Disassembly::~Disassembly() {
 }
 
 bool Disassembly::Load(bool perform_parsing) {
-  Instruction::Ptr instruction;
 
-  if (type_ == "ELF") {
-    SymtabAPI::Symtab* sym_tab = nullptr;
-    SymtabCodeSource* symtab_code_source = nullptr;
-    bool is_parseable = SymtabAPI::Symtab::openFile(sym_tab, inputfile_);
-    if (is_parseable == false) {
-      printf("Error: ELF File cannot be parsed.\n");
+  if (uses_dyninst_) {
+    std::scoped_lock<std::mutex> lock(dyninst_api_mutex_);
+
+    Dyninst::InstructionAPI::Instruction::Ptr instruction;
+
+    if (type_ == "ELF") {
+      Dyninst::SymtabAPI::Symtab* sym_tab = nullptr;
+      Dyninst::ParseAPI::SymtabCodeSource* symtab_code_source = nullptr;
+      bool is_parseable = Dyninst::SymtabAPI::Symtab::openFile(sym_tab, 
+        inputfile_);
+      if (is_parseable == false) {
+        printf("Error: ELF File cannot be parsed.\n");
+        return false;
+      }
+      // Brutal const_cast because SymtabCodeSource for some reason wants a
+      // char * instead of a const char*.
+      symtab_code_source = new Dyninst::ParseAPI::SymtabCodeSource(
+        const_cast<char*>(inputfile_.c_str()));
+      code_source_ = static_cast<Dyninst::ParseAPI::CodeSource*>(
+        symtab_code_source);
+      Dyninst::ParseAPI::SymtabCodeSource::addNonReturning("__stack_chk_fail");
+    } else if (type_ == "PE") {
+      PECodeSource* pe_code_source = new PECodeSource(inputfile_);
+      if (pe_code_source->parsed() == false) {
+        printf("Error: PE File cannot be parsed.\n");
+        return false;
+      }
+      code_source_ = static_cast<Dyninst::ParseAPI::CodeSource*>(pe_code_source);
+    } else {
+      printf("Error: Unknown filetype specified.\n");
       return false;
     }
-    // Brutal C-style cast because SymtabCodeSource for some reason wants a
-    // char * instead of a const char*.
-    symtab_code_source = new SymtabCodeSource((char *)inputfile_.c_str());
-    code_source_ = static_cast<CodeSource*>(symtab_code_source);
 
-    SymtabCodeSource::addNonReturning("__stack_chk_fail");
-  } else if (type_ == "PE") {
-    PECodeSource* pe_code_source = new PECodeSource(inputfile_);
-    if (pe_code_source->parsed() == false) {
-      printf("Error: PE File cannot be parsed.\n");
-      return false;
+    code_object_ = new Dyninst::ParseAPI::CodeObject(code_source_);
+
+    if (perform_parsing) {
+      // Parse the obvious function entries.
+      code_object_->parse();
+
+      // Parse the gaps.
+      for (Dyninst::ParseAPI::CodeRegion* region : code_source_->regions()) {
+        code_object_->parseGaps(region,
+          Dyninst::ParseAPI::GapParsingType::IdiomMatching);
+        code_object_->parseGaps(region, 
+          Dyninst::ParseAPI::GapParsingType::PreambleMatching);
+      }
     }
-    code_source_ = static_cast<CodeSource*>(pe_code_source);
-  } else {
-    printf("Error: Unknown filetype specified.\n");
-    return false;
+    return true;
   }
-
-  code_object_ = new CodeObject(code_source_);
-
-  if (perform_parsing) {
-    // Parse the obvious function entries.
-    code_object_->parse();
-
-    // Parse the gaps.
-    for (CodeRegion* region : code_source_->regions()) {
-      code_object_->parseGaps(region, GapParsingType::IdiomMatching);
-      code_object_->parseGaps(region, GapParsingType::PreambleMatching);
-    }
-  }
-  return true;
+  return false;
 }
 
 void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
   if (uses_dyninst_) {
+    scoped_lock<std::mutex> lock(dyninst_api_mutex_);
     code_object_->parse(address, recursive);
   }
 }
 
-std::unique_ptr<FeatureGenerator> Disassembly::GetFeatureGenerator(
+std::unique_ptr<FunctionFeatureGenerator> Disassembly::GetFeatureGenerator(
   uint32_t function_index) const {
-  std::scoped_lock dyninst_lock(dyninst_api_mutex_);
   if (uses_dyninst_) {
+    std::scoped_lock lock(dyninst_api_mutex_);
     Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
       function_index);
-    std::unique_ptr<FeatureGenerator> generator(new DyninstFeatureGenerator(
-      function));
+    std::unique_ptr<FunctionFeatureGenerator> generator(
+      static_cast<FunctionFeatureGenerator *>(new DyninstFeatureGenerator(
+      function)));
     return generator;
   }
-  return std::unique_ptr<FeatureGenerator>(nullptr);
+  return std::unique_ptr<FunctionFeatureGenerator>(nullptr);
 }
 
-std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index) 
+std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
   const {
-  std::scoped_lock dyninst_lock(dyninst_api_mutex_);
   if (uses_dyninst_) {
+    std::scoped_lock lock(dyninst_api_mutex_);
     Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
       function_index); 
     std::unique_ptr<Flowgraph> flowgraph(new Flowgraph());
@@ -119,20 +132,31 @@ std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
   return std::unique_ptr<Flowgraph>(nullptr);
 }
 
-uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) {
-  Dyninst::ParseAPI::Function* function = dyninst_functions_.at(function_index);
-  return function->addr();
+uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) const {
+  if (uses_dyninst_) {
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(function_index);
+    return function->addr();
+  }
+  return 0;
 }
 
-std::string Disassembly::GetDisassembly(uint32_t function_index) {
+uint32_t Disassembly::GetNumberOfFunctions() const {
   if (uses_dyninst_) {
+    return dyninst_functions_.size();
+  }
+  return 0;
+}
+
+std::string Disassembly::GetDisassembly(uint32_t function_index) const {
+  if (uses_dyninst_) {
+    std::scoped_lock<std::mutex> lock(dyninst_api_mutex_);
     Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
       function_index);
 
     std::stringstream output;
-    Dyninst::ParseAPI::InstructionDecoder decoder(
+    Dyninst::InstructionAPI::InstructionDecoder decoder(
       function->isrc()->getPtrToInstruction(function->addr()),
-      InstructionDecoder::maxInstructionLength,
+      Dyninst::InstructionAPI::InstructionDecoder::maxInstructionLength,
       function->region()->getArch());
 
     output << "\n[!] Function at " << std::hex << function->addr();
@@ -143,7 +167,7 @@ std::string Disassembly::GetDisassembly(uint32_t function_index) {
       Dyninst::ParseAPI::Block::Insns block_instructions;
       block->getInsns(block_instructions);
 
-      output << "(" << std::dec << static_cast<size_t>(block_instructions.size()
+      output << "(" << std::dec << static_cast<size_t>(block_instructions.size())
         << ")\n";
 
       for (const auto& instruction : block_instructions) {
@@ -152,21 +176,37 @@ std::string Disassembly::GetDisassembly(uint32_t function_index) {
         rendered << "\n";
       }
     }
+    return output.str();
   }
-
+  return "";
 }
 
- 
-/*
-bool ContainsSharedBasicBlocks(Function* function) {
-  bool has_shared_blocks = false;
-  for (const auto& block : function->blocks()) {
-    std::vector<Function *> functions_for_block;
-    block->getFuncs(functions_for_block);
-    if (functions_for_block.size() > 1) {
-      return true;
+bool Disassembly::ContainsSharedBasicBlocks(uint32_t index) const {
+  if (uses_dyninst_) {
+    std::scoped_lock<std::mutex> lock(dyninst_api_mutex_);
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(index);
+
+    bool has_shared_blocks = false;
+    for (const auto& block : function->blocks()) {
+      std::vector<Dyninst::ParseAPI::Function *> functions_for_block;
+      block->getFuncs(functions_for_block);
+      if (functions_for_block.size() > 1) {
+        return true;
+      }
     }
   }
   return false;
-}*/
+}
+
+InstructionGetter Disassembly::GetInstructionGetter() const {
+  if (uses_dyninst_) {
+    return MakeDyninstInstructionGetter(code_object_);
+  }
+}
+
+uint32_t Disassembly::GetIndexByAddress(uint64_t address) const {
+  // TODO(thomasdullien): Implement.
+  return 0;
+
+}
 

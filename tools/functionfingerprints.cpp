@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     // individual feature hashes.
     std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
-    std::unique_ptr<FeatureGenerator> generator =
+    std::unique_ptr<FunctionFeatureGenerator> generator =
       disassembly.GetFeatureGenerator(index);
     sim_hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes,
       &feature_hashes);

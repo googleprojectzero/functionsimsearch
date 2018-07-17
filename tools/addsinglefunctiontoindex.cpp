@@ -78,26 +78,25 @@ int main(int argc, char** argv) {
   }
   std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
 
-
   if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
     printf("[!] (1/1) %s FileID %lx: Skipping function %lx. Index file "
       "full.\n", binary_path_string.c_str(), file_id, target_address);
     return -1;
   }
-  uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
+  uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
 
   printf("[!] (1/1) %s FileID %lx: Adding function %lx (%lu branching "
     "nodes)\n", binary_path_string.c_str(), file_id, target_address,
     branching_nodes);
 
   std::vector<uint64_t> hashes;
-  std::unique_ptr<FeatureGenerator> generator =
+  std::unique_ptr<FunctionFeatureGenerator> generator =
     disassembly.GetFeatureGenerator(index);
   hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
   uint64_t hash_A = hashes[0];
   uint64_t hash_B = hashes[1];
   try {
-    search_index.AddFunction(hash_A, hash_B, file_id, function_address);
+    search_index.AddFunction(hash_A, hash_B, file_id, target_address);
   } catch (boost::interprocess::bad_alloc& out_of_space) {
     printf("[!] boost::interprocess::bad_alloc - no space in index file left!\n");
   }

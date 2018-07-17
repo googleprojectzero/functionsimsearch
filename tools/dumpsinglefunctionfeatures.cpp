@@ -61,21 +61,22 @@ int main(int argc, char** argv) {
   disassembly.DisassembleFromAddress(target_address, true);
 
   // Find the function that has the right address.
-  uint32_t index = disassembly.GetIndexOfFunction(target_address);
+  uint32_t index = disassembly.GetIndexByAddress(target_address);
 
   // The weights are not used, so ignore them (and use hardcoded weights.txt.
   FunctionSimHasher hasher("weights.txt");
 
   if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
-    print("[!] Error: --no_shared_blocks was specified but function has them.");
+    printf("[!] Error: --no_shared_blocks was specified but function has them.");
     exit(1);
   }
 
-  std::unique_ptr<FeatureGenerator> feature_generator =
+  std::unique_ptr<FunctionFeatureGenerator> generator =
     disassembly.GetFeatureGenerator(index);
 
   std::vector<FeatureHash> feature_ids;
-  hasher.CalculateFunctionSimHash(&generator, 128, &hashes, &feature_ids);
+  std::vector<uint64_t> hashes;
+  hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes, &feature_ids);
   for (FeatureHash feature : feature_ids) {
     printf("%16.16lx%16.16lx ", feature.first, feature.second);
   }
