@@ -19,9 +19,10 @@
 #include "CodeObject.h"
 
 // A thin wrapper class around Dyninst to deal with some boilerplate code
-// required for switching between PE and ELF files. Will be obsoleted when
-// DynInst acquires "native" PE parsing capability.
-
+// required for switching between PE and ELF files and other inputs. Also helps
+// hiding the details of DynInst and whatever else produces disassemblies from
+// the rest of the codebase (the external interface is free of pollution from
+// disassembly libraries.
 class Disassembly {
 public:
   Disassembly(const std::string& filetype, const std::string& inputfile);
@@ -29,19 +30,28 @@ public:
 
   bool Load(bool perform_parsing = true);
   void DisassembleFromAddress(uint64_t address, bool recursive);
-  Dyninst::ParseAPI::CodeObject* getCodeObject() { return code_object_; };
 
+  // Allow users of this class to iterate through all functions in the binary.
+  std::unique_ptr<FeatureGenerator> GetFeatureGenerator(uint32_t function_index)
+    const;
+  std::unique_ptr<Flowgraph> GetFlowgraph(uint32_t function_index) const;
+  InstructionGetter GetInstructionGetter() const;
+  uint64_t GetAddressOfFunction(uint32_t function_index) const;
+  uint32_t GetNumberOfFunctions() const;
+  std::string GetDisassembly(uint32_t function_index) const;
+  uint32_t GetIndexByAddress(uint64_t address) const;
+  // A helper function used to detect functions which have shared basic blocks
+  // with other functions. This is mainly used to detect situations where 
+  // Dyninst failed to properly disassembly a binary.
+  bool ContainsSharedBasicBlocks(uint32_t function_index) const;
 private:
   const std::string type_;
   const std::string inputfile_;
+  bool uses_dyninst_;
+  std::mutex dyninst_api_mutex_;
+  std::vector<Function*> dyninst_functions_;
   Dyninst::ParseAPI::CodeObject* code_object_;
   Dyninst::ParseAPI::CodeSource* code_source_;
 };
 
-// A helper function used to detect functions which have shared basic blocks
-// with other functions. This is mainly used to detect situations where 
-// Dyninst failed to properly disassembly a binary.
-bool ContainsSharedBasicBlocks(Dyninst::ParseAPI::Function* function);
-
 #endif // DISASSEMBLY_HPP
-

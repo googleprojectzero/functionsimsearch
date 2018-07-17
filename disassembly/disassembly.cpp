@@ -88,9 +88,76 @@ bool Disassembly::Load(bool perform_parsing) {
 }
 
 void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
-  code_object_->parse(address, recursive);
+  if (uses_dyninst_) {
+    code_object_->parse(address, recursive);
+  }
 }
 
+std::unique_ptr<FeatureGenerator> Disassembly::GetFeatureGenerator(
+  uint32_t function_index) const {
+  std::scoped_lock dyninst_lock(dyninst_api_mutex_);
+  if (uses_dyninst_) {
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
+      function_index);
+    std::unique_ptr<FeatureGenerator> generator(new DyninstFeatureGenerator(
+      function));
+    return generator;
+  }
+  return std::unique_ptr<FeatureGenerator>(nullptr);
+}
+
+std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index) 
+  const {
+  std::scoped_lock dyninst_lock(dyninst_api_mutex_);
+  if (uses_dyninst_) {
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
+      function_index); 
+    std::unique_ptr<Flowgraph> flowgraph(new Flowgraph());
+    BuildFlowgraph(function, flowgraph.get());
+    return flowgraph;
+  }
+  return std::unique_ptr<Flowgraph>(nullptr);
+}
+
+uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) {
+  Dyninst::ParseAPI::Function* function = dyninst_functions_.at(function_index);
+  return function->addr();
+}
+
+std::string Disassembly::GetDisassembly(uint32_t function_index) {
+  if (uses_dyninst_) {
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
+      function_index);
+
+    std::stringstream output;
+    Dyninst::ParseAPI::InstructionDecoder decoder(
+      function->isrc()->getPtrToInstruction(function->addr()),
+      InstructionDecoder::maxInstructionLength,
+      function->region()->getArch());
+
+    output << "\n[!] Function at " << std::hex << function->addr();
+
+    for (const auto& block : function->blocks()) {
+      output << "\t\tBlock at " << std::hex << block->start();
+
+      Dyninst::ParseAPI::Block::Insns block_instructions;
+      block->getInsns(block_instructions);
+
+      output << "(" << std::dec << static_cast<size_t>(block_instructions.size()
+        << ")\n";
+
+      for (const auto& instruction : block_instructions) {
+        std::string rendered = instruction.second->format(instruction.first);
+        output << "\t\t\t " << std::hex << instruction.first << ": " <<
+        rendered << "\n";
+      }
+    }
+  }
+
+}
+
+ 
+/*
 bool ContainsSharedBasicBlocks(Function* function) {
   bool has_shared_blocks = false;
   for (const auto& block : function->blocks()) {
@@ -101,5 +168,5 @@ bool ContainsSharedBasicBlocks(Function* function) {
     }
   }
   return false;
-}
+}*/
 

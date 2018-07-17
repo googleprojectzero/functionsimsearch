@@ -17,9 +17,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
@@ -74,11 +71,8 @@ int main(int argc, char** argv) {
   if (!disassembly.Load()) {
     exit(1);
   }
-  CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return -1;
   }
@@ -86,23 +80,21 @@ int main(int argc, char** argv) {
   FunctionSimHasher sim_hasher(FLAGS_weights, FLAGS_disable_graphs,
     FLAGS_disable_instructions, FLAGS_dump_graphlet_features,
     FLAGS_dump_instruction_features);
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
+
+  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
+    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    Address function_address = disassembly.GetAddressOfFunction(index);
 
     // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
     }
-
-    BuildFlowgraph(function, &graph);
 
     if ((target_address != 0) && (target_address != function_address)) {
       continue;
     }
 
-    uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
+    uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
 
     if (branching_nodes <= minimum_size) {
       continue;
@@ -115,8 +107,9 @@ int main(int argc, char** argv) {
     // individual feature hashes.
     std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
-    DyninstFeatureGenerator generator(function);
-    sim_hasher.CalculateFunctionSimHash(&generator, 128, &hashes,
+    std::unique_ptr<FeatureGenerator> generator =
+      disassembly.GetFeatureGenerator(index);
+    sim_hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes,
       &feature_hashes);
 
     uint64_t hash1 = hashes[0];

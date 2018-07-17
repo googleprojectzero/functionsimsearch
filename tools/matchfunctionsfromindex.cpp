@@ -17,9 +17,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
@@ -103,22 +100,20 @@ int main(int argc, char** argv) {
   if (!disassembly.Load()) {
     exit(1);
   }
-  CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return -1;
   }
 
   printf("[!] Done disassembling, beginning search.\n");
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
 
   std::mutex search_index_mutex;
   std::mutex* mutex_pointer = &search_index_mutex; 
   threadpool::SynchronizedQueue<SearchResult> resultqueue;
-  threadpool::ThreadPool pool(1);//std::thread::hardware_concurrency());
+  // TODO(thomasdullien): Increase the number of worker threads and check
+  // why they were decreased in the first place.
+  threadpool::ThreadPool pool(1);
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = functions.size();
@@ -126,23 +121,21 @@ int main(int argc, char** argv) {
 
   uint64_t function_index = 0;
 
-  // Push the consumer thread into the threadpool.
-  for (Function* function : functions) {
+  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
     // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
     }
-
-    printf("Pushing function %lx\n", function->addr());
+    Address function_address = disassembly.GetAddressOfFunction(index);
+    printf("Pushing function %lx\n", function_address);
     // Push the producer threads into the threadpool.
     pool.Push(
       [&resultqueue, function_index, mutex_pointer, &search_index, &metadata,
       file_id, function, minimum_size, max_matches, minimum_percentage,
       number_of_functions, &hasher]
         (int threadid) {
-      Flowgraph graph;
-      Address function_address = function->addr();
-      BuildFlowgraph(function, &graph);
+      std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+      Address function_address = disassembly.GetAddressOfFunction(index);
 
       uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
       if (graph.GetNumberOfBranchingNodes() <= minimum_size) {
@@ -150,13 +143,9 @@ int main(int argc, char** argv) {
       }
 
       std::vector<uint64_t> hashes;
-      // Dyninst cannot tolerate multi-threaded access, so construction of the
-      // DyninstFeatureGenerator needs to be synched accross threads.
-      mutex_pointer->lock();
-      DyninstFeatureGenerator generator(function);
-      mutex_pointer->unlock();
-
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
+      std::unique_ptr<FeatureGenerator> generator =
+        disassembly.GetFeatureGenerator(index);
+      hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
 

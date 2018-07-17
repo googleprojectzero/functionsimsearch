@@ -17,9 +17,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
@@ -43,9 +40,6 @@ using namespace gflags;
 #endif
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(
@@ -65,49 +59,24 @@ int main(int argc, char** argv) {
   }
   // Make sure the function-to-index is in fact getting indexed.
   disassembly.DisassembleFromAddress(target_address, true);
-  CodeObject* code_object = disassembly.getCodeObject();
 
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
-    printf("No functions found.\n");
-    return -1;
-  }
+  // Find the function that has the right address.
+  uint32_t index = disassembly.GetIndexOfFunction(target_address);
 
-  std::mutex dyninst_mutex;
-  std::mutex* mutex_pointer = &dyninst_mutex;
-  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
-  uint64_t number_of_functions = functions.size();
+  // The weights are not used, so ignore them (and use hardcoded weights.txt.
   FunctionSimHasher hasher("weights.txt");
 
-  // Given that we are only indexing one function, the following code is clearly
-  // overkill.
-  for (Function* function : functions) {
-    // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
-      continue;
-    }
-
-    pool.Push(
-      [mutex_pointer, &binary_path_string, &hasher, file_id, function,
-        target_address](int threadid) {
-      Address function_address = function->addr();
-      if (function_address != target_address) {
-        return;
-      }
-      std::vector<uint64_t> hashes;
-      mutex_pointer->lock();
-      DyninstFeatureGenerator generator(function);
-      mutex_pointer->unlock();
-
-      std::vector<FeatureHash> feature_ids;
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, &feature_ids);
-      for (FeatureHash feature : feature_ids) {
-        printf("%16.16lx%16.16lx ", feature.first, feature.second);
-      }
-      uint64_t hash_A = hashes[0];
-      uint64_t hash_B = hashes[1];
-    });
+  if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
+    print("[!] Error: --no_shared_blocks was specified but function has them.");
+    exit(1);
   }
-  pool.Stop(true);
-  printf("\n");
+
+  std::unique_ptr<FeatureGenerator> feature_generator =
+    disassembly.GetFeatureGenerator(index);
+
+  std::vector<FeatureHash> feature_ids;
+  hasher.CalculateFunctionSimHash(&generator, 128, &hashes, &feature_ids);
+  for (FeatureHash feature : feature_ids) {
+    printf("%16.16lx%16.16lx ", feature.first, feature.second);
+  }
 }

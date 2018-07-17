@@ -16,9 +16,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
@@ -41,7 +38,7 @@ using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(
-    "Dumps hashes of all CFGs in the target binary to stdout.");
+    "Dumps (non-fuzzy) hashes of all CFGs in the target binary to stdout.");
   ParseCommandLineFlags(&argc, &argv, true);
 
   std::string mode(FLAGS_format);
@@ -50,22 +47,17 @@ int main(int argc, char** argv) {
   if (!disassembly.Load()) {
     exit(1);
   }
-  CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return -1;
   }
 
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
-    BuildFlowgraph(function, &graph);
+  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
+    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    Address function_address = disassembly.GetAddressOfFunction(index);
 
-    printf("%16.16lx %16.16lx\n", graph.CalculateHash(function_address),
+    printf("%16.16lx %16.16lx\n", graph->CalculateHash(function_address),
       function_address);
   }
 }

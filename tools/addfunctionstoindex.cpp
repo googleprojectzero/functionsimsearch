@@ -17,9 +17,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
@@ -46,9 +43,6 @@ using namespace gflags;
 #endif
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(
@@ -75,26 +69,18 @@ int main(int argc, char** argv) {
   if (!disassembly.Load()) {
     exit(1);
   }
-  CodeObject* code_object = disassembly.getCodeObject();
-
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
-    printf("No functions found.\n");
-    return -1;
-  }
 
   std::mutex search_index_mutex;
   std::mutex* mutex_pointer = &search_index_mutex;
   threadpool::ThreadPool pool(std::thread::hardware_concurrency());
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
-  uint64_t number_of_functions = functions.size();
+  uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
   FunctionSimHasher hasher(FLAGS_weights);
 
-  for (Function* function : functions) {
+  for (uint32_t index = 0; index < number_of_functions; ++index) {
     // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
     }
 
@@ -102,12 +88,11 @@ int main(int argc, char** argv) {
       [&search_index, mutex_pointer, &binary_path_string, &hasher,
       processed_functions, file_id, function, minimum_size,
       number_of_functions](int threadid) {
-      Flowgraph graph;
-      Address function_address = function->addr();
-      BuildFlowgraph(function, &graph);
+      std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
       (*processed_functions)++;
 
-      uint64_t branching_nodes = graph.GetNumberOfBranchingNodes();
+      uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
+      Address function_address = disassembly.GetAddressOfFunction(index);
 
       if (branching_nodes <= minimum_size) {
         printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu "
@@ -127,13 +112,10 @@ int main(int argc, char** argv) {
         binary_path_string.c_str(), file_id, function_address, branching_nodes);
 
       std::vector<uint64_t> hashes;
-      // Access to the DynInst API which happens inside the constructor of the
-      // generator needs to be synchronized.
-      mutex_pointer->lock();
-      DyninstFeatureGenerator generator(function);
-      mutex_pointer->unlock();
+      std::unique_ptr<FeatureGenerator> generator =
+        disassembly.GetFeatureGenerator(index);
 
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes);
+      hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
       uint64_t hash_A = hashes[0];
       uint64_t hash_B = hashes[1];
       {

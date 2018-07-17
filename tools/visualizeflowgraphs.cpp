@@ -18,9 +18,6 @@
 #include <string>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
@@ -45,9 +42,6 @@ using namespace gflags;
 #endif
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(

@@ -16,9 +16,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/pecodesource.hpp"
 
@@ -36,9 +33,6 @@ using namespace gflags;
 #endif
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(
@@ -63,41 +57,19 @@ int main(int argc, char** argv) {
   if (function_address) {
     disassembly.DisassembleFromAddress(function_address, false);
   }
-  CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return -1;
   }
 
-  Instruction::Ptr instruction;
-  for (Function* function : functions) {
+  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
     // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
     }
 
-    InstructionDecoder decoder(function->isrc()->getPtrToInstruction(
-      function->addr()), InstructionDecoder::maxInstructionLength,
-      function->region()->getArch());
-    int instruction_count = 0;
-    if ((function_address != 0) && (function_address != function->addr())) {
-      continue;
-    }
-    printf("\n[!] Function at %lx\n", function->addr());
-    for (const auto& block : function->blocks()) {
-      printf("     Block at %lx", block->start());
-
-      Dyninst::ParseAPI::Block::Insns block_instructions;
-      block->getInsns(block_instructions);
-      printf(" (%lu instructions)\n", static_cast<size_t>(
-        block_instructions.size()));
-      for (const auto& instruction : block_instructions) {
-        std::string rendered = instruction.second->format(instruction.first);
-        printf("          %lx: %s\n", instruction.first, rendered.c_str());
-      }
-    }
+    std::string disassembly_string = disassembly.GetDisassembly(index);
+    printf("%s", disassembly_string.c_str());
   }
 }

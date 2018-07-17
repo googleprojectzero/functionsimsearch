@@ -16,9 +16,6 @@
 #include <map>
 #include <gflags/gflags.h>
 
-#include "CodeObject.h"
-#include "InstructionDecoder.h"
-
 #include "disassembly/disassembly.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
@@ -40,9 +37,6 @@ using namespace gflags;
 #endif
 
 using namespace std;
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 int main(int argc, char** argv) {
   SetUsageMessage(
@@ -68,27 +62,20 @@ int main(int argc, char** argv) {
 
   std::string output_path_string(FLAGS_output);
 
-  CodeObject* code_object = disassembly.getCodeObject();
-
-  // Obtain the list of all functions in the binary.
-  const CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return -1;
   }
 
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
-  for (Function* function : functions) {
-    Flowgraph graph;
-    Address function_address = function->addr();
+  InstructionGetter get_block = disassembly.GetInstructionGetter();
+  for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
+    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    Address function_address = disassembly.GetFunctionAddress(index);
 
     // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && ContainsSharedBasicBlocks(function)) {
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
       continue;
     }
-
-    BuildFlowgraph(function, &graph);
 
     char buf[200];
     sprintf(buf, "sub_%lx.dot", function_address);
