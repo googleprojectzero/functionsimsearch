@@ -30,6 +30,9 @@ Disassembly::Disassembly(const std::string& filetype,
   const std::string& inputfile) : type_(filetype), inputfile_(inputfile) {
   code_object_ = nullptr;
   code_source_ = nullptr;
+  if ((type_ == "ELF") || (type_ == "PE")) {
+    uses_dyninst_ = true;
+  }
 }
 
 Disassembly::~Disassembly() {
@@ -92,16 +95,26 @@ bool Disassembly::Load(bool perform_parsing) {
         code_object_->parseGaps(region, 
           Dyninst::ParseAPI::GapParsingType::PreambleMatching);
       }
+      RefreshFunctionVector();
     }
     return true;
   }
   return false;
 }
 
+void Disassembly::RefreshFunctionVector() {
+  dyninst_functions_.clear();
+  for (Dyninst::ParseAPI::Function* function : code_object_->funcs()) {
+    dyninst_functions_.push_back(function);
+  }
+}
+
 void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
   if (uses_dyninst_) {
     scoped_lock<std::mutex> lock(dyninst_api_mutex_);
     code_object_->parse(address, recursive);
+
+    RefreshFunctionVector();
   }
 }
 
@@ -117,6 +130,29 @@ std::unique_ptr<FunctionFeatureGenerator> Disassembly::GetFeatureGenerator(
     return generator;
   }
   return std::unique_ptr<FunctionFeatureGenerator>(nullptr);
+}
+
+std::unique_ptr<FlowgraphWithInstructions>
+  Disassembly::GetFlowgraphWithInstructions(
+  uint32_t function_index) const {
+  if (uses_dyninst_) {
+    std::scoped_lock lock(dyninst_api_mutex_);
+    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
+      function_index); 
+    std::unique_ptr<FlowgraphWithInstructions> flowgraph(
+      new FlowgraphWithInstructions());
+    BuildFlowgraph(function, flowgraph.get());
+    InstructionGetter get_block = GetInstructionGetter();
+    std::vector<address> nodes;
+    flowgraph->GetNodes(&nodes);
+    for (const address& node_address : nodes) {
+      std::vector<Instruction> instructions;
+      get_block(node_address, &instructions);
+      flowgraph->AddInstructions(node_address, instructions);
+    }
+    return flowgraph;
+  }
+  return std::unique_ptr<FlowgraphWithInstructions>(nullptr);
 }
 
 std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
@@ -206,7 +242,13 @@ InstructionGetter Disassembly::GetInstructionGetter() const {
 
 uint32_t Disassembly::GetIndexByAddress(uint64_t address) const {
   // TODO(thomasdullien): Implement.
-  return 0;
-
+  if (uses_dyninst_) {
+    for (uint32_t index = 0; index < dyninst_functions_.size(); ++index) {
+      if (dyninst_functions_.at(index)->addr() == address) {
+        return index;
+      }
+    }
+  }
+  return std::numeric_limits<uint32_t>::max();
 }
 

@@ -22,20 +22,9 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
     printf("Failure to load %s\n", filename.c_str());
     return std::make_pair(0, 0);
   }
-  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
 
-  // Obtain the list of all functions in the binary.
-  const Dyninst::ParseAPI::CodeObject::funclist &functions =
-    code_object->funcs();
-
-  bool contains_function = false;
-  for (Dyninst::ParseAPI::Function* function : functions) {
-    Dyninst::Address function_address = function->addr();
-    if (function_address == address) {
-      contains_function = true;
-      break;
-    }
-  }
+  bool contains_function = (disassembly.GetIndexByAddress(address) 
+    != std::numeric_limits<uint32_t>::max());
 
   if (!contains_function) {
     // Make sure the function-to-index is in fact getting indexed.
@@ -44,24 +33,16 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
     disassembly.DisassembleFromAddress(address, true);
   }
 
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     return std::make_pair(0,0);
   }
 
-  for (Dyninst::ParseAPI::Function* function : functions) {
-    Flowgraph graph;
-    Dyninst::Address function_address = function->addr();
-    if (function_address == address) {
-      BuildFlowgraph(function, &graph);
-
-      std::vector<uint64_t> hashes;
-      DyninstFeatureGenerator generator(function);
-      hasher.CalculateFunctionSimHash(&generator, 128, &hashes, feature_hashes);
-      uint64_t hash_A = hashes[0];
-      uint64_t hash_B = hashes[1];
-      return std::make_pair(hash_A, hash_B);
-    }
-  }
-  return std::make_pair(0,0);
+  uint32_t index = disassembly.GetIndexByAddress(address);
+  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::unique_ptr<FunctionFeatureGenerator> generator =
+    disassembly.GetFeatureGenerator(index);
+  std::vector<uint64_t> hashes;
+  hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes, feature_hashes);
+  return std::make_pair(hashes.at(0), hashes.at(1));
 }
 

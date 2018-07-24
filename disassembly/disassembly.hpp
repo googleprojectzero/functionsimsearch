@@ -21,6 +21,8 @@
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/functionfeaturegenerator.hpp"
 
+class FlowgraphWithInstructions;
+
 // A thin wrapper class around Dyninst to deal with some boilerplate code
 // required for switching between PE and ELF files and other inputs. Also helps
 // hiding the details of DynInst and whatever else produces disassemblies from
@@ -38,6 +40,8 @@ public:
   std::unique_ptr<FunctionFeatureGenerator> GetFeatureGenerator(
     uint32_t function_index) const;
   std::unique_ptr<Flowgraph> GetFlowgraph(uint32_t function_index) const;
+  std::unique_ptr<FlowgraphWithInstructions> GetFlowgraphWithInstructions(
+    uint32_t function_index) const;
   InstructionGetter GetInstructionGetter() const;
   uint64_t GetAddressOfFunction(uint32_t function_index) const;
   uint32_t GetNumberOfFunctions() const;
@@ -48,6 +52,7 @@ public:
   // Dyninst failed to properly disassembly a binary.
   bool ContainsSharedBasicBlocks(uint32_t function_index) const;
 private:
+  void RefreshFunctionVector();
   const std::string type_;
   const std::string inputfile_;
   bool uses_dyninst_;

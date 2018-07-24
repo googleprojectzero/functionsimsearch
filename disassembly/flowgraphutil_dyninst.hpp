@@ -20,7 +20,7 @@ InstructionGetter MakeDyninstInstructionGetter(
 bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
   &inputfile, uint64_t address, std::string* result);
 
-FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
+std::unique_ptr<FlowgraphWithInstructions> GetCFGWithInstructionsFromBinary(
   const std::string& format, const std::string &inputfile,
   uint64_t func_address);
 

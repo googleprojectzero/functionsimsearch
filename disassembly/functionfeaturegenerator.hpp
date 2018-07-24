@@ -17,7 +17,8 @@ public:
   virtual std::pair<Flowgraph*, address> GetNextSubgraph() = 0;
   virtual bool HasMoreMnemonics() const = 0;
   virtual MnemTuple GetNextMnemTuple() = 0;
-  virtual ~FunctionFeatureGenerator() = 0;
+  // Virtual destructors should be non-abstract.
+  virtual ~FunctionFeatureGenerator() {};
 };
 
 #endif // FUNCTIONFEATUREGENERATOR_HPP

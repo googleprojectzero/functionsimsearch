@@ -91,32 +91,24 @@ bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
   }
   disassembly.DisassembleFromAddress(address, true);
 
-  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
-  // Obtain the list of all functions in the binary.
-  const Dyninst::ParseAPI::CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return false;
   }
 
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
-  for (Dyninst::ParseAPI::Function* function : functions) {
-
-    Flowgraph graph;
-    Dyninst::Address function_address = function->addr();
-    if (function_address == address) {
-      BuildFlowgraph(function, &graph);
-      std::stringstream json_data;
-      graph.WriteJSON(&json_data, get_block);
-      *result = json_data.str();
-      return true;
-    }
+  InstructionGetter get_block = disassembly.GetInstructionGetter();
+  uint32_t index = disassembly.GetIndexByAddress(address);
+  if (index == std::numeric_limits<uint32_t>::max()) {
+    return false;
   }
-  return false;
+  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::stringstream json_data;
+  graph->WriteJSON(&json_data, get_block);
+  *result = json_data.str();
+  return true;
 }
 
-FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
+std::unique_ptr<FlowgraphWithInstructions> GetCFGWithInstructionsFromBinary(
   const std::string& format, const std::string &inputfile,
   uint64_t func_address) {
 
@@ -126,32 +118,18 @@ FlowgraphWithInstructions* GetCFGWithInstructionsFromBinary(
   }
   disassembly.DisassembleFromAddress(func_address, true);
 
-  Dyninst::ParseAPI::CodeObject* code_object = disassembly.getCodeObject();
-  // Obtain the list of all functions in the binary.
-  const Dyninst::ParseAPI::CodeObject::funclist &functions = code_object->funcs();
-  if (functions.size() == 0) {
+  if (disassembly.GetNumberOfFunctions() == 0) {
     printf("No functions found.\n");
     return nullptr;
   }
+  InstructionGetter get_block = disassembly.GetInstructionGetter();
+  uint32_t index = disassembly.GetIndexByAddress(func_address);
 
-  Dyninst::InstructionAPI::Instruction::Ptr instruction;
-  InstructionGetter get_block = MakeDyninstInstructionGetter(code_object);
-  for (Dyninst::ParseAPI::Function* function : functions) {
-    Dyninst::Address function_address = function->addr();
-    if (function_address == func_address) {
-      FlowgraphWithInstructions* graph = new FlowgraphWithInstructions();
-      BuildFlowgraph(function, graph);
-      std::vector<address> nodes;
-      graph->GetNodes(&nodes);
-      for (const address& node_address : nodes) {
-        std::vector<Instruction> instructions;
-        get_block(node_address, &instructions);
-        graph->AddInstructions(node_address, instructions);
-      }
-      return graph;
-    }
+  if (index == std::numeric_limits<uint32_t>::max()) {
+    return nullptr;
   }
-  return nullptr;
+
+  return disassembly.GetFlowgraphWithInstructions(index);
 }
 
 
