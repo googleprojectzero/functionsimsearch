@@ -68,8 +68,8 @@ TEST(flowgraphwithinstructions, creategraph) {
       &feature_hashes);
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
-    EXPECT_EQ(hash1, 0xd853dcc230fb485e);
-    EXPECT_EQ(hash2, 0xb4b5cf4f4c53b306);
+    EXPECT_EQ(hash1, 0x9c5b458691685f5e);
+    EXPECT_EQ(hash2, 0x76a3474775cba64e);
   }
   // Check fg_dyninst
   {
@@ -83,8 +83,8 @@ TEST(flowgraphwithinstructions, creategraph) {
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
 
-    EXPECT_EQ(hash1, 0xd853dcc230fb485e);
-    EXPECT_EQ(hash2, 0xb4b5cf4f4c53b306); 
+    EXPECT_EQ(hash1, 0x9c5b458691685f5e);
+    EXPECT_EQ(hash2, 0x76a3474775cba64e); 
   }
 }
 
