@@ -53,13 +53,17 @@ public:
   bool ContainsSharedBasicBlocks(uint32_t function_index) const;
 private:
   void RefreshFunctionVector();
+  void LoadFromJSONStream(std::istream& jsondata);
   const std::string type_;
   const std::string inputfile_;
+  // Dyninst-specific data members.
   bool uses_dyninst_;
   mutable std::mutex dyninst_api_mutex_;
   std::vector<Dyninst::ParseAPI::Function*> dyninst_functions_;
   Dyninst::ParseAPI::CodeObject* code_object_;
   Dyninst::ParseAPI::CodeSource* code_source_;
+  // Data members for the JSON input.
+  std::vector<std::unique_ptr<FlowgraphWithInstructions>> json_functions_;
 };
 
 #endif // DISASSEMBLY_HPP

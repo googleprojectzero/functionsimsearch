@@ -116,7 +116,8 @@ def load_function():
     if not meta_data.has_key((result[1], result[2])):
       print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx" %
         (executable_id, address, hashes[0], hashes[1],
-        max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        #max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        result[0],
         result[1], result[2]))
     else:
       filename, functionname = meta_data[(result[1], result[2])]
@@ -124,7 +125,8 @@ def load_function():
       functionname = functionname.replace('\r', '')
       print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx %s '%s'" %
         (executable_id, address, hashes[0], hashes[1],
-        max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        #max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
+        result[0],
         result[1], result[2], filename, functionname))
   print("--------------------------------------")
 

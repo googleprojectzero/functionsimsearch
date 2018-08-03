@@ -32,6 +32,8 @@ Disassembly::Disassembly(const std::string& filetype,
   code_source_ = nullptr;
   if ((type_ == "ELF") || (type_ == "PE")) {
     uses_dyninst_ = true;
+  } else if (type_ == "JSON") {
+    uses_dyninst_ = false;
   }
 }
 
@@ -47,8 +49,17 @@ Disassembly::~Disassembly() {
   }
 }
 
-bool Disassembly::Load(bool perform_parsing) {
+void Disassembly::LoadFromJSONStream(std::istream& jsondata) {
+  nlohmann::json incoming_data;
+  incoming_data << jsondata;
+  // Check that we have the mandatory "functions" field.
+  for (const auto& flowgraph : incoming_data["flowgraphs"]) {
+    json_functions_.emplace_back(new FlowgraphWithInstructions());
+    json_functions_.back()->ParseJSON(flowgraph);
+  }
+}
 
+bool Disassembly::Load(bool perform_parsing) {
   if (uses_dyninst_) {
     std::scoped_lock<std::mutex> lock(dyninst_api_mutex_);
 
@@ -57,7 +68,7 @@ bool Disassembly::Load(bool perform_parsing) {
     if (type_ == "ELF") {
       Dyninst::SymtabAPI::Symtab* sym_tab = nullptr;
       Dyninst::ParseAPI::SymtabCodeSource* symtab_code_source = nullptr;
-      bool is_parseable = Dyninst::SymtabAPI::Symtab::openFile(sym_tab, 
+      bool is_parseable = Dyninst::SymtabAPI::Symtab::openFile(sym_tab,
         inputfile_);
       if (is_parseable == false) {
         printf("Error: ELF File cannot be parsed.\n");
@@ -98,14 +109,20 @@ bool Disassembly::Load(bool perform_parsing) {
       RefreshFunctionVector();
     }
     return true;
+  } else if (type_ == "JSON") {
+    // Perform the JSON input parsing.
+    std::ifstream inputfile(inputfile_);
+    LoadFromJSONStream(inputfile);
   }
   return false;
 }
 
 void Disassembly::RefreshFunctionVector() {
-  dyninst_functions_.clear();
-  for (Dyninst::ParseAPI::Function* function : code_object_->funcs()) {
-    dyninst_functions_.push_back(function);
+  if (uses_dyninst_) {
+    dyninst_functions_.clear();
+    for (Dyninst::ParseAPI::Function* function : code_object_->funcs()) {
+      dyninst_functions_.push_back(function);
+    }
   }
 }
 
@@ -180,7 +197,7 @@ uint32_t Disassembly::GetNumberOfFunctions() const {
   if (uses_dyninst_) {
     return dyninst_functions_.size();
   }
-  return 0;
+  return json_functions_.size();
 }
 
 std::string Disassembly::GetDisassembly(uint32_t function_index) const {

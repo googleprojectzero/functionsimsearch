@@ -31,6 +31,7 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
 TESTS = build/bitpermutation_test.o \
         build/simhashsearchindex_test.o \
         build/flowgraphwithinstructions_test.o \
+        build/disassembly_test.o \
         build/testutil.o \
         build/functionsimhash_test.o \
         build/buffertokeniterator_test.o build/mappedtextfile_test.o \
