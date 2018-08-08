@@ -28,7 +28,7 @@
 #include "util/threadpool.hpp"
 #include "util/util.hpp"
 
-DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(format, "PE", "Executable format: PE,ELF,JSON");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(index, "./similarity.index", "Index file");
 DEFINE_string(weights, "", "Feature weights file");

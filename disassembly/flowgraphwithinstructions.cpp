@@ -46,7 +46,7 @@ bool FlowgraphWithInstructions::ParseNodeJSON(const nlohmann::json& node) {
 }
 
 bool FlowgraphWithInstructions::ParseEdgeJSON(const nlohmann::json& edge) {
-  if ((edge.find("source") == edge.end()) || 
+  if ((edge.find("source") == edge.end()) ||
     (edge.find("destination") == edge.end())) {
     return false;
   }

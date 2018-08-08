@@ -19,7 +19,7 @@
 #include "disassembly/disassembly.hpp"
 #include "disassembly/pecodesource.hpp"
 
-DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(format, "PE", "Executable format: PE,ELF,JSON");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(function_address, "", "Address of function (optional)");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");

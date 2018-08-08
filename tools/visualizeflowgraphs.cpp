@@ -29,7 +29,6 @@
 //
 // The input string specifies triples of file-format, filename, address.
 //
-DEFINE_string(format, "PE", "Executable format: PE or ELF");
 DEFINE_string(input, "ELF,/bin/tar,0x8BD0,ELF,/bin/gzip,0x2320", "...");
 DEFINE_string(output, "/var/tmp/results.html", "Output html file.");
 

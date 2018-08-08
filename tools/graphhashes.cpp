@@ -21,7 +21,7 @@
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "disassembly/pecodesource.hpp"
 
-DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(format, "PE", "Executable format: PE,ELF,JSON");
 DEFINE_string(input, "", "File to disassemble");
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.

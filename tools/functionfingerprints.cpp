@@ -25,7 +25,7 @@
 #include "disassembly/pecodesource.hpp"
 #include "util/util.hpp"
 
-DEFINE_string(format, "PE", "Executable format: PE or ELF");
+DEFINE_string(format, "PE", "Executable format: PE,ELF,JSON");
 DEFINE_string(input, "", "File to disassemble");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
 DEFINE_bool(verbose, false, "Verbose output");
