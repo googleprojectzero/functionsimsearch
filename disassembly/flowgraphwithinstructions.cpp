@@ -8,7 +8,7 @@
 
 // Copy constructor. Somewhat hideously expensive.
 FlowgraphWithInstructions::FlowgraphWithInstructions(
-  const FlowgraphWithInstructions& original) {
+  const FlowgraphWithInstructions& original) : Flowgraph(original) {
   instructions_ = original.instructions_;
 }
 

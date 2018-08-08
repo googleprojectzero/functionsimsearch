@@ -27,6 +27,12 @@ using json = nlohmann::json;
 
 Flowgraph::Flowgraph() {}
 
+Flowgraph::Flowgraph(const Flowgraph& other) {
+  out_edges_ = other.out_edges_;
+  in_edges_ = other.in_edges_;
+  bidirectional_edges_ = other.bidirectional_edges_;
+}
+
 Instruction::Instruction(const std::string& mnemonic,
   const std::vector<std::string>& operands) : mnemonic_(mnemonic),
   operands_(operands) {};

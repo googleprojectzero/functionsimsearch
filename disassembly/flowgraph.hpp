@@ -57,6 +57,7 @@ private:
   std::map<address, std::vector<address>> bidirectional_edges_;
 public:
   Flowgraph();
+  Flowgraph(const Flowgraph& other);
   bool AddNode(address node_adress);
   bool AddEdge(address source_address, address target_address);
   bool HasNode(address node);
