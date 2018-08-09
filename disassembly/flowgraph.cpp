@@ -18,6 +18,7 @@
 #include <queue>
 #include <set>
 #include <vector>
+
 #include "third_party/json/src/json.hpp"
 
 #include "disassembly/flowgraphutil.hpp"
@@ -295,4 +296,14 @@ uint64_t Flowgraph::GetNumberOfBranchingNodes() const {
   return result;
 }
 
-
+std::string Instruction::AsString() const {
+  std::ostringstream result;
+  result << mnemonic_ << " ";
+  for (uint32_t index = 0; index < operands_.size(); ++index) {
+    result << operands_[index];
+    if (index != operands_.size() -1) {
+      result << ", ";
+    }
+  }
+  return result.str();
+}

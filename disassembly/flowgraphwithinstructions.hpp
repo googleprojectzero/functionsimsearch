@@ -25,6 +25,7 @@ public:
     return instructions_; };
   FlowgraphWithInstructions(const FlowgraphWithInstructions& original);\
   FlowgraphWithInstructions();
+  std::string GetDisassembly() const;
 };
 
 class FlowgraphWithInstructionsFeatureGenerator :

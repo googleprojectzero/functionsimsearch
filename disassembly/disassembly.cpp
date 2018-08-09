@@ -56,6 +56,10 @@ void Disassembly::LoadFromJSONStream(std::istream& jsondata) {
   for (const auto& flowgraph : incoming_data["flowgraphs"]) {
     json_functions_.emplace_back(new FlowgraphWithInstructions());
     json_functions_.back()->ParseJSON(flowgraph);
+    for (const auto& instruction : json_functions_.back()->GetInstructions()) {
+      uint64_t address = instruction.first;
+      blocks_to_flowgraph_[address] = json_functions_.size()-1;
+    }
   }
 }
 
@@ -113,6 +117,9 @@ bool Disassembly::Load(bool perform_parsing) {
     // Perform the JSON input parsing.
     std::ifstream inputfile(inputfile_);
     LoadFromJSONStream(inputfile);
+    if (GetNumberOfFunctions() != 0) {
+      return true;
+    }
   }
   return false;
 }
@@ -145,6 +152,10 @@ std::unique_ptr<FunctionFeatureGenerator> Disassembly::GetFeatureGenerator(
       static_cast<FunctionFeatureGenerator *>(new DyninstFeatureGenerator(
       function)));
     return generator;
+  } else {
+    return std::unique_ptr<FunctionFeatureGenerator>(
+      new FlowgraphWithInstructionsFeatureGenerator(
+      *json_functions_[function_index]));
   }
   return std::unique_ptr<FunctionFeatureGenerator>(nullptr);
 }
@@ -168,29 +179,29 @@ std::unique_ptr<FlowgraphWithInstructions>
       flowgraph->AddInstructions(node_address, instructions);
     }
     return flowgraph;
+  } else if (function_index < GetNumberOfFunctions()) {
+    FlowgraphWithInstructions* flowgraph = json_functions_[function_index].get();
+    return std::unique_ptr<FlowgraphWithInstructions>(
+      new FlowgraphWithInstructions(*flowgraph));
   }
   return std::unique_ptr<FlowgraphWithInstructions>(nullptr);
 }
 
 std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
   const {
-  if (uses_dyninst_) {
-    std::scoped_lock lock(dyninst_api_mutex_);
-    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
-      function_index); 
-    std::unique_ptr<Flowgraph> flowgraph(new Flowgraph());
-    BuildFlowgraph(function, flowgraph.get());
-    return flowgraph;
-  }
-  return std::unique_ptr<Flowgraph>(nullptr);
+  return GetFlowgraphWithInstructions(function_index);
 }
 
 uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) const {
   if (uses_dyninst_) {
     Dyninst::ParseAPI::Function* function = dyninst_functions_.at(function_index);
     return function->addr();
+  } else {
+    // In a rather inelegant move, the node with the lowest address is declared
+    // to be the address of the function.
+    // TODO(thomasdullien): Find a performant better variant of this.
+    return json_functions_[function_index]->GetInstructions().begin()->first;
   }
-  return 0;
 }
 
 uint32_t Disassembly::GetNumberOfFunctions() const {
@@ -230,8 +241,9 @@ std::string Disassembly::GetDisassembly(uint32_t function_index) const {
       }
     }
     return output.str();
+  } else {
+    return json_functions_[function_index]->GetDisassembly();
   }
-  return "";
 }
 
 bool Disassembly::ContainsSharedBasicBlocks(uint32_t index) const {
@@ -254,6 +266,17 @@ bool Disassembly::ContainsSharedBasicBlocks(uint32_t index) const {
 InstructionGetter Disassembly::GetInstructionGetter() const {
   if (uses_dyninst_) {
     return MakeDyninstInstructionGetter(code_object_);
+  } else {
+    InstructionGetter getter = [this](uint64_t address,
+      std::vector<Instruction>* results) -> bool {
+      const auto& entry = this->blocks_to_flowgraph_.find(address);
+      if (entry == this->blocks_to_flowgraph_.end()) {
+        return false;
+      }
+      *(results) = json_functions_[entry->second]->GetInstructions().at(address);
+      return true;
+    };
+    return getter;
   }
 }
 

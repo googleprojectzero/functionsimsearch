@@ -74,7 +74,6 @@ bool FlowgraphWithInstructions::ParseJSON(const nlohmann::json& json_graph) {
   return true;
 }
 
-
 FlowgraphWithInstructionsFeatureGenerator::FlowgraphWithInstructionsFeatureGenerator(
   const FlowgraphWithInstructions& flowgraph) : flowgraph_(flowgraph) {
   std::vector<address> nodes;
@@ -142,4 +141,21 @@ bool FlowgraphWithInstructionsFromJSON(const char* json,
   }
 
   return graph->ParseJSON(json_graph);
+}
+
+std::string FlowgraphWithInstructions::GetDisassembly() const {
+  std::stringstream output;
+  // TODO(thomasdullien): The code takes the lowest address in a function as the
+  // beginning address here. There has to be a better way?
+  output << "\n[!] Function at " << std::hex << instructions_.begin()->first;
+  
+  for (const auto& block : instructions_) {
+    output << "\t\tBlock at " << std::hex << block.first;
+    output << " (" << std::dec << static_cast<size_t>(block.second.size()) 
+      << ")\n";
+    for (const auto& instruction : block.second) {
+      output << "\t\t\t " << instruction.AsString() << "\n";
+    }
+  }
+  return output.str();
 }

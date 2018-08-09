@@ -40,6 +40,7 @@ public:
     operands);
   const std::string& GetMnemonic() const { return mnemonic_; };
   const std::vector<std::string>& GetOperands() const { return operands_; };
+  std::string AsString() const;
 private:
   std::string mnemonic_;
   std::vector<std::string> operands_;

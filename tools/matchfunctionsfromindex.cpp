@@ -127,7 +127,6 @@ int main(int argc, char** argv) {
       continue;
     }
     Address function_address = disassembly.GetAddressOfFunction(index);
-    printf("Pushing function %lx\n", function_address);
     // Push the producer threads into the threadpool.
     pool.Push(
       [&resultqueue, &disassembly, index, mutex_pointer, &search_index, &metadata,

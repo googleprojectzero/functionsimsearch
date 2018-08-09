@@ -64,6 +64,7 @@ private:
   Dyninst::ParseAPI::CodeSource* code_source_;
   // Data members for the JSON input.
   std::vector<std::unique_ptr<FlowgraphWithInstructions>> json_functions_;
+  std::map<uint64_t, uint32_t> blocks_to_flowgraph_;
 };
 
 #endif // DISASSEMBLY_HPP
