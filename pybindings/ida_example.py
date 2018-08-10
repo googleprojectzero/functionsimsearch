@@ -61,7 +61,9 @@ def get_flowgraph_from(address):
     given address in IDA.
   """
   call_instruction_string
-  ida_flowgraph = idaapi.FlowChart(idaapi.get_func(here()))
+  if not address:
+    address = here()
+  ida_flowgraph = idaapi.FlowChart(idaapi.get_func(address))
   flowgraph = functionsimsearch.FlowgraphWithInstructions()
   for block in ida_flowgraph:
     # Add all the ida-flowgraph-basic blocks. We do this up-front so we can
@@ -83,16 +85,44 @@ def get_flowgraph_from(address):
       flowgraph.add_edge(small_blocks[-1][0][0], successor_block.start_ea)
   return flowgraph
 
+def export_idb_as_json(output_prefix):
+  """ Writes the entire IDB into a big JSON file and create a separate symbol
+  file as well. """
+  output_file = file(output_prefix + ".json", "wt")
+  output_file.write("{ \"flowgraphs\" : [ ")
+  executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
+  path = ida_nalt.get_input_file_path()
+  function_addresses = [ x for x in Functions(MinEA(), MaxEA()) ]
+  for function in function_addresses:
+    flowgraph = get_flowgraph_from(address=function)
+    json = flowgraph.to_json()
+    print("Writing flowgraph for function %lx (%d bytes)..." % (function, 
+      len(json)))
+    output_file.write(json)
+    if function != function_addresses[-1]:
+      output_file.write(",\n")
+  output_file.write("]}")
+  output_file.close()
+  print("Done.")
+
+def save_all_functions():
+  search_index
+  sim_hasher
+  for function in Functions(MinEA(), MaxEA()):
+    save_function(function)
+
 def print_hash():
   sim_hasher
   flowgraph = get_flowgraph_from(here())
   hashes = sim_hasher.calculate_hash(flowgraph)
   print("Hash for flowgraph at %lx is %lx %lx" % (here(), hashes[0], hashes[1]))
 
-def save_function():
+def save_function(function_address=None):
   search_index
   sim_hasher
-  flowgraph = get_flowgraph_from(here())
+  if function_address == None:
+    function_address = here()
+  flowgraph = get_flowgraph_from(function_address)
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
   address = idaapi.get_func(here()).start_ea
@@ -162,8 +192,12 @@ except:
   # Ask the user for a directory. The code expects the directory to contain
   # a search index ("simhash.index"), a metadata file ("simhash.meta"), and
   # optionally a feature weights file ("simhash.weights").
-  data_directory = AskStr("/var/tmp/functionsimsearch/",
+  data_directory = AskStr("/var/tmp/",
     "Please enter a data directory. If no index is found, it will be created.")
+  while not os.path.exists(data_directory):
+    data_directory = AskStr("/var/tmp/", 
+      "Please enter an EXISTING data directory.")
+
   index_file = os.path.join(data_directory, "simhash.index")
   metadata_file = os.path.join(data_directory, "simhash.meta")
   weights_file = os.path.join(data_directory, "simhash.weights")

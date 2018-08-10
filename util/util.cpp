@@ -31,8 +31,10 @@ uint64_t GenerateExecutableID(const std::string& filename) {
     printf("[E] Could not open executable %s\n", filename.c_str());
     exit(-1);
   }
-  picosha2::hash256(std::istreambuf_iterator<char>(ifs),
-      std::istreambuf_iterator<char>(), hash.begin(), hash.end());
+
+  picosha2::hash256(
+    std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>(), 
+    hash.begin(), hash.end());
 
   uint64_t *temp = reinterpret_cast<uint64_t*>(&hash[0]);
   return __builtin_bswap64(*temp);
