@@ -89,11 +89,13 @@ def export_idb_as_json(output_prefix):
   """ Writes the entire IDB into a big JSON file and create a separate symbol
   file as well. """
   output_file = file(output_prefix + ".json", "wt")
+  output_meta = file(output_prefix + ".meta", "wt")
   output_file.write("{ \"flowgraphs\" : [ ")
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
   path = ida_nalt.get_input_file_path()
   function_addresses = [ x for x in Functions(MinEA(), MaxEA()) ]
   for function in function_addresses:
+    # Obtain and write the flowgraph.
     flowgraph = get_flowgraph_from(address=function)
     json = flowgraph.to_json()
     print("Writing flowgraph for function %lx (%d bytes)..." % (function, 
@@ -101,6 +103,9 @@ def export_idb_as_json(output_prefix):
     output_file.write(json)
     if function != function_addresses[-1]:
       output_file.write(",\n")
+    # Write the meta-information.
+    output_meta.write("%16.16lx %s %16.16lx %s false\n" % (
+      executable_id, path, function, base64.encodestring(Name(here()))))
   output_file.write("]}")
   output_file.close()
   print("Done.")
