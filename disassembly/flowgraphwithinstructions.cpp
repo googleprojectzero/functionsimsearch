@@ -1,4 +1,5 @@
 #include <map>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -143,12 +144,20 @@ bool FlowgraphWithInstructionsFromJSON(const char* json,
   return graph->ParseJSON(json_graph);
 }
 
+bool FlowgraphWithInstructionsFromJSONFile(const std::string& filename,
+  FlowgraphWithInstructions* graph) {
+  std::ifstream t(filename);
+  std::string str((std::istreambuf_iterator<char>(t)),
+    std::istreambuf_iterator<char>());
+  return FlowgraphWithInstructionsFromJSON(str.c_str(), graph);
+}
+
 std::string FlowgraphWithInstructions::GetDisassembly() const {
   std::stringstream output;
   // TODO(thomasdullien): The code takes the lowest address in a function as the
   // beginning address here. There has to be a better way?
   output << "\n[!] Function at " << std::hex << instructions_.begin()->first;
-  
+
   for (const auto& block : instructions_) {
     output << "\t\tBlock at " << std::hex << block.first;
     output << " (" << std::dec << static_cast<size_t>(block.second.size()) 

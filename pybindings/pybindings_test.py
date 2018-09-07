@@ -86,6 +86,10 @@ class TestFunctionSimSearch(unittest.TestCase):
     self.assertTrue(foo[0][2] == 0x400000)
     self.assertTrue(foo[1][0] == 126)
 
+    odds = searchindex.odds_of_random_hit(110)
+    odds = searchindex.odds_of_random_hit(110.0)
+    print(odds)
+
   def test_hasher_with_weights(self):
     """ Tests whether the loading of a weights file works. """
     jsonstring = """{"edges":[{"destination":1518838580,"source":1518838565},{"destination":1518838572,"source":1518838565},{"destination":1518838578,"source":1518838572},{"destination":1518838574,"source":1518838572},{"destination":1518838580,"source":1518838574},{"destination":1518838578,"source":1518838574},{"destination":1518838580,"source":1518838578}],"name":"CFG","nodes":[{"address":1518838565,"instructions":[{"mnemonic":"xor","operands":["EAX","EAX"]},{"mnemonic":"cmp","operands":["[ECX + 4]","EAX"]},{"mnemonic":"jnle","operands":["5a87a334"]}]},{"address":1518838572,"instructions":[{"mnemonic":"jl","operands":["5a87a332"]}]},{"address":1518838574,"instructions":[{"mnemonic":"cmp","operands":["[ECX]","EAX"]},{"mnemonic":"jnb","operands":["5a87a334"]}]},{"address":1518838578,"instructions":[{"mnemonic":"mov","operands":["AL","1"]}]},{"address":1518838580,"instructions":[{"mnemonic":"ret near","operands":["[ESP]"]}]}]}"""

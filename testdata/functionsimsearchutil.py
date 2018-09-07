@@ -1,5 +1,5 @@
 """ Some utility functions for handling the data. """
-import base64, subprocess
+import base64, subprocess, numpy
 from subprocess import Popen, PIPE, STDOUT
 
 def hash_distance(v1, v2):

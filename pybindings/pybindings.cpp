@@ -112,6 +112,20 @@ static PyObject* PyFlowgraphWithInstructions__add_edge(PyObject* self,
   Py_RETURN_NONE;
 }
 
+static PyObject* PyFlowgraphWithInstructions__size(PyObject* self,
+  PyObject* args) {
+  PyFlowgraphWithInstructions* this_ = (PyFlowgraphWithInstructions*)self;
+  return PyLong_FromLong(
+    this_->flowgraph_with_instructions_->GetSize());
+}
+
+static PyObject* PyFlowgraphWithInstructions__number_of_branching_nodes(
+  PyObject* self, PyObject* args) {
+  PyFlowgraphWithInstructions* this_ = (PyFlowgraphWithInstructions*)self;
+  return PyLong_FromLong(
+    this_->flowgraph_with_instructions_->GetNumberOfBranchingNodes());
+}
+
 static PyObject* PyFlowgraphWithInstructions__to_json(PyObject* self,
   PyObject* args) {
   std::ostringstream json;
@@ -222,6 +236,11 @@ static PyMethodDef PyFlowgraphWithInstructions_methods[] = {
   { "to_json", (PyCFunction)PyFlowgraphWithInstructions__to_json,
     METH_VARARGS, NULL },
   { "from_json", (PyCFunction)PyFlowgraphWithInstructions__from_json,
+    METH_VARARGS, NULL },
+  { "size", (PyCFunction)PyFlowgraphWithInstructions__size,
+    METH_VARARGS, NULL },
+  { "number_of_branching_nodes",
+    (PyCFunction)PyFlowgraphWithInstructions__number_of_branching_nodes,
     METH_VARARGS, NULL },
   { NULL, NULL, 0, NULL },
 };
@@ -371,6 +390,30 @@ static PyObject* PySimHashSearchIndex__get_used_size(PyObject* self,
   return PyLong_FromLong(index->search_index_->GetIndexSetSize());
 }
 
+static PyObject* PySimHashSearchIndex__indexed_functions(PyObject* self,
+  PyObject* args) {
+  PySimHashSearchIndex* index = (PySimHashSearchIndex*)self;
+  return PyLong_FromLong(index->search_index_->GetNumberOfIndexedFunctions());
+}
+
+static PyObject* PySimHashSearchIndex__odds_of_random_hit(PyObject* self,
+  PyObject* args) {
+  PySimHashSearchIndex* index = (PySimHashSearchIndex*)self;
+  uint64_t score = 0;
+  double temp = 0;
+  // Try to convert the incoming value from an integer
+  if (!PyArg_ParseTuple(args, "d", &temp)) {
+    if (!PyArg_ParseTuple(args, "k", &score)) {
+      PyErr_SetString(functionsimsearch_error, "Failed to parse arguments.");
+      return NULL;
+    }
+  } else {
+    score = temp;
+  }
+  double odds = index->search_index_->GetOddsOfRandomHit(score);
+  return PyFloat_FromDouble(odds);
+}
+
 static PyObject* PySimHashSearchIndex__add_function(PyObject* self,
   PyObject* args) {
   // Arguments are hash_A, hash_B (both uint64_t), a 128-bit FileID, and an
@@ -453,6 +496,8 @@ static PyMethodDef PySimHashSearchIndex_methods[] = {
   { "get_used_size", (PyCFunction)PySimHashSearchIndex__get_used_size, METH_VARARGS, NULL },
   { "add_function", (PyCFunction)PySimHashSearchIndex__add_function, METH_VARARGS, NULL },
   { "query_top_N", (PyCFunction)PySimHashSearchIndex__query_top_N, METH_VARARGS, NULL },
+  { "indexed_functions", (PyCFunction)PySimHashSearchIndex__indexed_functions, METH_VARARGS, NULL },
+  { "odds_of_random_hit", (PyCFunction)PySimHashSearchIndex__odds_of_random_hit, METH_VARARGS, NULL },
   { NULL, NULL, 0, NULL },
 };
 
