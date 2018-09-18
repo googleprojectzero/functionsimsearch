@@ -130,7 +130,7 @@ def save_function(function_address=None):
   flowgraph = get_flowgraph_from(function_address)
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
-  address = idaapi.get_func(here()).start_ea
+  address = idaapi.get_func(function_address).start_ea
   search_index.add_function(hashes[0], hashes[1], executable_id, address)
   print("%lx:%lx %lx-%lx Added function to search index." % (executable_id,
     address, hashes[0], hashes[1]))
