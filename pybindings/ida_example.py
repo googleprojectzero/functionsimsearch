@@ -55,7 +55,7 @@ def split_instruction_list(instructions, split_mnemonic):
     results.pop()
   return results
 
-def get_flowgraph_from(address):
+def get_flowgraph_from(address, ignore_instructions=False):
   """
     Generates a flowgraph object that can be fed into FunctionSimSearch from a
     given address in IDA.
@@ -78,7 +78,8 @@ def get_flowgraph_from(address):
       flowgraph.add_node(small_block[0][0])
       small_block_instructions = tuple(instruction[1:] for instruction 
         in small_block)
-      flowgraph.add_instructions(small_block[0][0], small_block_instructions)
+      if not ignore_instructions:
+        flowgraph.add_instructions(small_block[0][0], small_block_instructions)
     for index in range(len(small_blocks)-1):
       flowgraph.add_edge(small_blocks[index][0][0], small_blocks[index+1][0][0])
     for successor_block in block.succs():
@@ -103,9 +104,6 @@ def export_idb_as_json(output_prefix):
     output_file.write(json)
     if function != function_addresses[-1]:
       output_file.write(",\n")
-    # Write the meta-information.
-    output_meta.write("%16.16lx %s %16.16lx %s false\n" % (
-      executable_id, path, function, base64.encodestring(Name(here()))))
   output_file.write("]}")
   output_file.close()
   print("Done.")
@@ -114,61 +112,104 @@ def save_all_functions():
   search_index
   sim_hasher
   for function in Functions(MinEA(), MaxEA()):
-    save_function(function)
+    if not save_function(function_address=function):
+      break
 
 def print_hash():
   sim_hasher
-  flowgraph = get_flowgraph_from(here())
+  flowgraph = get_flowgraph_from(here(), True)
+  print(flowgraph.size())
+  print(flowgraph.number_of_branching_nodes())
+  print(flowgraph.to_json())
   hashes = sim_hasher.calculate_hash(flowgraph)
   print("Hash for flowgraph at %lx is %lx %lx" % (here(), hashes[0], hashes[1]))
 
 def save_function(function_address=None):
   search_index
   sim_hasher
+  if search_index.get_free_size() < 1024:
+    print("Fewer than 1024 bytes in the index file left. Resize it please.")
+    return False
   if function_address == None:
     function_address = here()
   flowgraph = get_flowgraph_from(function_address)
+  branching_nodes = flowgraph.number_of_branching_nodes()
+  if branching_nodes < 5:
+    print("%lx: has only %d (< 5) branching nodes, ignoring." % (
+      function_address,
+      branching_nodes))
+    return True
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
   address = idaapi.get_func(function_address).start_ea
   search_index.add_function(hashes[0], hashes[1], executable_id, address)
   print("%lx:%lx %lx-%lx Added function to search index." % (executable_id,
     address, hashes[0], hashes[1]))
+  # Add the metadata of the function.
+  metadata_file
+  metafile = file(metadata_file, "a")
+  function_name = base64.b64encode(Name(address))
+  metafile.write("%16.16lx %s %16.16lx %s false\n" % (
+    executable_id, ida_nalt.get_input_file_path(), address, function_name))
+  return True
 
-def load_function():
+def load_function(function_address = None):
   search_index
   sim_hasher
   meta_data
-  flowgraph = get_flowgraph_from(here())
+  if function_address == None:
+    function_address = here()
+  flowgraph = get_flowgraph_from(function_address)
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
-  address = long(idaapi.get_func(here()).start_ea)
+  address = long(idaapi.get_func(function_address).start_ea)
   results = search_index.query_top_N(hashes[0], hashes[1], 5)
   if len(results) == 0:
     print("%lx:%lx %lx-%lx No search results" %
       (executable_id, address, hashes[0], hashes[1]))
+  print_separator = False
   for result in results:
-    if not meta_data.has_key((result[1], result[2])):
-      print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx" %
+    same_bits = result[0]
+    result_exe_id = result[1]
+    result_address = result[2]
+    odds = 0.0
+    odds = search_index.odds_of_random_hit(same_bits)
+    if odds < 20000:
+      continue
+    print_separator = True
+    if not meta_data.has_key((result_exe_id, result_address)):
+      print("%lx:%lx %lx-%lx Result is %f - %lx:%lx (1 in %f searches)" %
         (executable_id, address, hashes[0], hashes[1],
-        #max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
-        result[0],
-        result[1], result[2]))
+        same_bits, result_exe_id, result_address, odds))
     else:
-      filename, functionname = meta_data[(result[1], result[2])]
+      filename, functionname = meta_data[(result_exe_id, result_address)]
       functionname = functionname.replace('\n', '')
       functionname = functionname.replace('\r', '')
-      print("%lx:%lx %lx-%lx Best match is %f - %lx:%lx %s '%s'" %
+      print("%lx:%lx %lx-%lx Result is %f - %lx:%lx %s '%s' (1 in %f searches)" %
         (executable_id, address, hashes[0], hashes[1],
-        #max(float(result[0]) / 128.0 - 0.5, 0.0)*2,
-        result[0],
-        result[1], result[2], filename, functionname))
-  print("--------------------------------------")
+        same_bits, result_exe_id, result_address, filename, functionname, odds))
+  if print_separator:
+    print("--------------------------------------")
 
+def match_all_functions():
+  search_index
+  sim_hasher
+  for function in Functions(MinEA(), MaxEA()):
+    load_function(function_address=function)
 
 import ida_idp
-processor_to_call_instructions = { "arm" : "BLX", "pc" : "call" }
+processor_to_call_instructions = { "arm" : "FOO", "pc" : "call" }
 call_instruction_string = processor_to_call_instructions[ida_idp.get_idp_name()]
+
+hotkey_mappings = {
+  "Shift-S", save_function,
+  "Shift-L", load_function,
+  "Shift-A", save_all_functions,
+  "Shift-H", print_hash,
+}
+
+hotkey_contexts = []
+
 
 try:
   hotkey_context_S
@@ -189,6 +230,19 @@ try:
     del hotkey_context_H
   else:
     print("FunctionSimSearch: Failed to unregister hotkey H.")
+  hotkey_context_A
+  if idaapi.del_hotkey(hotkey_context_A):
+    print("FunctionSimSearch: Hotkey A unregistered.")
+    del hotkey_context_A
+  else:
+    print("FunctionSimSearch: Failed to unregister hotkey A.")
+  hotkey_context_M
+  if idaapi.del_hotkey(hotkey_context_M):
+    print("FunctionSimSearch: Hotkey M unregistered.")
+    del hotkey_context_M
+  else:
+    print("FunctionSimSearch: Failed to unregister hotkey M.")
+
   search_index
   sim_hasher
   del search_index
@@ -211,11 +265,16 @@ except:
   hotkey_context_S = idaapi.add_hotkey("Shift-S", save_function)
   hotkey_context_L = idaapi.add_hotkey("Shift-L", load_function)
   hotkey_context_H = idaapi.add_hotkey("Shift-H", print_hash)
-  if hotkey_context_S is None or hotkey_context_L is None:
+  hotkey_context_A = idaapi.add_hotkey("Shift-A", save_all_functions)
+  hotkey_context_M = idaapi.add_hotkey("Shift-M", match_all_functions)
+  if None in [hotkey_context_S, hotkey_context_L, hotkey_context_H,
+    hotkey_context_A, hotkey_context_M]:
     print("FunctionSimSearch: Failed to register hotkeys.")
     del hotkey_context_S
     del hotkey_context_L
     del hotkey_context_H
+    del hotkey_context_A
+    del hotkey_context_M
   else:
     print("FunctionSimSearch: Hotkeys registered.")
 
@@ -242,6 +301,4 @@ except:
       sim_hasher = functionsimsearch.SimHasher()
   except:
     print("Failure to create/open the search index!")
-
-
 

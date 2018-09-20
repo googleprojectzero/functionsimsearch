@@ -47,4 +47,7 @@ private:
 bool FlowgraphWithInstructionsFromJSON(const char* json,
   FlowgraphWithInstructions* graph);
 
+bool FlowgraphWithInstructionsFromJSONFile(const std::string& filename,
+  FlowgraphWithInstructions* graph);
+
 #endif // FLOWGRAPHWITHINSTRUCTIONS_HPP

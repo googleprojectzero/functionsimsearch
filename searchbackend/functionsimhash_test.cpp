@@ -3,6 +3,7 @@
 #include <set>
 
 #include "gtest/gtest.h"
+#include "disassembly/flowgraphwithinstructions.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "util/testutil.hpp"
 #include "util/util_with_dyninst.hpp"
@@ -132,6 +133,60 @@ TEST(functionsimhash, zero_weight_hasher) {
       ASSERT_EQ(hamming, 0);
     }
   }
+}
+
+// Test that zero weights for mnemonic tuples for two identical CFGs hashes
+// to the same value.
+TEST(functionsimhash, zero_weight_for_mnemonics) {
+  FunctionSimHasher hasher_weight_zero("",
+    false, // Do not disable graphs.
+    false, // Do not disable mnemonics.
+    false, // Do not dump the graphlet dictionary.
+    false, // Do not dump the mnemonic dictionary.
+    0.0, // Mnemonic weight set to zero.
+    1.0 // Graphlet weight set to one.
+  );
+  FunctionSimHasher hasher_ignore_mnemonics("",
+    false, // Do not disable graphs.
+    true, // Disable mnemonics.
+    false, // Do not dump the graphlet dictionary.
+    false, // Do not dump the mnemonic dictionary.
+    0.0, // Mnemonic weight set to zero.
+    1.0 // Graphlet weight set to one.
+  );
+
+  FlowgraphWithInstructions graph1;
+  FlowgraphWithInstructions graph2;
+  FlowgraphWithInstructionsFromJSONFile(
+    "../testdata/vp9_set_target_rate.clang.nothumb.json", &graph1);
+  FlowgraphWithInstructionsFromJSONFile(
+    "../testdata/vp9_set_target_rate.clang.with.thumb.json", &graph2);
+
+  FlowgraphWithInstructionsFeatureGenerator featuregen1(graph1);
+  FlowgraphWithInstructionsFeatureGenerator featuregen2(graph2);
+
+  std::vector<uint64_t> hash1;
+  hasher_weight_zero.CalculateFunctionSimHash(&featuregen1, 128, &hash1);
+
+  std::vector<uint64_t> hash2;
+  hasher_weight_zero.CalculateFunctionSimHash(&featuregen2, 128, &hash2);
+
+  std::vector<uint64_t> hash3;
+  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen1, 128, &hash3);
+
+  std::vector<uint64_t> hash4;
+  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen2, 128, &hash4);
+
+  // All hashes should be the same.
+  EXPECT_EQ(hash1[0], hash2[0]);
+  EXPECT_EQ(hash1[1], hash2[1]);
+  EXPECT_EQ(hash1[0], hash3[0]);
+  EXPECT_EQ(hash1[1], hash3[1]);
+  EXPECT_EQ(hash1[0], hash4[0]);
+  EXPECT_EQ(hash1[1], hash4[1]);
+
+  EXPECT_EQ(hash1[0], 0xb74b6fbed1a325ea);
+  EXPECT_EQ(hash1[1], 0xc6b79fb0afe3a8fd);
 }
 
 

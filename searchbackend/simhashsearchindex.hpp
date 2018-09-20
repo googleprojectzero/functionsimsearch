@@ -116,6 +116,7 @@ public:
   uint64_t GetIndexSetSize() const;
   uint64_t GetNumberOfIndexedFunctions() const;
   uint8_t GetNumberOfBuckets() const;
+  double GetOddsOfRandomHit(uint32_t count) const;
 
   void DumpIndexToStdout(bool all) const;
 private:

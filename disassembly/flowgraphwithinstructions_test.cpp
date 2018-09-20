@@ -88,7 +88,6 @@ TEST(flowgraphwithinstructions, creategraph) {
   }
 }
 
-
 TEST(flowgraphwithinstructions, parsejson) {
   const char* json_string = 
   R"json({"edges":[{"destination":1518838580,"source":1518838565},{"destination":1518838572,"source":1518838565},{"destination":1518838578,"source":1518838572},{"destination":1518838574,"source":1518838572},{"destination":1518838580,"source":1518838574},{"destination":1518838578,"source":1518838574},{"destination":1518838580,"source":1518838578}],"name":"CFG","nodes":[{"address":1518838565,"instructions":[{"mnemonic":"xor","operands":["EAX","EAX"]},{"mnemonic":"cmp","operands":["[ECX + 4]","EAX"]},{"mnemonic":"jnle","operands":["5a87a334"]}]},{"address":1518838572,"instructions":[{"mnemonic":"jl","operands":["5a87a332"]}]},{"address":1518838574,"instructions":[{"mnemonic":"cmp","operands":["[ECX]","EAX"]},{"mnemonic":"jnb","operands":["5a87a334"]}]},{"address":1518838578,"instructions":[{"mnemonic":"mov","operands":["AL","1"]}]},{"address":1518838580,"instructions":[{"mnemonic":"ret near","operands":["[ESP]"]}]}]})json";

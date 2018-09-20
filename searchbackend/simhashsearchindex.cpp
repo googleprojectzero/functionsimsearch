@@ -139,6 +139,23 @@ uint64_t SimHashSearchIndex::QueryTopN(uint64_t hash_A, uint64_t hash_B,
   return counter;
 }
 
+// Calculates the odds for a given similarity (in bits) to be the product of
+// random chance. A number greater than 1 means "such a deviation would occur
+// by chance once every $RESULT searches", obviously, bigger is better here. A
+// number less than 1 means "this sort of finding is to be expected on every
+// search, so this is probably random".
+double SimHashSearchIndex::GetOddsOfRandomHit(
+  uint32_t count) const {
+  static const double standard_dev = sqrt(static_cast<double>(128.0 * 0.5 * 0.5));
+  double deviation = fabs(count - 64.0);
+  double number_of_standard_devs = deviation / standard_dev;
+
+  double expected_frequency_outside_range = 1.0 /
+    (1 - erf( number_of_standard_devs / sqrt(2.0) ));
+  expected_frequency_outside_range /= GetNumberOfIndexedFunctions();
+  return expected_frequency_outside_range;
+}
+
 uint64_t SimHashSearchIndex::AddFunction(uint64_t hash_A, uint64_t hash_B,
   SimHashSearchIndex::FileID file_id, SimHashSearchIndex::Address address) {
   // Obtain a new function ID and insert the mapping from function ID to

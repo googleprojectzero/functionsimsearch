@@ -59,6 +59,7 @@ private:
 public:
   Flowgraph();
   Flowgraph(const Flowgraph& other);
+  virtual ~Flowgraph() {};
   bool AddNode(address node_adress);
   bool AddEdge(address source_address, address target_address);
   bool HasNode(address node);
