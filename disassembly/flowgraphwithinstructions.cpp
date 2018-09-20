@@ -88,15 +88,14 @@ FlowgraphWithInstructionsFeatureGenerator::FlowgraphWithInstructionsFeatureGener
     nodes_and_distance_.push(std::make_pair(node, 3));
   }
 
-  std::vector<MnemTuple> tuples;
   BuildMnemonicNgrams();
-  for (const auto& tuple : tuples) {
-    mnem_tuples_.push(tuple);
-  }
 }
 
 void FlowgraphWithInstructionsFeatureGenerator::BuildMnemonicNgrams() {
   std::vector<std::string> sequence;
+
+  // The map returned from GetInstructions is already sorted by address, so
+  // the instructions will be sorted by address, too.
   for (const auto& pair : flowgraph_.GetInstructions()) {
     for (const Instruction& instruction : pair.second) {
       sequence.push_back(instruction.GetMnemonic());
