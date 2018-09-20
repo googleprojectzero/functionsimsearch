@@ -33,10 +33,6 @@ void DyninstFeatureGenerator::BuildMnemonicNgrams(
   Dyninst::ParseAPI::Function* function,
   std::vector<MnemTuple>* tuples) const {
   std::vector<std::pair<address, std::string>> sequence;
-  // Make sure that reading the mnemonics from Dyninst is synchronized.
-  // TODO(thomasdullien): Latest DynInst should allow concurrent reading, so
-  // the mutex is gone here. If crashes or problems come up, we need to re-
-  // introduce it.
   {
     // Iterate over each block and extract the instructions.
     for (const auto& block : function->blocks()) {
