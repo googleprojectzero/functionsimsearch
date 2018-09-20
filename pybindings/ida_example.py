@@ -230,11 +230,11 @@ except:
       print("%lx:%lx" %i )
   else:
     meta_data = {}
-  print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, 28)" % (
+  print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, 50)" % (
     index_file, create_index))
   try:
     search_index = functionsimsearch.SimHashSearchIndex(index_file,
-      create_index, 28)
+      create_index, 50)
     if os.path.isfile(weights_file):
       print("Calling functionsimsearch.SimHasher(\"%s\")" % weights_file)
       sim_hasher = functionsimsearch.SimHasher(weights_file)
