@@ -3,6 +3,11 @@
 
 DyninstFeatureGenerator::DyninstFeatureGenerator(
   Dyninst::ParseAPI::Function* function) {
+  // TODO(thomasdullien): We should probably get rid of the Dyninst-specific
+  // feature generator, and just eat the performance hit from building a
+  // FlowgraphWithInstructions object directly. Hashing performance is not so
+  // important, and it would remove unhealthy code duplication between this
+  // file and flowgraphwithinstructions.cpp.
   BuildFlowgraph(function, &graph_);
   std::vector<address> nodes;
   graph_.GetNodes(&nodes);
