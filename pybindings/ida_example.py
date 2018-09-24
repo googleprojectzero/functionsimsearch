@@ -291,7 +291,7 @@ except:
       print("%lx:%lx" %i )
   else:
     meta_data = {}
-  number_of_buckets = 255
+  number_of_buckets = 28
   print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, %d)" % (
     index_file, create_index, number_of_buckets))
   try:
