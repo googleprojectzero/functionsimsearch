@@ -532,7 +532,7 @@ def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
   WritePairsFile( validation_repulsion_set,
     FLAGS.work_directory + "validation_data_seen/repulse.txt" )
   WriteFunctionsTxt( FLAGS.work_directory + "/validation_data_seen" )
-  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_unseen" )
+  WriteFunctionsTxt( FLAGS.work_directory + "/training_data_seen" )
 
 
 def main(argv):
