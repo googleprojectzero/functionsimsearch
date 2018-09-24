@@ -53,6 +53,9 @@ flags.DEFINE_integer('max_seen_training_samples', 500000, "Maximum number of " +
   "pairs to generate for the 'seen' case. This may be needed if you are " +
   "training on lots of data at once and fear running out of memory.")
 
+flags.DEFINE_integer('parallelism', 8, "Number of parallel invocations of " +
+  "the disassembly tools. Given that one disassembly operation can eat up to " +
+  "12GB of RAM for large executables, this is heavily RAM-bound.")
 #=============================================================================
 
 FLAGS = flags.FLAGS
@@ -231,7 +234,7 @@ def ProcessTrainingFiles(training_files, file_format):
     file_id = sha256sum[0:16].decode("utf-8")
     argument_tuples.append((training_file, file_id, file_format))
   # Use a quarter of the available cores.
-  pool = multiprocessing.Pool(max(1, int(multiprocessing.cpu_count() / 8)))
+  pool = multiprocessing.Pool(max(1, int(FLAGS.parallelism)))
   if FLAGS.generate_fingerprints:
     print("Running functionfingerprints on all files.")
     pool.map(RunFunctionFingerprints, argument_tuples)
