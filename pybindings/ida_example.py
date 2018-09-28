@@ -174,8 +174,6 @@ def load_function(function_address = None):
     result_address = result[2]
     odds = 0.0
     odds = search_index.odds_of_random_hit(same_bits)
-    if odds < 20000:
-      continue
     print_separator = True
     if not meta_data.has_key((result_exe_id, result_address)):
       print("%lx:%lx %lx-%lx Result is %f - %lx:%lx (1 in %f searches)" %
@@ -245,6 +243,10 @@ try:
 
   search_index
   sim_hasher
+  # Deleting the search index and simhashes is necessary to make sure the C++
+  # destructors get called and the memory-mapped file that provides the search
+  # index gets unmapped cleanly. This is mainly useful to make sure that the
+  # DB can be safely unmapped from IDA (and then modified / grown).
   del search_index
   del sim_hasher
 except:
@@ -289,11 +291,12 @@ except:
       print("%lx:%lx" %i )
   else:
     meta_data = {}
-  print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, 50)" % (
-    index_file, create_index))
+  number_of_buckets = 50
+  print("Calling functionsimsearch.SimHashSearchIndex(\"%s\", %s, %d)" % (
+    index_file, create_index, number_of_buckets))
   try:
     search_index = functionsimsearch.SimHashSearchIndex(index_file,
-      create_index, 50)
+      create_index, number_of_buckets)
     if os.path.isfile(weights_file):
       print("Calling functionsimsearch.SimHasher(\"%s\")" % weights_file)
       sim_hasher = functionsimsearch.SimHasher(weights_file)
