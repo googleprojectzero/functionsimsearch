@@ -153,7 +153,7 @@ def save_function(function_address=None):
     executable_id, ida_nalt.get_input_file_path(), address, function_name))
   return True
 
-def load_function(function_address = None):
+def load_function(function_address = None, minimum=0):
   search_index
   sim_hasher
   meta_data
@@ -170,6 +170,8 @@ def load_function(function_address = None):
   print_separator = False
   for result in results:
     same_bits = result[0]
+    if same_bits < minimum:
+      continue
     result_exe_id = result[1]
     result_address = result[2]
     odds = 0.0
@@ -193,7 +195,7 @@ def match_all_functions():
   search_index
   sim_hasher
   for function in Functions(MinEA(), MaxEA()):
-    load_function(function_address=function)
+    load_function(function_address=function, minimum=100)
 
 import ida_idp
 processor_to_call_instructions = { "arm" : "FOO", "pc" : "call" }
@@ -207,7 +209,6 @@ hotkey_mappings = {
 }
 
 hotkey_contexts = []
-
 
 try:
   hotkey_context_S
