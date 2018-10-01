@@ -27,48 +27,6 @@ TEST(functionsimhash, check_feature_uniqueness) {
   }
 }
 
-TEST(functionsimhash, check_feature_counts) {
-  FunctionSimHasher hasher("");
-
-  std::map<uint64_t, uint32_t> feature_counts = {
-    { 0x019beb40ff26b418ULL, 961 },
-    { 0x22b6ae5553ee8881ULL, 627 },
-    { 0x396063026eaac371ULL, 716 },
-    { 0x51f3962ff93c1c1eULL, 674 },
-    { 0x584e2f1630b21cfaULL, 521 },
-    { 0x5ae018cfafb410f5ULL, 587 },
-    { 0x720c272a7261ec7eULL, 917 },
-    { 0x83fe3244c90314f4ULL, 627 },
-    { 0x924daa0b17c6ae64ULL, 544 },
-    { 0x38ec33c1d2961e79ULL, 641 },
-    { 0xf7f94f1cdfbe0f98ULL, 811 },
-    { 0xf89b73cc72cd02c7ULL, 819 }};
-
-  for (const auto& hash_addr : id_to_address_function_1) {
-    uint64_t file_hash = hash_addr.first;
-    uint64_t address = hash_addr.second;
-
-    std::vector<FeatureHash> feature_hashes;
-    FeatureHash trained = GetHashForFileAndFunction(hasher,
-      id_to_filename[file_hash], id_to_mode[file_hash], address, &feature_hashes);
-
-    std::set<uint64_t> feature_id_set;
-    for (const auto& feature : feature_hashes) {
-      feature_id_set.insert(feature.first);
-    }
-    EXPECT_EQ(feature_id_set.size(), feature_counts[file_hash]);
-    if (feature_id_set.size() != feature_counts[file_hash]) {
-      printf(
-        "Failure extracting features from %s %s %16.16lx "
-        "(%d features, %d expected)\n",
-        id_to_filename[file_hash].c_str(),
-        id_to_mode[file_hash].c_str(),
-        address, feature_id_set.size(),
-        feature_counts[file_hash]);
-    }
-  }
-}
-
 // Test whether loading and using weights from an input text file works. This
 // is done by loading a bunch of zero-weights, which should lead to all functions
 // having hashes of hamming distance zero.
