@@ -56,7 +56,7 @@ public:
     bool disable_mnemonic = false,
     bool dump_graphlet_dictionary = false,
     bool dump_mnem_tuple_dictionary = false,
-    double default_mnemomic_weight = 0.05,
+    double default_mnemomic_weight = 0.1,
     double default_graphlet_weight = 1.0);
 
   FunctionSimHasher(std::map<uint64_t, float>* weights);
