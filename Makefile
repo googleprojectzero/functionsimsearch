@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS += -ggdb -O0 -std=c++17 -fPIE
+CPPFLAGS += -ggdb -O3 -std=c++17 -fPIE
 LIBDIR = -L./third_party/pe-parse/pe-parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -I./ -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
@@ -8,6 +8,7 @@ LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
 OBJ = build/util.o build/util_with_dyninst.o build/disassembly.o \
       build/pecodesource.o build/flowgraph.o \
       build/flowgraphwithinstructions.o \
+      build/flowgraphwithinstructionsfeaturegenerator.o \
       build/buffertokeniterator.o \
       build/flowgraphutil.o build/flowgraphutil_dyninst.o \
       build/functionsimhash.o \

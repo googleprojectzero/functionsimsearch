@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "disassembly/flowgraphwithinstructions.hpp"
+#include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "util/testutil.hpp"
 #include "util/util_with_dyninst.hpp"

@@ -20,6 +20,7 @@
 
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "disassembly/functionfeaturegenerator.hpp"
+#include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 #include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/pecodesource.hpp"
 #include "disassembly/disassembly.hpp"

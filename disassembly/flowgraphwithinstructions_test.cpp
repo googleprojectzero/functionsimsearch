@@ -5,6 +5,7 @@
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
+#include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 
 TEST(flowgraphwithinstructions, creategraph) {
   FlowgraphWithInstructions fg;
