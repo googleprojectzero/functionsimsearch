@@ -88,7 +88,7 @@ static PyMemberDef PyFlowgraphWithInstructions_members[] = {
 static PyObject* PyFlowgraphWithInstructions__add_node(PyObject* self,
   PyObject* args) {
   uint64_t address;
-  if (!PyArg_ParseTuple(args, "L", &address)) {
+  if (!PyArg_ParseTuple(args, "K", &address)) {
     PyErr_SetString(functionsimsearch_error, "Failed to parse argument");
     return NULL;
   }
@@ -101,7 +101,7 @@ static PyObject* PyFlowgraphWithInstructions__add_node(PyObject* self,
 static PyObject* PyFlowgraphWithInstructions__add_edge(PyObject* self,
   PyObject* args) {
   uint64_t source, dest;
-  if (!PyArg_ParseTuple(args, "LL", &source, &dest)) {
+  if (!PyArg_ParseTuple(args, "KK", &source, &dest)) {
     PyErr_SetString(functionsimsearch_error, "Failed to parse arguments");
     return NULL;
   }
@@ -164,7 +164,7 @@ static PyObject* PyFlowgraphWithInstructions__add_instructions(PyObject* self,
   // )
   uint64_t block_address;
   PyObject* block_object = nullptr;
-  if (!PyArg_ParseTuple(args, "LO", &block_address, &block_object)) {
+  if (!PyArg_ParseTuple(args, "KO", &block_address, &block_object)) {
     PyErr_SetString(functionsimsearch_error, "Failed to parse argument"); 
     return NULL;
   }
