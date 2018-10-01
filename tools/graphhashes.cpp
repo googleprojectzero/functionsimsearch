@@ -54,7 +54,8 @@ int main(int argc, char** argv) {
   }
 
   for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
-    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    std::unique_ptr<FlowgraphWithInstructions> graph =
+      disassembly.GetFlowgraphWithInstructions(index);
     Address function_address = disassembly.GetAddressOfFunction(index);
 
     printf("%16.16lx %16.16lx\n", graph->CalculateHash(function_address),

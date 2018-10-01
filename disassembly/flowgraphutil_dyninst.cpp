@@ -101,7 +101,8 @@ bool GetCFGFromBinaryAsJSON(const std::string& format, const std::string
   if (index == std::numeric_limits<uint32_t>::max()) {
     return false;
   }
-  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::unique_ptr<FlowgraphWithInstructions> graph =
+    disassembly.GetFlowgraphWithInstructions(index);
   std::stringstream json_data;
   graph->WriteJSON(&json_data, get_block);
   *result = json_data.str();

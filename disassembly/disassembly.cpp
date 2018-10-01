@@ -167,7 +167,7 @@ std::unique_ptr<FlowgraphWithInstructions>
   if (uses_dyninst_) {
     std::scoped_lock lock(dyninst_api_mutex_);
     Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
-      function_index); 
+      function_index);
     std::unique_ptr<FlowgraphWithInstructions> flowgraph(
       new FlowgraphWithInstructions());
     BuildFlowgraph(function, flowgraph.get());
@@ -186,11 +186,6 @@ std::unique_ptr<FlowgraphWithInstructions>
       new FlowgraphWithInstructions(*flowgraph));
   }
   return std::unique_ptr<FlowgraphWithInstructions>(nullptr);
-}
-
-std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
-  const {
-  return GetFlowgraphWithInstructions(function_index);
 }
 
 uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) const {

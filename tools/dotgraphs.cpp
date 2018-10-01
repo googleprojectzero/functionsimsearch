@@ -69,7 +69,8 @@ int main(int argc, char** argv) {
 
   InstructionGetter get_block = disassembly.GetInstructionGetter();
   for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
-    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    std::unique_ptr<FlowgraphWithInstructions> graph =
+      disassembly.GetFlowgraphWithInstructions(index);
     uint64_t function_address = disassembly.GetAddressOfFunction(index);
 
     // Skip functions that contain shared basic blocks.

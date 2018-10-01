@@ -133,7 +133,8 @@ int main(int argc, char** argv) {
       file_id, minimum_size, max_matches, minimum_percentage,
       number_of_functions, &hasher]
         (int threadid) {
-      std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+      std::unique_ptr<FlowgraphWithInstructions> graph =
+        disassembly.GetFlowgraphWithInstructions(index);
       Address function_address = disassembly.GetAddressOfFunction(index);
 
       uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();

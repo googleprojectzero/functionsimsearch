@@ -13,10 +13,15 @@ class Flowgraph;
 
 class FunctionFeatureGenerator {
 public:
+  // Subgraph-extraction functions.
   virtual bool HasMoreSubgraphs() const = 0;
   virtual std::pair<Flowgraph*, address> GetNextSubgraph() = 0;
+  // Mnemonics-extraction functions.
   virtual bool HasMoreMnemonics() const = 0;
   virtual MnemTuple GetNextMnemTuple() = 0;
+  // Immediate values in operands extraction functions.
+  //virtual bool HasMoreImmediates() const = 0;
+  //virtual uint64_t GetNextImmediate() = 0;
   // Virtual destructors should be non-abstract.
   virtual ~FunctionFeatureGenerator() {};
 };

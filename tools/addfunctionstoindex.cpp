@@ -45,50 +45,51 @@ using namespace gflags;
 using namespace std;
 
 int main(int argc, char** argv) {
-  SetUsageMessage(
-    "Add the functions of the input executable which exceed a certain minimum "
-    "size to the search index specified.");
-  ParseCommandLineFlags(&argc, &argv, true);
+SetUsageMessage(
+  "Add the functions of the input executable which exceed a certain minimum "
+  "size to the search index specified.");
+ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string mode(FLAGS_format);
-  std::string binary_path_string(FLAGS_input);
-  std::string index_file(FLAGS_index);
-  uint64_t minimum_size = FLAGS_minimum_function_size;
+std::string mode(FLAGS_format);
+std::string binary_path_string(FLAGS_input);
+std::string index_file(FLAGS_index);
+uint64_t minimum_size = FLAGS_minimum_function_size;
 
-  if (binary_path_string == "") {
-    printf("[!] Empty target binary.\n");
-    return -1;
+if (binary_path_string == "") {
+  printf("[!] Empty target binary.\n");
+  return -1;
+}
+uint64_t file_id = GenerateExecutableID(binary_path_string);
+printf("[!] Executable id is %16.16lx\n", file_id);
+
+// Load the search index.
+SimHashSearchIndex search_index(index_file, false);
+
+Disassembly disassembly(mode, binary_path_string);
+if (!disassembly.Load()) {
+  exit(1);
+}
+
+std::mutex search_index_mutex;
+std::mutex* mutex_pointer = &search_index_mutex;
+threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+std::atomic_ulong atomic_processed_functions(0);
+std::atomic_ulong* processed_functions = &atomic_processed_functions;
+uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
+FunctionSimHasher hasher(FLAGS_weights);
+
+for (uint32_t index = 0; index < number_of_functions; ++index) {
+  // Skip functions that contain shared basic blocks.
+  if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
+    continue;
   }
-  uint64_t file_id = GenerateExecutableID(binary_path_string);
-  printf("[!] Executable id is %16.16lx\n", file_id);
 
-  // Load the search index.
-  SimHashSearchIndex search_index(index_file, false);
-
-  Disassembly disassembly(mode, binary_path_string);
-  if (!disassembly.Load()) {
-    exit(1);
-  }
-
-  std::mutex search_index_mutex;
-  std::mutex* mutex_pointer = &search_index_mutex;
-  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
-  std::atomic_ulong atomic_processed_functions(0);
-  std::atomic_ulong* processed_functions = &atomic_processed_functions;
-  uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
-  FunctionSimHasher hasher(FLAGS_weights);
-
-  for (uint32_t index = 0; index < number_of_functions; ++index) {
-    // Skip functions that contain shared basic blocks.
-    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
-      continue;
-    }
-
-    pool.Push(
-      [&search_index, &disassembly, mutex_pointer, &binary_path_string, &hasher,
-      processed_functions, file_id, index, minimum_size,
-      number_of_functions](int threadid) {
-      std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  pool.Push(
+    [&search_index, &disassembly, mutex_pointer, &binary_path_string, &hasher,
+    processed_functions, file_id, index, minimum_size,
+    number_of_functions](int threadid) {
+      std::unique_ptr<FlowgraphWithInstructions> graph =
+        disassembly.GetFlowgraphWithInstructions(index);
       (*processed_functions)++;
 
       uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();

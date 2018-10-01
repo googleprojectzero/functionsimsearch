@@ -38,7 +38,8 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   }
 
   uint32_t index = disassembly.GetIndexByAddress(address);
-  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::unique_ptr<FlowgraphWithInstructions> graph =
+    disassembly.GetFlowgraphWithInstructions(index);
   std::unique_ptr<FunctionFeatureGenerator> generator =
     disassembly.GetFeatureGenerator(index);
   std::vector<uint64_t> hashes;

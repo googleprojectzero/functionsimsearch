@@ -76,7 +76,8 @@ int main(int argc, char** argv) {
     printf("Specified function not found.\n");
     return -1;
   }
-  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::unique_ptr<FlowgraphWithInstructions> graph =
+    disassembly.GetFlowgraphWithInstructions(index);
 
   if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
     printf("[!] (1/1) %s FileID %lx: Skipping function %lx. Index file "

@@ -82,7 +82,8 @@ int main(int argc, char** argv) {
     FLAGS_dump_instruction_features);
 
   for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
-    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    std::unique_ptr<FlowgraphWithInstructions> graph =
+      disassembly.GetFlowgraphWithInstructions(index);
     Address function_address = disassembly.GetAddressOfFunction(index);
 
     // Skip functions that contain shared basic blocks.
