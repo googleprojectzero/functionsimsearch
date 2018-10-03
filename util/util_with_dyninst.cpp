@@ -3,7 +3,6 @@
 #include "InstructionDecoder.h"
 
 #include "disassembly/disassembly.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"

@@ -16,7 +16,7 @@ OBJ = build/util.o build/util_with_dyninst.o build/disassembly.o \
       build/simhashsearchindex.o build/bitpermutation.o \
       build/threadtimer.o build/functionmetadata.o \
       build/mappedtextfile.o \
-      build/simhashtrainer.o build/sgdsolver.o build/dyninstfeaturegenerator.o \
+      build/simhashtrainer.o build/sgdsolver.o \
       build/trainingdata.o build/cppsplitter.o
 
 

@@ -54,6 +54,9 @@ public:
 private:
   void RefreshFunctionVector();
   void LoadFromJSONStream(std::istream& jsondata);
+  // Dyninst-specific function to generate a FlowgraphWithInstructions.
+  std::unique_ptr<FlowgraphWithInstructions> GetFlowgraphWithInstructionsDyninst(
+    uint32_t function_index) const;
   const std::string type_;
   const std::string inputfile_;
   // Dyninst-specific data members.

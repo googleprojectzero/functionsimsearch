@@ -3,7 +3,6 @@
 #include "third_party/PicoSHA2/picosha2.h"
 
 #include "disassembly/disassembly.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil.hpp"
 #include "searchbackend/functionsimhash.hpp"
