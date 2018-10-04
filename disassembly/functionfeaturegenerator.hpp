@@ -20,8 +20,8 @@ public:
   virtual bool HasMoreMnemonics() const = 0;
   virtual MnemTuple GetNextMnemTuple() = 0;
   // Immediate values in operands extraction functions.
-  //virtual bool HasMoreImmediates() const = 0;
-  //virtual uint64_t GetNextImmediate() = 0;
+  virtual bool HasMoreImmediates() const = 0;
+  virtual uint64_t GetNextImmediate() = 0;
   // Virtual destructors should be non-abstract.
   virtual ~FunctionFeatureGenerator() {};
 };

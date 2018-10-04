@@ -54,10 +54,13 @@ public:
   FunctionSimHasher(const std::string& weight_file,
     bool disable_graphs = false,
     bool disable_mnemonic = false,
+    bool disable_immediates = false,
     bool dump_graphlet_dictionary = false,
     bool dump_mnem_tuple_dictionary = false,
+    bool dump_immediate_dictionary = false,
     double default_mnemomic_weight = 0.1,
-    double default_graphlet_weight = 1.0);
+    double default_graphlet_weight = 1.0,
+    double default_immediate_weight = 1.0);
 
   FunctionSimHasher(std::map<uint64_t, float>* weights);
 
@@ -93,6 +96,12 @@ private:
     uint64_t hash_index, std::vector<float>* output_simhash_floats,
     std::vector<FeatureHash>* feature_hashes = nullptr) const;
 
+  // Process the immediate value and hash it into the output vector.
+  void ProcessImmediate(uint64_t immediate,
+    float immediate_weight, uint64_t bits, uint64_t hash_index,
+    std::vector<float>* output_simhash_floats, std::vector<FeatureHash>*
+    feature_hashes) const;
+
   // Given an n-bit hash and a weight, hash the weight into the output vector
   // with positive sign for 1's and negative sign for 0's.
   void AddWeightsInHashToOutput(const std::vector<uint64_t>& hash, uint64_t bits,
@@ -108,6 +117,10 @@ private:
   uint64_t HashGraph(std::unique_ptr<Flowgraph>& graph, address node,
     uint64_t hash_index, uint64_t counter) const;
 
+  // Hash an immediate value.
+  uint64_t HashImmediate(uint64_t immediate, uint64_t hash_index,
+    uint64_t counter) const;
+
   // Extend a 64-bit graph hash family to a N-bit hash family by just increasing
   // the hash function index.
   void CalculateNBitGraphHash(std::unique_ptr<Flowgraph>& graph, address node,
@@ -118,6 +131,10 @@ private:
   void CalculateNBitMnemTupleHash(const MnemTuple& tup, uint64_t bits,
     uint64_t hash_index, std::vector<uint64_t>* output) const;
 
+  // Extend a 64-bit immediate hash.
+  uint64_t CalculateNBitImmediateHash(uint64_t immediate, uint64_t bits,
+    uint64_t hash_index, std::vector<uint64_t>*output) const;
+ 
   // Return a weight for a given key.
   float GetWeight(uint64_t key, float standard) const;
 
@@ -129,6 +146,9 @@ private:
   uint64_t GetMnemonicIdOccurrence(const MnemTuple& tuple,
     uint32_t occurrence) const;
   uint64_t GetMnemonicIdNoOccurrence(const MnemTuple& tuple) const;
+  uint64_t GetImmediateIdNoOccurrence(uint64_t immediate) const;
+  uint64_t GetImmediateIdOccurrence(uint64_t immediate, uint32_t occurrence) 
+    const;
 
   inline bool GetNthBit(const std::vector<uint64_t>& nbit_hash,
     uint64_t bitindex) const;
@@ -139,11 +159,15 @@ private:
 
   double default_mnemonic_weight_;
   double default_graphlet_weight_;
+  double default_immediate_weight_;
 
   bool disable_graph_hashes_;
   bool disable_mnemonic_hashes_;
+  bool disable_immediate_hashes_;
+
   bool dump_graphlet_dictionary_;
   bool dump_mnem_tuple_dictionary_;
+  bool dump_immediate_dictionary_;
 
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;

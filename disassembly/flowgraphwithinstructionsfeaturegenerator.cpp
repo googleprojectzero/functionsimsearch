@@ -1,3 +1,6 @@
+// DEBUG remove
+#include <fstream>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -34,6 +37,24 @@ void FlowgraphWithInstructionsFeatureGenerator::init() {
   }
 
   BuildMnemonicNgrams();
+  FindImmediateValues();
+}
+
+void FlowgraphWithInstructionsFeatureGenerator::FindImmediateValues() {
+  // Run through all the instructions again.
+  std::ofstream opfile;
+  opfile.open("/tmp/operands.txt", std::ofstream::out | std::ofstream::app);
+ 
+  for (const auto& pair : flowgraph_->GetInstructions()) {
+    opfile << pair.first << std::endl;
+    for (const Instruction& instruction : pair.second) {
+      for (const std::string& operand : instruction.GetOperands()) {
+        // What do we do now?
+        opfile << operand << std::endl;
+      }
+    }
+  }
+  opfile << "----" << std::endl;
 }
 
 void FlowgraphWithInstructionsFeatureGenerator::BuildMnemonicNgrams() {
@@ -76,4 +97,14 @@ MnemTuple FlowgraphWithInstructionsFeatureGenerator::GetNextMnemTuple() {
   MnemTuple tuple = mnem_tuples_.front();
   mnem_tuples_.pop();
   return tuple;
+}
+
+bool FlowgraphWithInstructionsFeatureGenerator::HasMoreImmediates() const {
+  return !immediates_.empty();
+}
+
+uint64_t FlowgraphWithInstructionsFeatureGenerator::GetNextImmediate() {
+  uint64_t val = immediates_.front();
+  immediates_.pop();
+  return val;
 }

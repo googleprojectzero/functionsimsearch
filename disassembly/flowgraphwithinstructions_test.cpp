@@ -60,7 +60,7 @@ TEST(flowgraphwithinstructions, creategraph) {
 
   // Check fg.
   {
-    FunctionSimHasher sim_hasher("", false, false, false, false);
+    FunctionSimHasher sim_hasher("");
     std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
     FlowgraphWithInstructionsFeatureGenerator generator(fg);

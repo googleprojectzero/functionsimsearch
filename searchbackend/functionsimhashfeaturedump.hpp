@@ -13,4 +13,8 @@ void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB,
 void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB, 
   const MnemTuple& tuple);
 
+// Writes an immediate into the relevant log file.
+void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB, uint64_t
+  immediate);
+ 
 #endif // FUNCTIONSIMHASHFEATUREDUMP_HPP

@@ -20,9 +20,14 @@ public:
   std::pair<Flowgraph*, address> GetNextSubgraph();
   bool HasMoreMnemonics() const;
   MnemTuple GetNextMnemTuple();
+
+  bool HasMoreImmediates() const;
+  uint64_t GetNextImmediate();
 private:
   void init();
   void BuildMnemonicNgrams();
+  void FindImmediateValues();
+
   std::unique_ptr<FlowgraphWithInstructions> flowgraph_;
   std::queue<std::pair<address, uint32_t>> nodes_and_distance_;
   std::queue<MnemTuple> mnem_tuples_;
