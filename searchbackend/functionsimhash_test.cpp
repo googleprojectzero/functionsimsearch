@@ -98,20 +98,18 @@ TEST(functionsimhash, zero_weight_hasher) {
 // to the same value.
 TEST(functionsimhash, zero_weight_for_mnemonics) {
   FunctionSimHasher hasher_weight_zero("",
-    false, // Do not disable graphs.
-    false, // Do not disable mnemonics.
-    false, // Do not dump the graphlet dictionary.
-    false, // Do not dump the mnemonic dictionary.
+    default_features,
+    default_logging,
     0.0, // Mnemonic weight set to zero.
-    1.0 // Graphlet weight set to one.
+    1.0, // Graphlet weight set to one.
+    0.0  // Immediate weight set to zero.
   );
   FunctionSimHasher hasher_ignore_mnemonics("",
-    false, // Do not disable graphs.
-    true, // Disable mnemonics.
-    false, // Do not dump the graphlet dictionary.
-    false, // Do not dump the mnemonic dictionary.
-    0.0, // Mnemonic weight set to zero.
-    1.0 // Graphlet weight set to one.
+    disable_mnemonics | disable_immediates, // Do not disable graphs.
+    default_logging,
+    1.0, // Mnemonic weight set to one, should not matter (disabled).
+    1.0, // Graphlet weight set to one.
+    1.0  // Immediate weight set to zero, should not matter (disabled).
   );
 
   FlowgraphWithInstructions graph1;
@@ -124,28 +122,39 @@ TEST(functionsimhash, zero_weight_for_mnemonics) {
   FlowgraphWithInstructionsFeatureGenerator featuregen1(graph1);
   FlowgraphWithInstructionsFeatureGenerator featuregen2(graph2);
 
-  std::vector<uint64_t> hash1;
-  hasher_weight_zero.CalculateFunctionSimHash(&featuregen1, 128, &hash1);
+  std::vector<uint64_t> hash_graph1_weight_zero;
+  hasher_weight_zero.CalculateFunctionSimHash(&featuregen1, 128,
+    &hash_graph1_weight_zero);
 
-  std::vector<uint64_t> hash2;
-  hasher_weight_zero.CalculateFunctionSimHash(&featuregen2, 128, &hash2);
+  std::vector<uint64_t> hash_graph2_weight_zero;
+  hasher_weight_zero.CalculateFunctionSimHash(&featuregen2, 128,
+    &hash_graph2_weight_zero);
 
-  std::vector<uint64_t> hash3;
-  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen1, 128, &hash3);
+  // Re-initialize the feature generators again.
+  featuregen1.reinit();
+  featuregen2.reinit();
 
-  std::vector<uint64_t> hash4;
-  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen2, 128, &hash4);
+  std::vector<uint64_t> hash_graph1_disable_mnem_and_imm;
+  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen1, 128,
+    &hash_graph1_disable_mnem_and_imm);
+
+  std::vector<uint64_t> hash_graph2_disable_mnem_and_imm;
+  hasher_ignore_mnemonics.CalculateFunctionSimHash(&featuregen2, 128,
+    &hash_graph2_disable_mnem_and_imm);
 
   // All hashes should be the same.
-  EXPECT_EQ(hash1[0], hash2[0]);
-  EXPECT_EQ(hash1[1], hash2[1]);
-  EXPECT_EQ(hash1[0], hash3[0]);
-  EXPECT_EQ(hash1[1], hash3[1]);
-  EXPECT_EQ(hash1[0], hash4[0]);
-  EXPECT_EQ(hash1[1], hash4[1]);
+  EXPECT_EQ(hash_graph1_weight_zero[0], hash_graph2_weight_zero[0]);
+  EXPECT_EQ(hash_graph1_weight_zero[1], hash_graph2_weight_zero[1]);
 
-  EXPECT_EQ(hash1[0], 0xb74b6fbed1a325ea);
-  EXPECT_EQ(hash1[1], 0xc6b79fb0afe3a8fd);
+  EXPECT_EQ(hash_graph1_weight_zero[0], hash_graph1_disable_mnem_and_imm[0]);
+  EXPECT_EQ(hash_graph1_weight_zero[1], hash_graph1_disable_mnem_and_imm[1]);
+
+  EXPECT_EQ(hash_graph1_weight_zero[0], hash_graph2_disable_mnem_and_imm[0]);
+  EXPECT_EQ(hash_graph2_weight_zero[1], hash_graph2_disable_mnem_and_imm[1]);
+
+  // Bad tests because they are brittle to experiments with weights.
+  //EXPECT_EQ(hash_graph1_weight_zero[0], 0xb74b6fbed1a325ea);
+  //EXPECT_EQ(hash_graph1_weight_zero[1], 0xc6b79fb0afe3a8fd);
 }
 
 

@@ -17,6 +17,19 @@
 #include "searchbackend/functionsimhash.hpp"
 #include "searchbackend/functionsimhashfeaturedump.hpp"
 
+FeatureOptions DisabledFeatures(bool graphs, bool mnemonics, bool immediates) {
+  return (graphs ? disable_graphs : default_features) |
+    (mnemonics ? disable_mnemonics : default_features) |
+    (immediates ? disable_immediates : default_features);
+}
+
+FeatureLoggingOptions FeatureLogging(bool graphs, bool mnemonics, 
+  bool immediates) {
+  return (graphs ? dump_graphlets : default_logging) |
+    (mnemonics ? dump_mnemonics : default_logging) |
+    (immediates ? dump_immediates : default_logging);
+}
+
 uint64_t FunctionSimHasher::FloatsToBits(const std::vector<float>& floats) {
   std::vector<uint64_t> temp;
   FloatsToBits(floats, &temp);
@@ -74,7 +87,7 @@ void FunctionSimHasher::CalculateFunctionSimHash(
   // TODO(thomasdullien): The following code (for adding graph, mnemonic, and
   // immediate features) has a lot of code duplication and should be cleaned
   // up to be more DRY.
-  if (!disable_graph_hashes_) {
+  if (!(feature_options_ & disable_graphs)) {
     // Process subgraphs.
     while (generator->HasMoreSubgraphs()) {
       std::pair<Flowgraph*, address> graphlet_and_node =
@@ -96,7 +109,7 @@ void FunctionSimHasher::CalculateFunctionSimHash(
       }
     }
   }
-  if (!disable_mnemonic_hashes_) {
+  if (!(feature_options_ & disable_mnemonics)) {
     while (generator->HasMoreMnemonics()) {
       MnemTuple tuple = generator->GetNextMnemTuple();
       uint64_t tuple_id = GetMnemonicIdNoOccurrence(tuple);
@@ -110,7 +123,7 @@ void FunctionSimHasher::CalculateFunctionSimHash(
         cardinality, &output_simhash_floats, feature_hashes);
     }
   }
-  if (!disable_immediate_hashes_) {
+  if (!(feature_options_ & disable_immediates)) {
     while(generator->HasMoreImmediates()) {
       // Multiply the immediate value with some random uint64_t to get a hash.
       uint64_t immediate = generator->GetNextImmediate();
@@ -163,7 +176,7 @@ void FunctionSimHasher::ProcessSubgraph(std::unique_ptr<Flowgraph>& graph,
   // For diagnostics, it can be useful to write a DOT or JSON file with the
   // structure of the graph. This is particularly helpful to analyze weights
   // after the learning process.
-  if (dump_graphlet_dictionary_) {
+  if (feature_logging_options_ & dump_graphlets) {
     WriteFeatureDictionaryEntry(hash[0], hash[1], *graph);
   }
   if (feature_hashes) {
@@ -185,7 +198,7 @@ void FunctionSimHasher::ProcessMnemTuple(const MnemTuple &tup,
   // For diagnostics, it can be useful to write a DOT or JSON file with the
   // structure of the graph. This is particularly helpful to analyze weights
   // after the learning process.
-  if (dump_mnem_tuple_dictionary_) {
+  if (feature_logging_options_ & dump_mnemonics) {
     WriteFeatureDictionaryEntry(hash[0], hash[1], tup);
   }
 
@@ -207,7 +220,7 @@ void FunctionSimHasher::ProcessImmediate(uint64_t immediate,
   // For diagnostics, it can be useful to write a DOT or JSON file with the
   // structure of the graph. This is particularly helpful to analyze weights
   // after the learning process.
-  if (dump_immediate_dictionary_) {
+  if (feature_logging_options_ & dump_immediates) {
     WriteFeatureDictionaryEntry(hash[0], hash[1], immediate);
   }
 
@@ -275,7 +288,8 @@ uint64_t FunctionSimHasher::HashGraph(std::unique_ptr<Flowgraph>& graph,
 
 uint64_t FunctionSimHasher::HashImmediate(uint64_t immediate,
   uint64_t hash_index, uint64_t counter) const {
-  uint64_t value1 = SeedXForHashY(0, hash_index);
+  uint64_t value1 = SeedXForHashY(0, hash_index) + counter * k0 + counter * k1 +
+    counter * k2;
   value1 = rotl64(value1, 7);
   value1 *= (immediate ^ SeedXForHashY(0, hash_index));
   value1 = rotl64(value1, 7);
@@ -287,7 +301,7 @@ uint64_t FunctionSimHasher::HashImmediate(uint64_t immediate,
   return value1;
 }
 
-uint64_t FunctionSimHasher::CalculateNBitImmediateHash(uint64_t immediate,
+void FunctionSimHasher::CalculateNBitImmediateHash(uint64_t immediate,
   uint64_t bits, uint64_t hash_index, std::vector<uint64_t>*output) const {
   output->clear();
 
@@ -386,19 +400,16 @@ inline bool FunctionSimHasher::GetNthBit(const std::vector<uint64_t>& nbit_hash,
 }
 
 FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
-  bool disable_graphs, bool disable_mnemonic, bool disable_immediate_hashes,
-  bool dump_graphlet_dictionary, bool dump_mnem_tuple_dictionary,
-  bool dump_immediate_dictionary, double default_mnemonic_weight,
-  double default_graphlet_weight, double default_immediate_weight) :
+  FeatureOptions feature_options,
+  FeatureLoggingOptions feature_logging,
+  double default_mnemonic_weight,
+  double default_graphlet_weight,
+  double default_immediate_weight) :
     default_mnemonic_weight_(default_mnemonic_weight),
     default_graphlet_weight_(default_graphlet_weight),
     default_immediate_weight_(default_immediate_weight),
-    disable_graph_hashes_(disable_graphs),
-    disable_mnemonic_hashes_(disable_mnemonic),
-    disable_immediate_hashes_(disable_immediate_hashes),
-    dump_graphlet_dictionary_(dump_graphlet_dictionary),
-    dump_mnem_tuple_dictionary_(dump_mnem_tuple_dictionary),
-    dump_immediate_dictionary_(dump_immediate_dictionary) {
+    feature_options_(feature_options),
+    feature_logging_options_(feature_logging) {
   std::vector<std::vector<std::string>> tokenized_lines;
 
   if (weight_file == "") {
@@ -423,8 +434,9 @@ FunctionSimHasher::FunctionSimHasher(const std::string& weight_file,
 }
 
 FunctionSimHasher::FunctionSimHasher(std::map<uint64_t, float>* weights) :
-  weights_(*weights), default_mnemonic_weight_(0.1),
-  default_graphlet_weight_(1.0), default_immediate_weight_(1.0) {
+  weights_(*weights), default_mnemonic_weight_(kMnemonicDefaultWeight),
+  default_graphlet_weight_(kGraphletDefaultWeight), default_immediate_weight_(
+    kImmediateDefaultWeight) {
   weights_ = *weights;
 }
 

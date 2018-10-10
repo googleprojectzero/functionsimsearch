@@ -31,6 +31,14 @@ DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(index, "./similarity.index", "Index file");
 DEFINE_string(weights, "weights.txt", "Feature weights file");
 DEFINE_string(function_address, "", "Address of the function");
+
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -69,7 +77,10 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  FunctionSimHasher hasher("weights.txt");
+  FunctionSimHasher hasher("weights.txt", default_features, default_logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
+
   uint32_t index = disassembly.GetIndexByAddress(target_address);
   if (index == std::numeric_limits<uint32_t>::max()) {
     printf("Specified function not found.\n");

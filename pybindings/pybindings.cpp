@@ -7,6 +7,7 @@
 
 #include "disassembly/flowgraphutil.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
+#include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 #include "searchbackend/functionsimhash.hpp"
 #include "searchbackend/simhashsearchindex.hpp"
 

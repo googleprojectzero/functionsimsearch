@@ -3,6 +3,7 @@ from distutils.core import setup, Extension
 module = Extension(
   'functionsimsearch',
   sources = [ 'disassembly/flowgraphwithinstructions.cpp',
+    'disassembly/flowgraphwithinstructionsfeaturegenerator.cpp',
     'disassembly/flowgraph.cpp',
     'disassembly/flowgraphutil.cpp',
     'searchbackend/functionsimhash.cpp',

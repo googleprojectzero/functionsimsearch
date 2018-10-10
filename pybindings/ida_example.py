@@ -71,8 +71,14 @@ def get_flowgraph_from(address, ignore_instructions=False):
     flowgraph.add_node(block.start_ea)
 
   for block in ida_flowgraph:
-    instructions = [ (i, GetMnem(i), (print_operand(i, 0),
-      print_operand(i, 1))) for i in Heads(block.start_ea, block.end_ea)]
+    # There seems to be no good way to get operands without IDA substituting
+    # local variable names etc., so this is a very ugly hack to deal with that.
+    # TODO(thomasdullien): IDA 7.2 will provide a way to perform print_operand
+    # without replacement (by providing empty type arguments?), replace the hack
+    # here with a "proper" solution.
+    instructions = [ (i, GetMnem(i), (print_operand(i, 0).replace("+var_", "-0x"),
+      print_operand(i, 1).replace("+var_", "-0x"))) for i in
+      Heads(block.start_ea, block.end_ea)]
     small_blocks = split_instruction_list(instructions, call_instruction_string)
     for small_block in small_blocks:
       flowgraph.add_node(small_block[0][0])

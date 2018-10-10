@@ -30,6 +30,13 @@ DEFINE_string(input, "", "File to disassemble");
 DEFINE_string(function_address, "", "Address of function");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
 
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -63,7 +70,9 @@ int main(int argc, char** argv) {
   uint32_t index = disassembly.GetIndexByAddress(target_address);
 
   // The weights are not used, so ignore them (and use hardcoded weights.txt.
-  FunctionSimHasher hasher("weights.txt");
+  FunctionSimHasher hasher("weights.txt", default_features, default_logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
 
   if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
     printf("[!] Error: --no_shared_blocks was specified but function has them.");

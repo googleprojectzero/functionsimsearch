@@ -33,6 +33,13 @@ DEFINE_string(weights, "weights.txt", "Feature weights file");
 DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added.");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
 
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -44,90 +51,92 @@ using namespace gflags;
 using namespace std;
 
 int main(int argc, char** argv) {
-SetUsageMessage(
-  "Add the functions of the input executable which exceed a certain minimum "
-  "size to the search index specified.");
-ParseCommandLineFlags(&argc, &argv, true);
+  SetUsageMessage(
+    "Add the functions of the input executable which exceed a certain minimum "
+    "size to the search index specified.");
+  ParseCommandLineFlags(&argc, &argv, true);
 
-std::string mode(FLAGS_format);
-std::string binary_path_string(FLAGS_input);
-std::string index_file(FLAGS_index);
-uint64_t minimum_size = FLAGS_minimum_function_size;
+  std::string mode(FLAGS_format);
+  std::string binary_path_string(FLAGS_input);
+  std::string index_file(FLAGS_index);
+  uint64_t minimum_size = FLAGS_minimum_function_size;
 
-if (binary_path_string == "") {
-  printf("[!] Empty target binary.\n");
-  return -1;
-}
-uint64_t file_id = GenerateExecutableID(binary_path_string);
-printf("[!] Executable id is %16.16lx\n", file_id);
+  if (binary_path_string == "") {
+    printf("[!] Empty target binary.\n");
+    return -1;
+  }
+  uint64_t file_id = GenerateExecutableID(binary_path_string);
+  printf("[!] Executable id is %16.16lx\n", file_id);
 
-// Load the search index.
-SimHashSearchIndex search_index(index_file, false);
+  // Load the search index.
+  SimHashSearchIndex search_index(index_file, false);
 
-Disassembly disassembly(mode, binary_path_string);
-if (!disassembly.Load()) {
-  exit(1);
-}
-
-std::mutex search_index_mutex;
-std::mutex* mutex_pointer = &search_index_mutex;
-threadpool::ThreadPool pool(std::thread::hardware_concurrency());
-std::atomic_ulong atomic_processed_functions(0);
-std::atomic_ulong* processed_functions = &atomic_processed_functions;
-uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
-FunctionSimHasher hasher(FLAGS_weights);
-
-for (uint32_t index = 0; index < number_of_functions; ++index) {
-  // Skip functions that contain shared basic blocks.
-  if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
-    continue;
+  Disassembly disassembly(mode, binary_path_string);
+  if (!disassembly.Load()) {
+    exit(1);
   }
 
-  pool.Push(
-    [&search_index, &disassembly, mutex_pointer, &binary_path_string, &hasher,
-    processed_functions, file_id, index, minimum_size,
-    number_of_functions](int threadid) {
-      std::unique_ptr<FlowgraphWithInstructions> graph =
-        disassembly.GetFlowgraphWithInstructions(index);
-      (*processed_functions)++;
+  std::mutex search_index_mutex;
+  std::mutex* mutex_pointer = &search_index_mutex;
+  threadpool::ThreadPool pool(std::thread::hardware_concurrency());
+  std::atomic_ulong atomic_processed_functions(0);
+  std::atomic_ulong* processed_functions = &atomic_processed_functions;
+  uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
+  FunctionSimHasher hasher(FLAGS_weights, default_features, default_logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
 
-      uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
-      uint64_t function_address = disassembly.GetAddressOfFunction(index);
+  for (uint32_t index = 0; index < number_of_functions; ++index) {
+    // Skip functions that contain shared basic blocks.
+    if (FLAGS_no_shared_blocks && disassembly.ContainsSharedBasicBlocks(index)) {
+      continue;
+    }
 
-      if (branching_nodes <= minimum_size) {
-        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu "
-          "branching nodes\n", processed_functions->load(), number_of_functions,
-          binary_path_string.c_str(), file_id, function_address, branching_nodes);
-        return;
-      }
-      if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
-        printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx. Index file "
-          "full.\n", processed_functions->load(), number_of_functions,
-          binary_path_string.c_str(), file_id, function_address);
-        return;
-      }
+    pool.Push(
+      [&search_index, &disassembly, mutex_pointer, &binary_path_string, &hasher,
+      processed_functions, file_id, index, minimum_size,
+      number_of_functions](int threadid) {
+        std::unique_ptr<FlowgraphWithInstructions> graph =
+          disassembly.GetFlowgraphWithInstructions(index);
+        (*processed_functions)++;
 
-      printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching "
-        "nodes)\n", processed_functions->load(), number_of_functions,
-        binary_path_string.c_str(), file_id, function_address, branching_nodes);
+        uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();
+        uint64_t function_address = disassembly.GetAddressOfFunction(index);
 
-      std::vector<uint64_t> hashes;
-      std::unique_ptr<FunctionFeatureGenerator> generator =
-        disassembly.GetFeatureGenerator(index);
-
-      hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
-      uint64_t hash_A = hashes[0];
-      uint64_t hash_B = hashes[1];
-      {
-        std::lock_guard<std::mutex> lock(*mutex_pointer);
-        try {
-          search_index.AddFunction(hash_A, hash_B, file_id, function_address);
-        } catch (boost::interprocess::bad_alloc& out_of_space) {
-          printf("[!] boost::interprocess::bad_alloc - no space in index file "
-            "left!\n");
+        if (branching_nodes <= minimum_size) {
+          printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx, only %lu "
+            "branching nodes\n", processed_functions->load(), number_of_functions,
+            binary_path_string.c_str(), file_id, function_address, branching_nodes);
+          return;
         }
-      }
-    });
+        if (search_index.GetIndexFileFreeSpace() < (1ULL << 14)) {
+          printf("[!] (%lu/%lu) %s FileID %lx: Skipping function %lx. Index file "
+            "full.\n", processed_functions->load(), number_of_functions,
+            binary_path_string.c_str(), file_id, function_address);
+          return;
+        }
+
+        printf("[!] (%lu/%lu) %s FileID %lx: Adding function %lx (%lu branching "
+          "nodes)\n", processed_functions->load(), number_of_functions,
+          binary_path_string.c_str(), file_id, function_address, branching_nodes);
+
+        std::vector<uint64_t> hashes;
+        std::unique_ptr<FunctionFeatureGenerator> generator =
+          disassembly.GetFeatureGenerator(index);
+
+        hasher.CalculateFunctionSimHash(generator.get(), 128, &hashes);
+        uint64_t hash_A = hashes[0];
+        uint64_t hash_B = hashes[1];
+        {
+          std::lock_guard<std::mutex> lock(*mutex_pointer);
+          try {
+            search_index.AddFunction(hash_A, hash_B, file_id, function_address);
+          } catch (boost::interprocess::bad_alloc& out_of_space) {
+            printf("[!] boost::interprocess::bad_alloc - no space in index file "
+              "left!\n");
+          }
+        }
+      });
   }
   pool.Stop(true);
 }

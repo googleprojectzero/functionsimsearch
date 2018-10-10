@@ -16,13 +16,17 @@ public:
     std::unique_ptr<FlowgraphWithInstructions> flowgraph);
   FlowgraphWithInstructionsFeatureGenerator(const FlowgraphWithInstructions&
     flowgraph); 
+
   bool HasMoreSubgraphs() const;
   std::pair<Flowgraph*, address> GetNextSubgraph();
+
   bool HasMoreMnemonics() const;
   MnemTuple GetNextMnemTuple();
 
   bool HasMoreImmediates() const;
   uint64_t GetNextImmediate();
+
+  void reinit(); 
 private:
   void init();
   void BuildMnemonicNgrams();

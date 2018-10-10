@@ -29,6 +29,62 @@
 #include "disassembly/functionfeaturegenerator.hpp"
 #include "util/util.hpp"
 
+// Below the code I am following the advice of the C++ standard, section 
+// 17.5.2.1.3. I do not like it, it is a lot of boilerplate code for what should
+// be a first-order language feature.
+//
+enum FeatureOptions : uint32_t {
+  _default_features = 0,
+  _disable_graphs = 1,
+  _disable_mnemonics = 2,
+  _disable_immediates = 4
+};
+
+constexpr FeatureOptions default_features(_default_features);
+constexpr FeatureOptions disable_graphs(_disable_graphs);
+constexpr FeatureOptions disable_mnemonics(_disable_mnemonics);
+constexpr FeatureOptions disable_immediates(_disable_immediates);
+
+enum FeatureLoggingOptions : uint32_t {
+  _default_logging = 0,
+  _dump_graphlets = 1,
+  _dump_mnemonics = 2,
+  _dump_immediates = 4
+};
+
+constexpr FeatureLoggingOptions default_logging(_default_logging);
+constexpr FeatureLoggingOptions dump_graphlets(_dump_graphlets);
+constexpr FeatureLoggingOptions dump_mnemonics(_dump_mnemonics);
+constexpr FeatureLoggingOptions dump_immediates(_dump_immediates);
+
+constexpr enum FeatureOptions operator|(const enum FeatureOptions a,
+  const enum FeatureOptions b) {
+  return static_cast<FeatureOptions>(
+    static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+
+constexpr enum FeatureLoggingOptions operator|(const enum FeatureLoggingOptions a,
+  const enum FeatureLoggingOptions b) {
+  return static_cast<FeatureLoggingOptions>(
+    static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+
+constexpr enum FeatureOptions operator&(const enum FeatureOptions a,
+  const enum FeatureOptions b) {
+  return static_cast<FeatureOptions>(
+    static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
+
+constexpr enum FeatureLoggingOptions operator&(const enum FeatureLoggingOptions a,
+  const enum FeatureLoggingOptions b) {
+  return static_cast<FeatureLoggingOptions>(
+    static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
+
+FeatureOptions DisabledFeatures(bool graphs, bool mnemonics, bool immediates);
+FeatureLoggingOptions FeatureLogging(bool graphs, bool mnemonics, 
+  bool immediates);
+
 // A class to perform per-function SimHash calculation.
 //
 // SimHash was introduced in the paper "Similarity Estimation Techniques from
@@ -47,20 +103,20 @@
 // hash family (subsequent hash functions are used for the calculations).
 class FunctionSimHasher {
 public:
+  static constexpr double kMnemonicDefaultWeight = 0.1;
+  static constexpr double kGraphletDefaultWeight = 1.0;
+  static constexpr double kImmediateDefaultWeight = 0.0;
+
   // The weight_file is a simple memory-mapped map that maps uint64_t IDs for
   // a feature to float weights. The second argument is used to obtain the
   // IDs for features used in the calculation of the SimHash, and mainly used
   // for debugging.
   FunctionSimHasher(const std::string& weight_file,
-    bool disable_graphs = false,
-    bool disable_mnemonic = false,
-    bool disable_immediates = false,
-    bool dump_graphlet_dictionary = false,
-    bool dump_mnem_tuple_dictionary = false,
-    bool dump_immediate_dictionary = false,
-    double default_mnemomic_weight = 0.1,
-    double default_graphlet_weight = 1.0,
-    double default_immediate_weight = 1.0);
+    FeatureOptions options = default_features,
+    FeatureLoggingOptions logging_options = default_logging,
+    double default_mnemomic_weight = kMnemonicDefaultWeight,
+    double default_graphlet_weight = kGraphletDefaultWeight,
+    double default_immediate_weight = kImmediateDefaultWeight);
 
   FunctionSimHasher(std::map<uint64_t, float>* weights);
 
@@ -132,7 +188,7 @@ private:
     uint64_t hash_index, std::vector<uint64_t>* output) const;
 
   // Extend a 64-bit immediate hash.
-  uint64_t CalculateNBitImmediateHash(uint64_t immediate, uint64_t bits,
+  void CalculateNBitImmediateHash(uint64_t immediate, uint64_t bits,
     uint64_t hash_index, std::vector<uint64_t>*output) const;
  
   // Return a weight for a given key.
@@ -161,13 +217,8 @@ private:
   double default_graphlet_weight_;
   double default_immediate_weight_;
 
-  bool disable_graph_hashes_;
-  bool disable_mnemonic_hashes_;
-  bool disable_immediate_hashes_;
-
-  bool dump_graphlet_dictionary_;
-  bool dump_mnem_tuple_dictionary_;
-  bool dump_immediate_dictionary_;
+  FeatureOptions feature_options_;
+  FeatureLoggingOptions feature_logging_options_;
 
   // Some primes between 2^63 and 2^64 from CityHash.
   static constexpr uint64_t seed0_ = 0xc3a5c85c97cb3127ULL;

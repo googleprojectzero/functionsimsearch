@@ -1,12 +1,10 @@
-// DEBUG remove
-#include <fstream>
-
 #include <map>
 #include <string>
 #include <vector>
 
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphwithinstructions.hpp"
+#include "disassembly/extractimmediate.hpp"
 
 #include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 
@@ -20,6 +18,11 @@ FlowgraphWithInstructionsFeatureGenerator::FlowgraphWithInstructionsFeatureGener
 FlowgraphWithInstructionsFeatureGenerator::FlowgraphWithInstructionsFeatureGenerator(
   std::unique_ptr<FlowgraphWithInstructions> flowgraph) :
     flowgraph_(std::move(flowgraph)) {
+  init();
+}
+
+void FlowgraphWithInstructionsFeatureGenerator::reinit() {
+  // Fill the internal queues with the features again.
   init();
 }
 
@@ -42,19 +45,29 @@ void FlowgraphWithInstructionsFeatureGenerator::init() {
 
 void FlowgraphWithInstructionsFeatureGenerator::FindImmediateValues() {
   // Run through all the instructions again.
-  std::ofstream opfile;
-  opfile.open("/tmp/operands.txt", std::ofstream::out | std::ofstream::app);
- 
   for (const auto& pair : flowgraph_->GetInstructions()) {
-    opfile << pair.first << std::endl;
-    for (const Instruction& instruction : pair.second) {
+    // Some disassemblers give us basic blocks with no instructions (DynInst).
+    if (pair.second.size() == 0) {
+      continue;
+    }
+    // Always skip the last instruction in a basic block, as it is a branch
+    // and hence does not contain a useful operand.
+    for (uint64_t index = 0; index < pair.second.size()-1; ++index) {
+      const Instruction& instruction = pair.second[index];
       for (const std::string& operand : instruction.GetOperands()) {
-        // What do we do now?
-        opfile << operand << std::endl;
+        std::vector<uint64_t> immediates;
+        ExtractImmediateFromString(operand, &immediates);
+        for (uint64_t immediate : immediates) {
+          // Only consider immediates as useful that are not divisible by 4,
+          // which should remove most stack offsets. Also removes data structure
+          // offsets, though.
+          if (immediate % 4) {
+            immediates_.push(immediate);
+          }
+        }
       }
     }
   }
-  opfile << "----" << std::endl;
 }
 
 void FlowgraphWithInstructionsFeatureGenerator::BuildMnemonicNgrams() {

@@ -56,7 +56,7 @@ TEST(flowgraphwithinstructions, creategraph) {
   }
 
   // The Dyninst output for the simhash for the function is
-  // 9c5b458691685f5e76a3474775cba64e.
+  // ACEB07449170DFCF56df46c771e9a4df.
 
   // Check fg.
   {
@@ -74,7 +74,7 @@ TEST(flowgraphwithinstructions, creategraph) {
   }
   // Check fg_dyninst
   {
-    FunctionSimHasher sim_hasher("", false, false, false, false);
+    FunctionSimHasher sim_hasher("");
     std::vector<FeatureHash> feature_hashes;
     std::vector<uint64_t> hashes;
     FlowgraphWithInstructionsFeatureGenerator generator(*fg_dyninst);
@@ -84,8 +84,8 @@ TEST(flowgraphwithinstructions, creategraph) {
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
 
-    EXPECT_EQ(hash1, 0x9c5b458691685f5e);
-    EXPECT_EQ(hash2, 0x76a3474775cba64e); 
+    EXPECT_EQ(hash1, 0xACEB07449170DFCF);
+    EXPECT_EQ(hash2, 0x56df46c771e9a4df);
   }
 }
 
