@@ -31,6 +31,14 @@
 
 DEFINE_string(data, "./data", "Directory for sourcing data");
 DEFINE_string(weights, "weights.txt", "Feature weights file");
+
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
+
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
 #ifndef gflags
@@ -38,7 +46,6 @@ using namespace google;
 #else
 using namespace gflags;
 #endif
-
 
 using namespace std;
 
@@ -133,8 +140,11 @@ int main(int argc, char** argv) {
 
   // Training has been performed. Instantiate two FunctionSimHasher, one with
   // the new weights, one without.
-  FunctionSimHasher hash_no_weight("", false);
-  FunctionSimHasher hash_weights(outputfile, false);
+  FunctionSimHasher hash_no_weight("", default_features, default_logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
+
+  FunctionSimHasher hash_weights(outputfile);
 
   double attraction_mean_trained = 0;
   double attraction_mean_untrained = 0;

@@ -1,13 +1,35 @@
 #!/usr/bin/python3
 
 """
-  This script loads a weights file together with a validation data directory and
-  generates data for a ROC curve given different "minimum distances".
+  This script loads a dump of a search database and a symbol file. From this,
+  it generates the TPR, FPR, IRR's for both exact search (without using the
+  permutation-based LSH) and approximate search.
 
-  Precision and Recall are calculated using their information-retrieval versions:
+  TPR - # of retrieved relevant / # total relevant
+  FPR - # of retrieved irrelevant / # total irrelevant
+  IRR - # of retrieved irrelevant / # total retrieved
 
-  Precision = # of retrieved relevant / # of total retrieved
-  Recall = # of retrieved relevant / # of total relevant
+  In the default setting (which is used for the untrained approach), the script
+  does the following:
+
+  1. Group all functions that share the same symbol together.
+  2. Select 300 random function groups.
+  3. Pick a random element from each function group.
+  4. Perform a search (both precise and approximate), treat the other members
+     of the same function group as the "relevant" examples, and everything else
+     as irrelevant.
+
+  If we wish to evaluate the performance on trained data, our situation is a bit
+  different - we need to provide a list of functions that were not know at
+  training time instead of step (2) and (3) above. Instead, we need to do the
+  following:
+
+  1. Group all functions that share the same symbol together.
+  2. Load a list of functions that were unknown at training time, and obtain
+     their relevant function groups.
+  3. Pick the unknown function.
+  4. Perform a search and proceed as above.
+
 """
 from collections import defaultdict
 import random, sys
@@ -28,7 +50,19 @@ flags.DEFINE_string('dbdump', 'dbdump.txt', 'Database dump in the same ' +\
 flags.DEFINE_string('index', 'db.index', 'The search index that the previous ' +\
   'two arguments depend on / are generated from.')
 
+flags.DEFINE_bool('verbose', False, 'Dump debugging information.')
+
+flags.DEFINE_bool('trained', False, 'Use mode for dealing w trained data.')
+
+flags.DEFINE_string('validation_directory', 
+  '/media/thomasdullien/september_20_train/validation_data_seen/',
+  'A list of the functions that were not visible at training time.')
+
 FLAGS = flags.FLAGS
+
+def log(s):
+  if FLAGS.verbose:
+    print(s)
 
 class SearchResult:
   def __init__(self, distance, function_info):
@@ -38,24 +72,33 @@ class SearchResult:
     self.file_name = function_info[2]
     self.file_id = function_info[3]
     self.address = function_info[4]
+  def __str__(self):
+    retval = "{ distance: %d, simhash: %s, function_name: %s, file_name: %s, " +\
+      "file_id: %s, address: %s"
+    retval = retval % (self.distance, self.simhash, self.function_name,
+      self.file_name, self.file_id, self.address)
+    return retval
 
 class LabeledDataManager:
   def __init__(self, symbols, dbdump, index):
     self.total_number_of_functions = 0
     # A dictionary that maps a tuple (file_id, address) to the full description
-    # of that function (e.g. a tuple consisting of (hash, function, file_name,
+    # of that function (e.g. a tuple consisting of (hash, function_sym, file_name,
     # file_id, address).
     self.function_lookup = {}
     # Populate this dictionary. Retrieve functions and file ids and addresses.
     functions = functionsimsearchutil.read_inputs(symbols, dbdump, True)
     self.function_lookup = {}
     for function in functions:
-      self.function_lookup[int(function[3], 16), int(function[4], 16)] = function
+      file_id = int(function[3], 16)
+      address = int(function[4], 16)
+      self.function_lookup[file_id, address] = function
 
     # A dictionary that maps a function name to a list of it's implementations.
     self.functions_to_implementations = defaultdict(list)
     for function in functions:
-      self.functions_to_implementations[function[1]].append(function)
+      function_sym = function[1]
+      self.functions_to_implementations[function_sym].append(function)
       self.total_number_of_functions = self.total_number_of_functions + 1
 
     # The actual search index.
@@ -123,19 +166,56 @@ class LabeledDataManager:
     return relevant_count
 
   def get_function_subset(self, number, get_all = False):
-    if get_all or number > len(self.functions_to_implementations.keys()):
-      return [x for x in self.functions_to_implementations.keys()]
-    function_subset = np.random.choice( [ x for x in function_map.keys() ],
-      number, replace=False)
-    return function_subset
+    if not FLAGS.trained:
+      log("Untrained mode, checking for %d functions (%d max)." % (number,
+        len(self.functions_to_implementations.keys())))
+      if get_all or number > len(self.functions_to_implementations.keys()):
+        return [x for x in self.functions_to_implementations.keys()]
+      function_subset = np.random.choice(
+        [ x for x in self.functions_to_implementations.keys() ], number,
+        replace=False)
+      return function_subset
+    else:
+      # Load the attract.txt from the validation data directory, extract the
+      # second column and de-duplicate it.
+      attract_txt = set([ line.split(" ")[1] for line in
+        open(FLAGS.validation_directory + "/attract.txt", "rt").readlines() ])
+      file_ids_and_addresses = [ (int(token.split(":")[0], 16),
+          int(token.split(":")[1], 16)) for token in attract_txt]
+      function_subset = []
+      self.validation_symbol_to_function = {}
+      for file_id, address in file_ids_and_addresses:
+        function_sym = self.function_lookup[file_id, address][1]
+        self.validation_symbol_to_function[function_sym] = (file_id, address)
+        log("Validation function for %s is %lx %lx" % (function_sym, file_id,
+          address))
+        function_subset.append( function_sym )
+      log("function_subset is %s" % function_subset.__str__())
+      return function_subset
 
-  def random_implementation(self, function_name):
-    return random.choice(self.functions_to_implementations[function_name])
+  def pick_implementation(self, function_name):
+    if not FLAGS.trained:
+      log("There are %d implementations of %s" % (
+        len(self.functions_to_implementations[function_name]), function_name))
+      return random.choice(self.functions_to_implementations[function_name])
+    else:
+      function_to_return = self.function_lookup[
+        self.validation_symbol_to_function[function_name]]
+      log("Returning function %s %lx %lx as implementation." % (function_name,
+        self.validation_symbol_to_function[function_name][0],
+        self.validation_symbol_to_function[function_name][1]))
+      return function_to_return
 
   def get_implementations(self, function_name):
     return self.functions_to_implementations[function_name]
 
   def how_many_relevant_and_irrelevant(self, function_name):
+    log("Determining how many relevant implementations exist for %s" % 
+      function_name.__str__())
+    for implementation in self.functions_to_implementations[function_name]:
+      log(implementation.__str__())
+    log("We have %d implementations." %
+      len(self.functions_to_implementations[function_name]))
     relevant = len(self.functions_to_implementations[function_name])
     return (relevant, self.total_number_of_functions - relevant)
 
@@ -149,12 +229,14 @@ def main(argv):
 
   data = LabeledDataManager(FLAGS.symbols, FLAGS.dbdump, FLAGS.index)
 
+  log("Attempt to retrieve 300 random function families.")
   function_subset = data.get_function_subset(300, get_all=True)
+  log("Got %d function families." % len(function_subset))
 
   exact_results = {}
   approximate_results = {}
 
-  for distance in range(128, 0, -1):
+  for distance in range(0, 128, 1):
     true_positive_rates_exact = []
     true_positive_rates_approx = []
     false_positive_rates_exact = []
@@ -163,17 +245,31 @@ def main(argv):
     irrelevant_in_approx = []
 
     for function in function_subset:
-      implementation = data.random_implementation(function)
+      # Pick a random implementation of a given function.
+      log("Picking function %s" % function.__str__())
+      implementation = data.pick_implementation(function)
       simhash = implementation[0]
+
+      log("Picked function with SimHash %lx %lx" % (data.split_uint128(simhash)))
       if not exact_results.get(function):
         exact_results[function] = data.search_exact(simhash)
       if not approximate_results.get(function):
         approximate_results[function] = data.search_approximate(simhash)
 
+      log("exact_results[%s] are %s" % (function,
+        [(x.distance, x.simhash) for x in exact_results[function][0:10]]))
       exact = [result for result in exact_results[function] if result.distance >=
         (128.0 - distance)]
+
+      log("approximate_results[%s] are %s" % (function,
+        approximate_results[function][0:10].__str__()))
       approximate = [result for result in approximate_results[function] if
         result.distance >= (128.0 - distance)]
+
+      log("Exact search at distance %d yielded %d results" % (distance,
+        len(exact)))
+      log("Approximate search at distance %d yielded %d results" % (
+        distance, len(approximate)))
 
       relevant_exact = data.count_relevant_results(function, exact)
       relevant_approximate = data.count_relevant_results(function, approximate)

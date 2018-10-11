@@ -39,7 +39,7 @@ public:
   // Allow users of this class to iterate through all functions in the binary.
   std::unique_ptr<FunctionFeatureGenerator> GetFeatureGenerator(
     uint32_t function_index) const;
-  std::unique_ptr<Flowgraph> GetFlowgraph(uint32_t function_index) const;
+  //std::unique_ptr<Flowgraph> GetFlowgraph(uint32_t function_index) const;
   std::unique_ptr<FlowgraphWithInstructions> GetFlowgraphWithInstructions(
     uint32_t function_index) const;
   InstructionGetter GetInstructionGetter() const;
@@ -54,6 +54,9 @@ public:
 private:
   void RefreshFunctionVector();
   void LoadFromJSONStream(std::istream& jsondata);
+  // Dyninst-specific function to generate a FlowgraphWithInstructions.
+  std::unique_ptr<FlowgraphWithInstructions> GetFlowgraphWithInstructionsDyninst(
+    uint32_t function_index) const;
   const std::string type_;
   const std::string inputfile_;
   // Dyninst-specific data members.

@@ -3,7 +3,6 @@
 #include "InstructionDecoder.h"
 
 #include "disassembly/disassembly.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
@@ -38,7 +37,8 @@ FeatureHash GetHashForFileAndFunction(FunctionSimHasher& hasher,
   }
 
   uint32_t index = disassembly.GetIndexByAddress(address);
-  std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+  std::unique_ptr<FlowgraphWithInstructions> graph =
+    disassembly.GetFlowgraphWithInstructions(index);
   std::unique_ptr<FunctionFeatureGenerator> generator =
     disassembly.GetFeatureGenerator(index);
   std::vector<uint64_t> hashes;

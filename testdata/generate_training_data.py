@@ -492,11 +492,15 @@ def WriteSeenTrainingAndValidationData(symbol_to_file_and_address, FLAGS):
   training_attraction_set = set()
   validation_attraction_set = set()
   for function_family, elements in symbol_to_file_and_address.items():
+    # Pick a random element from the family.
     validation_element = random.choice(elements)
+    # Take the remaining members of the function family.
     training_elements = [ x for x in elements if x != validation_element ]
+    # Take all the pairs of elements for the function family \ validation_element
     training_attraction_set.update(
       [ (x, y) for x in training_elements for y in training_elements if
         x < y ])
+    # The second element of the tuple is the validation_element.
     validation_attraction_set.update(
       [ (x, y) for x in training_elements for y in [validation_element] ])
   print("'Seen' case: Got %d training pairs, %d validation pairs" %

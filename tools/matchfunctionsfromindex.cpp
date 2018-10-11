@@ -18,7 +18,6 @@
 #include <gflags/gflags.h>
 
 #include "disassembly/disassembly.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
@@ -36,6 +35,13 @@ DEFINE_uint64(minimum_function_size, 5, "Minimum size of a function to be added"
 DEFINE_uint64(max_matches, 5, "Maximum number of matches per query");
 DEFINE_double(minimum_percentage, 0.8, "Minimum similarity");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
+
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
 
 // The google namespace is there for compatibility with legacy gflags and will
 // be removed eventually.
@@ -117,7 +123,9 @@ int main(int argc, char** argv) {
   std::atomic_ulong atomic_processed_functions(0);
   std::atomic_ulong* processed_functions = &atomic_processed_functions;
   uint64_t number_of_functions = disassembly.GetNumberOfFunctions();
-  FunctionSimHasher hasher(FLAGS_weights);
+  FunctionSimHasher hasher(FLAGS_weights, default_features, default_logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
 
   uint64_t function_index = 0;
 
@@ -133,7 +141,8 @@ int main(int argc, char** argv) {
       file_id, minimum_size, max_matches, minimum_percentage,
       number_of_functions, &hasher]
         (int threadid) {
-      std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+      std::unique_ptr<FlowgraphWithInstructions> graph =
+        disassembly.GetFlowgraphWithInstructions(index);
       Address function_address = disassembly.GetAddressOfFunction(index);
 
       uint64_t branching_nodes = graph->GetNumberOfBranchingNodes();

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -20,7 +21,7 @@
 
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "disassembly/functionfeaturegenerator.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
+#include "disassembly/flowgraphwithinstructionsfeaturegenerator.hpp"
 #include "disassembly/pecodesource.hpp"
 #include "disassembly/disassembly.hpp"
 
@@ -145,13 +146,11 @@ void Disassembly::DisassembleFromAddress(uint64_t address, bool recursive) {
 std::unique_ptr<FunctionFeatureGenerator> Disassembly::GetFeatureGenerator(
   uint32_t function_index) const {
   if (uses_dyninst_) {
-    std::scoped_lock lock(dyninst_api_mutex_);
-    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
-      function_index);
-    std::unique_ptr<FunctionFeatureGenerator> generator(
-      static_cast<FunctionFeatureGenerator *>(new DyninstFeatureGenerator(
-      function)));
-    return generator;
+    std::unique_ptr<FlowgraphWithInstructions> cfg =
+      GetFlowgraphWithInstructionsDyninst(function_index);
+    return std::unique_ptr<FunctionFeatureGenerator>(
+      static_cast<FunctionFeatureGenerator *>(
+        new FlowgraphWithInstructionsFeatureGenerator(std::move(cfg))));
   } else {
     return std::unique_ptr<FunctionFeatureGenerator>(
       new FlowgraphWithInstructionsFeatureGenerator(
@@ -161,35 +160,35 @@ std::unique_ptr<FunctionFeatureGenerator> Disassembly::GetFeatureGenerator(
 }
 
 std::unique_ptr<FlowgraphWithInstructions>
+  Disassembly::GetFlowgraphWithInstructionsDyninst(uint32_t function_index) const {
+  std::scoped_lock lock(dyninst_api_mutex_);
+  Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
+    function_index);
+  std::unique_ptr<FlowgraphWithInstructions> flowgraph(
+    new FlowgraphWithInstructions());
+  BuildFlowgraph(function, flowgraph.get());
+  InstructionGetter get_block = GetInstructionGetter();
+  std::vector<address> nodes;
+  flowgraph->GetNodes(&nodes);
+  for (const address& node_address : nodes) {
+    std::vector<Instruction> instructions;
+    get_block(node_address, &instructions);
+    flowgraph->AddInstructions(node_address, instructions);
+  }
+  return flowgraph;
+}
+
+std::unique_ptr<FlowgraphWithInstructions>
   Disassembly::GetFlowgraphWithInstructions(
   uint32_t function_index) const {
   if (uses_dyninst_) {
-    std::scoped_lock lock(dyninst_api_mutex_);
-    Dyninst::ParseAPI::Function* function = dyninst_functions_.at(
-      function_index); 
-    std::unique_ptr<FlowgraphWithInstructions> flowgraph(
-      new FlowgraphWithInstructions());
-    BuildFlowgraph(function, flowgraph.get());
-    InstructionGetter get_block = GetInstructionGetter();
-    std::vector<address> nodes;
-    flowgraph->GetNodes(&nodes);
-    for (const address& node_address : nodes) {
-      std::vector<Instruction> instructions;
-      get_block(node_address, &instructions);
-      flowgraph->AddInstructions(node_address, instructions);
-    }
-    return flowgraph;
+    return GetFlowgraphWithInstructionsDyninst(function_index);
   } else if (function_index < GetNumberOfFunctions()) {
     FlowgraphWithInstructions* flowgraph = json_functions_[function_index].get();
     return std::unique_ptr<FlowgraphWithInstructions>(
       new FlowgraphWithInstructions(*flowgraph));
   }
   return std::unique_ptr<FlowgraphWithInstructions>(nullptr);
-}
-
-std::unique_ptr<Flowgraph> Disassembly::GetFlowgraph(uint32_t function_index)
-  const {
-  return GetFlowgraphWithInstructions(function_index);
 }
 
 uint64_t Disassembly::GetAddressOfFunction(uint32_t function_index) const {

@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "disassembly/flowgraph.hpp"
-#include "disassembly/functionfeaturegenerator.hpp"
 #include "third_party/json/src/json.hpp"
 
 // A class that keeps both the CFG and associated vectors of mnemonics for the
@@ -26,22 +25,6 @@ public:
   FlowgraphWithInstructions(const FlowgraphWithInstructions& original);\
   FlowgraphWithInstructions();
   std::string GetDisassembly() const;
-};
-
-class FlowgraphWithInstructionsFeatureGenerator :
-  public FunctionFeatureGenerator {
-public:
-  FlowgraphWithInstructionsFeatureGenerator(const FlowgraphWithInstructions&
-    flowgraph);
-  bool HasMoreSubgraphs() const;
-  std::pair<Flowgraph*, address> GetNextSubgraph();
-  bool HasMoreMnemonics() const;
-  MnemTuple GetNextMnemTuple();
-private:
-  void BuildMnemonicNgrams();
-  FlowgraphWithInstructions flowgraph_;
-  std::queue<std::pair<address, uint32_t>> nodes_and_distance_;
-  std::queue<MnemTuple> mnem_tuples_;
 };
 
 bool FlowgraphWithInstructionsFromJSON(const char* json,

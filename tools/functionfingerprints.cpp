@@ -18,7 +18,6 @@
 #include <gflags/gflags.h>
 
 #include "disassembly/disassembly.hpp"
-#include "disassembly/dyninstfeaturegenerator.hpp"
 #include "disassembly/flowgraph.hpp"
 #include "disassembly/flowgraphutil_dyninst.hpp"
 #include "searchbackend/functionsimhash.hpp"
@@ -33,9 +32,18 @@ DEFINE_string(weights, "", "Feature weights file");
 DEFINE_string(function_address, "", "Address of function");
 DEFINE_bool(disable_graphs, false, "Disable graphs as features");
 DEFINE_bool(disable_instructions, false, "Disable instructions as features");
+DEFINE_bool(disable_immediates, false, "Disable instructions as features");
 DEFINE_bool(no_shared_blocks, false, "Skip functions with shared blocks.");
-DEFINE_bool(dump_graphlet_features, false, "Dump graphlet features into /var/tmp.");
-DEFINE_bool(dump_instruction_features, false, "Dump instruction features into /var/tmp.");
+DEFINE_bool(dump_graphlets, false, "Dump graphlet features into /var/tmp.");
+DEFINE_bool(dump_mnemonics, false, "Dump instruction features into /var/tmp.");
+DEFINE_bool(dump_immediates, false, "Dump immediate features into /var/tmp.");
+
+DEFINE_double(default_graphlet_weight, FunctionSimHasher::kGraphletDefaultWeight,
+  "Default weight for graphlets.");
+DEFINE_double(default_mnemonic_weight, FunctionSimHasher::kMnemonicDefaultWeight,
+  "Default weight for mnemonics.");
+DEFINE_double(default_immediate_weight,
+  FunctionSimHasher::kImmediateDefaultWeight, "Default weight for immediates.");
 
 //
 // The google namespace is there for compatibility with legacy gflags and will
@@ -77,12 +85,18 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  FunctionSimHasher sim_hasher(FLAGS_weights, FLAGS_disable_graphs,
-    FLAGS_disable_instructions, FLAGS_dump_graphlet_features,
-    FLAGS_dump_instruction_features);
+  FeatureOptions features = DisabledFeatures(FLAGS_disable_graphs,
+    FLAGS_disable_instructions, FLAGS_disable_immediates);
+  FeatureLoggingOptions logging = FeatureLogging(FLAGS_dump_graphlets,
+    FLAGS_dump_mnemonics, FLAGS_dump_immediates);
+
+  FunctionSimHasher sim_hasher(FLAGS_weights, features, logging,
+    FLAGS_default_mnemonic_weight, FLAGS_default_graphlet_weight,
+    FLAGS_default_immediate_weight);
 
   for (uint32_t index = 0; index < disassembly.GetNumberOfFunctions(); ++index) {
-    std::unique_ptr<Flowgraph> graph = disassembly.GetFlowgraph(index);
+    std::unique_ptr<FlowgraphWithInstructions> graph =
+      disassembly.GetFlowgraphWithInstructions(index);
     Address function_address = disassembly.GetAddressOfFunction(index);
 
     // Skip functions that contain shared basic blocks.

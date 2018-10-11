@@ -14,7 +14,7 @@ void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB,
 }
 
 // Writes a JSON file for a given MnemTuple.
-void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB, 
+void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB,
   const MnemTuple& tuple) {
   char buf[256];
   sprintf(buf, "/var/tmp/%16.16lx%16.16lx.json", hashA, hashB);
@@ -24,3 +24,12 @@ void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB,
     << std::get<2>(tuple) << " ]" << std::endl;
 }
 
+// Writes an immediate that was encountered.
+void WriteFeatureDictionaryEntry(uint64_t hashA, uint64_t hashB, uint64_t
+  immediate) {
+  std::ofstream immediates;
+  immediates.open("/var/tmp/immediates.txt",
+    std::ofstream::out | std::ofstream::app);
+  immediates << std::hex << hashA << " " << hashB << " " << immediate
+    << std::endl;
+}

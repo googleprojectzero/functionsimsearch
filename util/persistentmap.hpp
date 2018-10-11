@@ -111,8 +111,9 @@ public:
   PersistentMap(const std::string& filename, bool create) :
     filename_(filename),
     mapname_("map"),
+    // Create a 1GB map by default.
     segment_(new managed_mapped_file(open_or_create, filename.c_str(),
-      1ul << 24)),
+      1ul << 30)),
     allocator_(segment_->get_segment_manager()) {
     Init(create);
   }
