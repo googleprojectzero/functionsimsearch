@@ -1,11 +1,12 @@
 CPP = g++
-CPPFLAGS += -ggdb -O3 -std=c++17 -fPIE
+CPPFLAGS += -ggdb -O0 -std=c++17 -fPIE
 LIBDIR = -L./third_party/pe-parse/pe-parser-library -L./third_party/libdwarf/libdwarf
 INCLUDEDIR = -Ithird_party/spii/include -I./ -Ithird_party/spii/thirdparty/Eigen
 LIBS = -lparseAPI -linstructionAPI -lsymtabAPI -lsymLite -ldynDwarf -ldynElf \
        -lcommon -lelf -ldwarf -lpthread -lpe-parser-library -lspii -lgflags
 
 OBJ = build/util.o build/util_with_dyninst.o build/disassembly.o \
+      build/extractimmediate.o \
       build/pecodesource.o build/flowgraph.o \
       build/flowgraphwithinstructions.o \
       build/flowgraphwithinstructionsfeaturegenerator.o \
@@ -32,6 +33,7 @@ ALL = bin/disassemble bin/dotgraphs bin/graphhashes bin/addfunctionstoindex \
 TESTS = build/bitpermutation_test.o \
         build/simhashsearchindex_test.o \
         build/flowgraphwithinstructions_test.o \
+        build/extractimmediate_test.o \
         build/testutil.o \
         build/functionsimhash_test.o \
         build/buffertokeniterator_test.o build/mappedtextfile_test.o \
