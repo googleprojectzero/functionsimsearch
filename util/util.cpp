@@ -120,4 +120,15 @@ FeatureHash StringToFeatureHash(const std::string& hash_as_string) {
   return std::make_pair(hashA, hashB);
 }
 
+uint64_t NGramTuplesFromSequence(const std::vector<
+  std::pair<address, std::string>>& sequence,
+  std::vector<std::vector<std::string>>* tuples, uint32_t N) {
+
+  for (uint64_t index = 0; index + N < sequence.size(); ++index) {
+    std::vector<std::string>& tuple = tuples.emplace_back(N);
+    for (uint32_t string_index = 0; string_index < N; ++string_index) {
+      tuple[string_index] = sequence[index + string_index];
+    }
+  }
+}
 
