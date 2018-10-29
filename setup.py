@@ -2,7 +2,8 @@ from distutils.core import setup, Extension
 
 module = Extension(
   'functionsimsearch',
-  sources = [ 'disassembly/flowgraphwithinstructions.cpp',
+  sources = [ 'disassembly/extractimmediate.cpp',
+    'disassembly/flowgraphwithinstructions.cpp',
     'disassembly/flowgraphwithinstructionsfeaturegenerator.cpp',
     'disassembly/flowgraph.cpp',
     'disassembly/flowgraphutil.cpp',
