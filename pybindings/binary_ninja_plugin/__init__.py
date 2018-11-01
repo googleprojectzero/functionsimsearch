@@ -14,8 +14,18 @@ PluginCommand.register_for_function(
   "Add function to search index",
   plugin.save_hash)
 
+PluginCommand.register_for_function(
+  "[FSS] Save all hashes",
+  "Add all function to search index",
+  plugin.save_all_functions)
+
 # register plugin
 PluginCommand.register_for_function(
   "[FSS] Search for similar functions",
   "Run similarity search based on current function hash",
   plugin.find_hash)
+
+PluginCommand.register_for_function(
+  "[FSS] Find similar functions for ALL functions",
+  "Run similarity search based for each function",
+  plugin.find_all_hashes)

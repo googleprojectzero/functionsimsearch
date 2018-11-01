@@ -14,7 +14,9 @@ from metadata import Metadata
 # I'm sure it works on those architectures
 supported_arch = [
   'linux-x86',
-  'linux-x86_64'
+  'linux-x86_64',
+  'windows-x86',
+  'windows-x86_64'
 ]
 
 # Default location of simhash database
@@ -39,7 +41,7 @@ class Plugin:
     self.metadata = Metadata(location+ '.meta')
   
 
-  def extract_flowgraph_hash(self, function):
+  def extract_flowgraph_hash(self, function, minimum_size = 5):
     """
       Generates a flowgraph object that can be fed into FunctionSimSearch from a
       given address in Binary Ninja and returns set of hashes.
@@ -63,7 +65,7 @@ class Plugin:
           local_node = []
           graph.append((position, block.start+shift))
           position = block.start + shift
-      
+
       for edge in block.outgoing_edges:
         graph.append((position, edge.target.start))
 
@@ -81,7 +83,9 @@ class Plugin:
 
     for edge in graph:
       flowgraph.add_edge(edge[0], edge[1])
-    
+
+    if flowgraph.number_of_branching_nodes() < minimum_size:
+      return (None, None)
     hasher = fss.SimHasher()
 
     return hasher.calculate_hash(flowgraph)
@@ -94,11 +98,21 @@ class Plugin:
 
     return long(h.hexdigest()[0:16], 16)
 
+  def save_single_function_hash(self, bv, search_index, function):
+    """
+      Save the hash of a given function into a given search index.
+    """
+    # TODO: detect if we are opening database instead of binary
+    exec_id = self.get_exec_id(bv.file.filename)
+    h1, h2 = self.extract_flowgraph_hash(function)
+    if h1 and h2:
+      search_index.add_function(h1, h2, exec_id, function.start)
+      bn.log_info('[+] Added function <{:x}:0x{:x} {:x}-{:x}> to search index.'.format(exec_id, function.start, h1, h2))
+      self.metadata.add(exec_id, function.start, bv.file.filename, function.name)
+    else:
+      bn.log_info('[-] Did not add function <{:x}:0x{:x}> to search index.'.format(exec_id, function.start)) 
 
-  def save_hash(self, bv, current_function):
-    """
-      Save hash of current function into search index.
-    """
+  def init_index(self, bv, current_function):
     if not self.sim_hash_location:
       self.init_db()
 
@@ -107,63 +121,67 @@ class Plugin:
       bn.log_error('[!] Right now this plugin supports only the following architectures: ' + str(supported_arch))
       return -1
 
-    h1, h2 = self.extract_flowgraph_hash(current_function)
-
     if os.path.isfile(self.sim_hash_location):
       create_index = False
     else:
       create_index = True
-    
-    search_index = fss.SimHashSearchIndex(self.sim_hash_location, create_index, 28)
-    # TODO: detect if we are opening database instead of binary
-    exec_id = self.get_exec_id(bv.file.filename)
-    search_index.add_function(h1, h2, exec_id, current_function.start)
-    bn.log_info('[+] Added function <{:x}:0x{:x} {:x}-{:x}> to search index.'.format(exec_id, current_function.start, h1, h2))
-    
-    self.metadata.add(exec_id, current_function.start, bv.file.filename, current_function.name)
+
+    search_index = fss.SimHashSearchIndex(self.sim_hash_location, create_index, 50)
+    return search_index
+ 
+  def save_hash(self, bv, current_function):
+    """
+      Save hash of current function into search index.
+    """
+    search_index = self.init_index(bv, current_function)
+    self.save_single_function_hash(bv, search_index, current_function)
+ 
+  def save_all_functions(self, bv, current_function):
+    """
+      Walk through all functions and save them into the index.
+    """
+    search_index = self.init_index(bv, current_function)
+    for function in bv.functions:
+      self.save_single_function_hash(bv, search_index, function)
+
+  def add_report_from_result(self, results, report, address, minimal_match = 100):
+    results = [ r for r in results if r[0] > minimal_match ]
+    if len(results) > 0:
+      report += "## Best match results for 0x{:x}\n".format(address)
+      for r in results:
+        m = self.metadata.get(r[1], r[2]) # file name, function name
+        if not m or len(m) == 0: 
+          line = "- {:f} - {:x}:0x{:x}".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
+        else:
+          line = "- {:f} - {:x}:0x{:x} {} '{}'".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
+        report += line + "\n"
+    return report
+
+  def find_function_hash(self, bv, h1, h2, address, search_index, report):
+    results = search_index.query_top_N(h1, h2, 5)
+    return self.add_report_from_result(results, report, address)
 
   def find_hash(self, bv, current_function):
     """
       Find functions similar to the current one.
     """
-    if not self.sim_hash_location:
-      self.init_db()
-
-    # Supported platform check
-    if bv.platform.name not in supported_arch:
-      bn.log_error('[!] Right now this plugin supports only the following architectures: ' + str(supported_arch))
-      return -1
-    
+    search_index = self.init_index(bv, current_function)
     h1, h2 = self.extract_flowgraph_hash(current_function)
-
-    if os.path.isfile(self.sim_hash_location):
-      create_index = False
+    if h1 and h2:
+      report = self.find_function_hash(bv, h1, h2, current_function.start, search_index, "")
+      bn.interaction.show_markdown_report('Function Similarity Search Report', report)
     else:
-      create_index = True
-    
-    search_index = fss.SimHashSearchIndex(self.sim_hash_location, create_index, 28)
-    results = search_index.query_top_N(h1, h2, 5)
+      bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(exec_id, function.start))
 
-    # TODO: refactor, possibly with report template
+  def find_all_hashes(self, bv, current_function):
+    search_index = self.init_index(bv, current_function)
     report = ""
+    for function in bv.functions:
+      h1, h2 = self.extract_flowgraph_hash(function)
+      if h1 and h2:
+        report = self.find_function_hash(bv, h1, h2, function.start, search_index, report)
+      else:
+        bn.log_info('[-] Did not search for function 0x{:x}.'.format(function.start))
 
-    if len(results) == 0:
-      report += "# No similar functions found"
-    else:
-      #TODO: add better header, but that will require some refactoring of extract function
-      report += "# Best match results\n"
-      for r in results:
-        print r
-        m = self.metadata.get(r[1], r[2]) # file name, function name
-        
-        if len(m) == 0: 
-          line = "- {:f} - {:x}:0x{:x}".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
-        else:
-          line = "- {:f} - {:x}:0x{:x} {} '{}'".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
-
-        report += line + "\n"
-
-    # Display results
     bn.interaction.show_markdown_report('Function Similarity Search Report', report)
 
-  
