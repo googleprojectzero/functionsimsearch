@@ -58,10 +58,11 @@ void FlowgraphWithInstructionsFeatureGenerator::FindImmediateValues() {
         std::vector<uint64_t> immediates;
         ExtractImmediateFromString(operand, &immediates);
         for (uint64_t immediate : immediates) {
-          // Only consider immediates as useful that are not divisible by 4,
-          // which should remove most stack offsets. Also removes data structure
-          // offsets, though.
-          if (immediate % 4) {
+          // Only consider immediates as useful that are either greater than
+          // 0x4000 or not divisible by 4. This should remove most stack offsets.
+          // Also removes data structure offsets, though.
+          if ((abs(static_cast<int64_t>(immediate)) > 0x4000) ||
+            (immediate % 4)) {
             immediates_.push(immediate);
           }
         }

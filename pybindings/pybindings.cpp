@@ -281,14 +281,28 @@ static void PySimHasher_dealloc(PySimHasher* self) {
 }
 
 static int PySimHasher_init(PySimHasher* self, PyObject* args, PyObject *kwds) {
-  // No arguments, so no need to parse any.
-  static char* kwlist[] = { (char*)"weights", NULL };
+  static char* kwlist[] = { (char*)"weights",
+    (char*)"mnem_weight",
+    (char*)"graphlet_weight",
+    (char*)"immediate_weight",
+    NULL };
+  double mnem_weight = FunctionSimHasher::kMnemonicDefaultWeight;
+  double graphlet_weight = FunctionSimHasher::kGraphletDefaultWeight;
+  double immediate_weight = FunctionSimHasher::kImmediateDefaultWeight;
+
   char* weightsfile = (char*)"weights.txt";
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", kwlist, &weightsfile)) {
-    PyErr_SetString(functionsimsearch_error, "Expected string argument");
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|sddd", kwlist, &weightsfile,
+      &mnem_weight, &graphlet_weight, &immediate_weight)) {
+    PyErr_SetString(functionsimsearch_error, "Failed to convert arguments.");
     return NULL;
   }
-  self->function_simhasher_ = new FunctionSimHasher(weightsfile);
+  // Debug code to enable logging.
+  FeatureOptions feature_options = default_features;
+  FeatureLoggingOptions logging_options = dump_immediates;
+
+  // End of debug code.
+  self->function_simhasher_ = new FunctionSimHasher(weightsfile,
+    feature_options, logging_options);
   return 0;
 }
 

@@ -103,9 +103,9 @@ FeatureLoggingOptions FeatureLogging(bool graphs, bool mnemonics,
 // hash family (subsequent hash functions are used for the calculations).
 class FunctionSimHasher {
 public:
-  static constexpr double kMnemonicDefaultWeight = 0.1;
+  static constexpr double kMnemonicDefaultWeight = 0.05;
   static constexpr double kGraphletDefaultWeight = 1.0;
-  static constexpr double kImmediateDefaultWeight = 0.0;
+  static constexpr double kImmediateDefaultWeight = 4.0;
 
   // The weight_file is a simple memory-mapped map that maps uint64_t IDs for
   // a feature to float weights. The second argument is used to obtain the

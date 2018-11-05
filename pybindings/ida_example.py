@@ -159,13 +159,16 @@ def save_function(function_address=None):
     executable_id, ida_nalt.get_input_file_path(), address, function_name))
   return True
 
-def load_function(function_address = None, minimum=0):
+def load_function(function_address = None, minimum=0, minsize=6):
   search_index
   sim_hasher
   meta_data
   if function_address == None:
     function_address = here()
   flowgraph = get_flowgraph_from(function_address)
+  branching_nodes = flowgraph.number_of_branching_nodes()
+  if (branching_nodes < minsize):
+    return
   hashes = sim_hasher.calculate_hash(flowgraph)
   executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
   address = long(idaapi.get_func(function_address).start_ea)
@@ -201,7 +204,7 @@ def match_all_functions():
   search_index
   sim_hasher
   for function in Functions(MinEA(), MaxEA()):
-    load_function(function_address=function, minimum=100)
+    load_function(function_address=function, minimum=103)
 
 import ida_idp
 processor_to_call_instructions = { "arm" : "FOO", "pc" : "call" }
