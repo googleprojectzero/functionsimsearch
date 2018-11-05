@@ -151,9 +151,9 @@ class Plugin:
       for r in results:
         m = self.metadata.get(r[1], r[2]) # file name, function name
         if not m or len(m) == 0: 
-          line = "- {:d}/128 - {:f} - {:x}:0x{:x}".format(r[0], max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
+          line = "- {:f} - {:x}:0x{:x}".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
         else:
-          line = "- {:d}/128 - {:f} - {:x}:0x{:x} {} '{}'".format(r[0], max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
+          line = "- {:f} - {:x}:0x{:x} {} '{}'".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
         report += line + "\n"
     return report
 

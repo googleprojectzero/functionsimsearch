@@ -4,6 +4,8 @@
 
 from binaryninja import PluginCommand
 
+import sys
+sys.path.append('/home/thomasdullien/.binaryninja/plugins/fss')
 from modules import main
 
 plugin = main.Plugin()
