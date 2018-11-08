@@ -210,15 +210,6 @@ import ida_idp
 processor_to_call_instructions = { "arm" : "FOO", "pc" : "call" }
 call_instruction_string = processor_to_call_instructions[ida_idp.get_idp_name()]
 
-hotkey_mappings = {
-  "Shift-S", save_function,
-  "Shift-L", load_function,
-  "Shift-A", save_all_functions,
-  "Shift-H", print_hash,
-}
-
-hotkey_contexts = []
-
 try:
   hotkey_context_S
   if idaapi.del_hotkey(hotkey_context_S):
@@ -264,7 +255,7 @@ except:
   # a search index ("simhash.index"), a metadata file ("simhash.meta"), and
   # optionally a feature weights file ("simhash.weights").
   data_directory = AskStr("/var/tmp/",
-    "Please enter a data directory. If no index is found, it will be created.")
+    "Please enter a directory for the search index. If no index is found, it will be created.")
   while not os.path.exists(data_directory):
     data_directory = AskStr("/var/tmp/", 
       "Please enter an EXISTING data directory.")
@@ -288,7 +279,12 @@ except:
     del hotkey_context_A
     del hotkey_context_M
   else:
-    print("FunctionSimSearch: Hotkeys registered.")
+    print("FunctionSimSearch: Hotkeys registered:")
+    print("Shift-S : save_function")
+    print("Shift-L : load_function")
+    print("Shift-H : print_hash")
+    print("Shift-A : save_all_functions")
+    print("Shift-M : match_all_functions")
 
   create_index = True
   if os.path.isfile(index_file):
