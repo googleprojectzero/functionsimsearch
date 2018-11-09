@@ -28,6 +28,7 @@ class Plugin:
   def __init__(self):
     self.sim_hash_location = None
     self.metadata = None
+    self.exec_id_cache = {}
 
   def init_db(self):
     # Fetch location
@@ -39,7 +40,6 @@ class Plugin:
     # setup metadata class
     self.sim_hash_location = location
     self.metadata = Metadata(location+ '.meta')
-  
 
   def extract_flowgraph_hash(self, function, minimum_size = 5):
     """
@@ -72,7 +72,8 @@ class Plugin:
       if local_node:
         nodes.append((position, local_node))
       else:
-        graph.pop(-1)
+        if len(graph) > 0:
+          graph.pop(-1)
 
     # Generate flowgraph
     flowgraph = fss.FlowgraphWithInstructions()
@@ -90,13 +91,14 @@ class Plugin:
 
     return hasher.calculate_hash(flowgraph)
 
-
   def get_exec_id(self, filename):
+    if self.exec_id_cache.has_key(filename):
+      return self.exec_id_cache[filename]
     h = hashlib.sha256()
     with open(filename, 'r') as fh:
       h.update(fh.read())
-
-    return long(h.hexdigest()[0:16], 16)
+    self.exec_id_cache[filename] = long(h.hexdigest()[0:16], 16)
+    return self.exec_id_cache[filename]
 
   def save_single_function_hash(self, bv, search_index, function):
     """
@@ -151,9 +153,9 @@ class Plugin:
       for r in results:
         m = self.metadata.get(r[1], r[2]) # file name, function name
         if not m or len(m) == 0: 
-          line = "- {:f} - {:x}:0x{:x}".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
+          line = "- {:d}/128 - {:f} - {:x}:0x{:x}".format(r[0], max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2])
         else:
-          line = "- {:f} - {:x}:0x{:x} {} '{}'".format(max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
+          line = "- {:d}/128 - {:f} - {:x}:0x{:x} {} '{}'".format(r[0], max(float(r[0]) / 128.0 - 0.5, 0.0)*2, r[1], r[2], m[0], m[1])
         report += line + "\n"
     return report
 
@@ -171,7 +173,7 @@ class Plugin:
       report = self.find_function_hash(bv, h1, h2, current_function.start, search_index, "")
       bn.interaction.show_markdown_report('Function Similarity Search Report', report)
     else:
-      bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(exec_id, function.start))
+      bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(self.get_exec_id(bv.file.filename), function.start))
 
   def find_all_hashes(self, bv, current_function):
     search_index = self.init_index(bv, current_function)
