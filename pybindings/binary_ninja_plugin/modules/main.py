@@ -20,9 +20,8 @@ supported_arch = [
 ]
 
 # Default location of simhash database
-default_sim_hash_location = '/tmp/example.simhash'
+default_sim_hash_location = '/var/tmp/simhash.index'
 default_sim_hash_meta_location = default_sim_hash_location+'.meta'
-
 
 class Plugin:
   def __init__(self):
@@ -100,7 +99,7 @@ class Plugin:
     self.exec_id_cache[filename] = long(h.hexdigest()[0:16], 16)
     return self.exec_id_cache[filename]
 
-  def save_single_function_hash(self, bv, search_index, function):
+  def save_single_function_hash(self, bv, search_index, function, write_meta=True):
     """
       Save the hash of a given function into a given search index.
     """
@@ -111,6 +110,8 @@ class Plugin:
       search_index.add_function(h1, h2, exec_id, function.start)
       bn.log_info('[+] Added function <{:x}:0x{:x} {:x}-{:x}> to search index.'.format(exec_id, function.start, h1, h2))
       self.metadata.add(exec_id, function.start, bv.file.filename, function.name)
+      if write_meta:
+        self.metadata.__save__()
     else:
       bn.log_info('[-] Did not add function <{:x}:0x{:x}> to search index.'.format(exec_id, function.start)) 
 
@@ -144,7 +145,8 @@ class Plugin:
     """
     search_index = self.init_index(bv, current_function)
     for function in bv.functions:
-      self.save_single_function_hash(bv, search_index, function)
+      self.save_single_function_hash(bv, search_index, function, False)
+    self.metadata.__save__()
 
   def add_report_from_result(self, results, report, address, minimal_match = 100):
     results = [ r for r in results if r[0] > minimal_match ]
