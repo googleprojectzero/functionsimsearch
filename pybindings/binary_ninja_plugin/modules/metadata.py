@@ -15,7 +15,7 @@ class Metadata:
   def read_metadata_dict(self, meta_location):
     data = {}
     if os.path.isfile(meta_location):
-      with open(self.sim_hash_meta_location, "r") as fh:
+      with open(meta_location, "r") as fh:
         for line in fh.xreadlines():
           tokens = line.split()
           if tokens:
@@ -24,6 +24,10 @@ class Metadata:
             except:
               bn.log_info("[-] Failure to b64decode '%s'!" % tokens[3])
               decoded_token = tokens[3]
+            exe_id = long(tokens[0], 16)
+            address = long(tokens[2], 16)
+            file_name = tokens[1]
+            function_name = decoded_token
             data[(exe_id, address)] = (file_name, function_name)
     bn.log_info("[+] Loaded metadata for %d functions." % len(data.keys()))
     return data
@@ -54,18 +58,14 @@ class Metadata:
     with open(self.sim_hash_meta_location, "w+") as fh:
       for key, value in data.iteritems():
         try:
-          fh.write("{exe_id:x} {function_name} {address:x} {file_name}\n".format(
+          fh.write("{exe_id:x} {file_name} {address:x} {function_name} false\n"
+            .format(
               exe_id = key[0],
-              function_name =value[1],
+              file_name = value[0],
               address = key[1],
-              file_name =  base64.b64encode(value[0])
+              function_name =  base64.b64encode(value[1])
               ))
         except:
           # Keep on writing even if there was an exception.
           pass
 
-  def __del__(self):
-    """
-    Save all metadata prior to exiting.
-    """
-    self.__save__()
