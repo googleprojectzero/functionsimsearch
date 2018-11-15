@@ -82,8 +82,11 @@ constexpr enum FeatureLoggingOptions operator&(const enum FeatureLoggingOptions 
 }
 
 FeatureOptions DisabledFeatures(bool graphs, bool mnemonics, bool immediates);
-FeatureLoggingOptions FeatureLogging(bool graphs, bool mnemonics, 
+FeatureLoggingOptions FeatureLogging(bool graphs, bool mnemonics,
   bool immediates);
+
+constexpr FeatureLoggingOptions dump_all = dump_graphlets | dump_mnemonics |
+  dump_immediates;
 
 // A class to perform per-function SimHash calculation.
 //

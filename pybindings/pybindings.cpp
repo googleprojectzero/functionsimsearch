@@ -298,7 +298,7 @@ static int PySimHasher_init(PySimHasher* self, PyObject* args, PyObject *kwds) {
   }
   // Debug code to enable logging.
   FeatureOptions feature_options = default_features;
-  FeatureLoggingOptions logging_options = dump_immediates;
+  FeatureLoggingOptions logging_options = default_logging;
 
   // End of debug code.
   self->function_simhasher_ = new FunctionSimHasher(weightsfile,

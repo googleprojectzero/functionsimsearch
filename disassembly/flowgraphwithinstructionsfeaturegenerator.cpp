@@ -59,10 +59,17 @@ void FlowgraphWithInstructionsFeatureGenerator::FindImmediateValues() {
         ExtractImmediateFromString(operand, &immediates);
         for (uint64_t immediate : immediates) {
           // Only consider immediates as useful that are either greater than
-          // 0x4000 or not divisible by 4. This should remove most stack offsets.
+          // 0x4000 or (not divisible by 4 and greater 10). This should remove
+          // most stack offsets.
+          //
+          // These are precisely the heuristics that should be removed by the
+          // machine-learning step, but since the baseline is supposed to work
+          // reasonably well even without the learning step, we need such stuff
+          // here.
+          //
           // Also removes data structure offsets, though.
           if ((abs(static_cast<int64_t>(immediate)) > 0x4000) ||
-            (immediate % 4)) {
+            ((immediate % 4) && (immediate > 10))) {
             immediates_.push(immediate);
           }
         }

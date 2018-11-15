@@ -82,7 +82,7 @@ def get_flowgraph_from(address, ignore_instructions=False):
     small_blocks = split_instruction_list(instructions, call_instruction_string)
     for small_block in small_blocks:
       flowgraph.add_node(small_block[0][0])
-      small_block_instructions = tuple(instruction[1:] for instruction 
+      small_block_instructions = tuple(instruction[1:] for instruction
         in small_block)
       if not ignore_instructions:
         flowgraph.add_instructions(small_block[0][0], small_block_instructions)
@@ -123,7 +123,7 @@ def save_all_functions():
 
 def print_hash():
   sim_hasher
-  flowgraph = get_flowgraph_from(here(), True)
+  flowgraph = get_flowgraph_from(here(), False)
   print(flowgraph.size())
   print(flowgraph.number_of_branching_nodes())
   print(flowgraph.to_json())
@@ -159,33 +159,32 @@ def save_function(function_address=None):
     executable_id, ida_nalt.get_input_file_path(), address, function_name))
   return True
 
-def load_function(function_address = None, minimum=0, minsize=6):
+def search_function(function_address, minimum=0, minsize=6):
+  """
+  Search through the search index for a given function at a given address.
+  """
   search_index
   sim_hasher
   meta_data
-  if function_address == None:
-    function_address = here()
   flowgraph = get_flowgraph_from(function_address)
   branching_nodes = flowgraph.number_of_branching_nodes()
   if (branching_nodes < minsize):
-    return
+    return (False, [])
   hashes = sim_hasher.calculate_hash(flowgraph)
-  executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
-  address = long(idaapi.get_func(function_address).start_ea)
   results = search_index.query_top_N(hashes[0], hashes[1], 5)
-  if len(results) == 0:
-    print("%lx:%lx %lx-%lx No search results" %
-      (executable_id, address, hashes[0], hashes[1]))
+  return (hashes, results)
+
+def print_results(executable_id, address, hashes, results, minimum=0):
   print_separator = False
   for result in results:
     same_bits = result[0]
     if same_bits < minimum:
       continue
+    print_separator = True
     result_exe_id = result[1]
     result_address = result[2]
     odds = 0.0
     odds = search_index.odds_of_random_hit(same_bits)
-    print_separator = True
     if not meta_data.has_key((result_exe_id, result_address)):
       print("%lx:%lx %lx-%lx Result is %f - %lx:%lx (1 in %f searches)" %
         (executable_id, address, hashes[0], hashes[1],
@@ -199,17 +198,84 @@ def load_function(function_address = None, minimum=0, minsize=6):
         same_bits, result_exe_id, result_address, filename, functionname, odds))
   if print_separator:
     print("--------------------------------------")
+ 
+def load_function(function_address = None, minimum=0, minsize=6):
+  """
+  Search for a function in the search index, and output the best matches to the
+  log window.
+  """
+  search_index
+  meta_data
+  if function_address == None:
+    function_address = here()
+  hashes, results = search_function(function_address, minimum, minsize)
+  executable_id = long(ida_nalt.retrieve_input_file_sha256()[0:16], 16)
+  address = long(idaapi.get_func(function_address).start_ea)
+  if len(results) == 0 and hashes:
+    print("%lx:%lx %lx-%lx No search results" %
+      (executable_id, address, hashes[0], hashes[1]))
+  else:
+    print_results(executable_id, address, hashes, results, minimum=minimum)
 
 def match_all_functions():
+  """
+  Iterate through all functions, and try to match them one-by-one without taking
+  any context into account (e.g. only the single function).
+  """
   search_index
   sim_hasher
   for function in Functions(MinEA(), MaxEA()):
-    load_function(function_address=function, minimum=103)
+    load_function(function_address=function, minimum=100)
 
-import ida_idp
+def match_all_functions_require_consecutive_n(n = 2, minimum_score = 95):
+  """
+  Scan through all functions, but only report results if N consecutive functions
+  obtain a similarity score in excess of minimum_score.
+
+  This helps control false positives.
+  """
+  search_index
+  sim_hasher
+  all_functions = [ f for f in Functions(MinEA(), MaxEA()) ]
+  results_map = {}
+  function_addresses = []
+  for function in Functions(MinEA(), MaxEA()):
+    hashes, results = search_function(function_address=function, minimum=minimum_score)
+    results_map[function] = results
+    function_addresses.append(function)
+    """
+    nontrivial_results = True
+    if len(function_addresses > n):
+      for i in range(0, n):
+        # Check that there are good results for the last n functions.
+        func_address = function_addresses[-i]
+        if len(results_map[func_address]) == 0:
+          nontrivial_results = False
+      if nontrivial_results:
+        # A sequence of matches was found.
+        print("Nontrivial matches found.")
+    load_function(functiion_address=function, minimum=103)
+    """
+  idx = 0
+  outfile = file("/tmp/res.txt", "wt")
+  for f in function_addresses:
+    res = results_map[f]
+    if len(res) > 0:
+      sim = res[0][0]
+    else:
+      sim = 0.0
+    if sim > 104:
+      outfile.write("%d %lx %d\n" % (idx, f, sim))
+    idx = idx+1
+  outfile.close()
+
+
+import ida_idp, idc
 processor_to_call_instructions = { "arm" : "FOO", "pc" : "call" }
 call_instruction_string = processor_to_call_instructions[ida_idp.get_idp_name()]
 
+# Attempt to de-register the hotkeys. This will throw an exception if they
+# are note registered yet, and then register them.
 try:
   hotkey_context_S
   if idaapi.del_hotkey(hotkey_context_S):
@@ -251,14 +317,21 @@ try:
   del search_index
   del sim_hasher
 except:
-  # Ask the user for a directory. The code expects the directory to contain
-  # a search index ("simhash.index"), a metadata file ("simhash.meta"), and
-  # optionally a feature weights file ("simhash.weights").
-  data_directory = AskStr("/var/tmp/",
-    "Please enter a directory for the search index. If no index is found, it will be created.")
-  while not os.path.exists(data_directory):
-    data_directory = AskStr("/var/tmp/", 
-      "Please enter an EXISTING data directory.")
+  print(idc.ARGV)
+  if len(idc.ARGV) > 2 and idc.ARGV[1] == "export":
+    data_directory = idc.ARGV[2]
+    if not os.path.exists(data_directory):
+      print("Could not find database to export to!")
+      qexit(1)
+  else:
+    # Ask the user for a directory. The code expects the directory to contain
+    # a search index ("simhash.index"), a metadata file ("simhash.meta"), and
+    # optionally a feature weights file ("simhash.weights").
+    data_directory = AskStr("/var/tmp/",
+      "Please enter a directory for the search index. If no index is found, it will be created.")
+    while not os.path.exists(data_directory):
+      data_directory = AskStr("/var/tmp/", 
+        "Please enter an EXISTING data directory.")
 
   index_file = os.path.join(data_directory, "simhash.index")
   metadata_file = os.path.join(data_directory, "simhash.meta")
@@ -293,8 +366,6 @@ except:
     print("Parsing meta_data from file %s" % metadata_file)
     meta_data = parse_function_meta_data(metadata_file)
     print("Parsed meta_data.")
-    for i in meta_data.keys()[0:10]:
-      print("%lx:%lx" %i )
   else:
     meta_data = {}
   number_of_buckets = 50
@@ -308,6 +379,13 @@ except:
       sim_hasher = functionsimsearch.SimHasher(weights_file)
     else:
       sim_hasher = functionsimsearch.SimHasher()
+
+    if len(idc.ARGV) > 2 and idc.ARGV[1] == "export":
+      save_all_functions()
+      qexit(0)
   except:
+    import traceback
+    tb = traceback.format_exc()
     print("Failure to create/open the search index!")
+    print(tb)
 
