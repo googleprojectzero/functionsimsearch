@@ -16,8 +16,21 @@
 #include <fstream>
 #include <string>
 #include <boost/tokenizer.hpp>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "searchbackend/functionmetadata.hpp"
+
+std::string decode64(const std::string &val) {
+    using namespace boost::archive::iterators;
+    using It = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
+    return boost::algorithm::trim_right_copy_if(std::string(It(std::begin(val)), 
+      It(std::end(val))), [](char c) {
+      return c == '\0';
+    });
+}
 
 std::vector<std::string> split(const char* string, char c = ' ') {
   std::vector<std::string> result;
@@ -62,7 +75,7 @@ bool FunctionMetadataStore::GetFunctionName(uint64_t file_id,
   uint64_t address, std::string* out) {
   auto pair = std::make_pair(file_id, address);
   if (function_to_name_.find(pair) != function_to_name_.end()) {
-    *out = function_to_name_.at(pair);
+    *out = decode64(function_to_name_.at(pair));
     return true;
   }
   return false;
@@ -87,7 +100,7 @@ bool FunctionMetadataStore::FunctionHasVulnerability(uint64_t file_id,
 
 void FunctionMetadataStore::AddFunctionName(uint64_t file_id,
   uint64_t address, const std::string& function_name) {
-
+  // TODO(thomasdullien): Implement.
 }
 
 void FunctionMetadataStore::SetFunctionIsVulnerable(uint64_t file_id,
