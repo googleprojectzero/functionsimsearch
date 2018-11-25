@@ -37,7 +37,14 @@ void replaceAll(std::string& str, const std::string& from,
   }
 }
 
-
+bool isSimpleToken(const std::string& str) {
+  for (const char &c : str) {
+    if (isalnum(c)) continue;
+    if (c == '_') continue;
+    return false;
+  }
+  return true;
+}
 // At tiny command line tool used to "stem" demangled symbols from visual-studio
 // compiled executables so they can be compared to GCC-generated symbols. It is
 // written in entirely the wrong way and ugly as hell. I would love to have a
@@ -64,6 +71,10 @@ int main(int argc, char** argv) {
   replaceAll(input, " )", ")");
   //replaceAll(input, "const*", "const *");
 
+  if (isSimpleToken(input)) {
+    printf("%s", input.c_str());
+    exit(1);
+  }
   // Now we need to stem off the return type.
   std::deque<std::string> tokens;
   CppSplitter(input, tokens);
@@ -80,7 +91,7 @@ int main(int argc, char** argv) {
   }
   // If the last token is enclosed in [..], remove it too.
   if (tokens2.size() > 0) {
-    if ((tokens2[tokens2.size()-1][0] == '[') && 
+    if ((tokens2[tokens2.size()-1][0] == '[') &&
       tokens2[tokens.size()-1].size() > 2) {
       tokens2.pop_back();
     }

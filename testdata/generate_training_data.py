@@ -3,11 +3,9 @@
 # A Python script to generate training data given ELF or PE files including their
 # relevant debug info.
 #
-# This Python script is meant to replace the horrible bash script that is
-# currently responsible for doing this.
 
 import subprocess, os, fnmatch, codecs, random, shutil, multiprocessing, glob
-import sys, bisect, numpy
+import sys, bisect, numpy, traceback, re
 from absl import app
 from absl import flags
 from subprocess import Popen, PIPE, STDOUT
@@ -81,6 +79,7 @@ def FindPETrainingFiles():
   dll_files = [ filename for filename in glob.iglob(
     FLAGS.executable_directory + 'PE/**/*.dll',
     recursive=True) if os.path.isfile(filename) ]
+  print(FLAGS.executable_directory + 'PE/**/*.exe')
   result = exe_files + dll_files
   print("Returning list of files from PE directory: %s" % result)
   return result
@@ -131,23 +130,42 @@ def ObtainPEFunctionSymbols(training_file):
   filetype = subprocess.check_output(["file", "-b", training_file]).decode("utf-8")
   if filetype == "PE32+ executable (console) x86-64, for MS Windows\n":
     default_base = 0x140000000
+  elif filetype == "PE32+ executable (DLL) (console) x86-64, for MS Windows\n":
+    default_base = 0x180000000
   elif filetype == "PE32 executable (console) Intel 80386, for MS Windows\n":
     default_base = 0x400000
   elif filetype == "PE32 executable (DLL) (GUI) Intel 80386, for MS Windows\n":
     default_base = 0x10000000
+  elif filetype == "PE32 executable (DLL) (console) Intel 80386, for MS Windows\n":
+    default_base = 0x10000000
   else:
     print("Problem: %s has unknown file type" % training_file)
     print("Filetype is: %s" % filetype)
-  function_lines = [
-    line for line in open(training_file + ".debugdump", "rt", errors='ignore').readlines() if
-    line.find("Function") != -1 and line.find("static") != -1
-    and line.find("crt") == -1 ]
+    sys.exit(1)
+  if not os.path.isfile(training_file + ".debugdump"):
+    print("No .debugdump file found, no debug symbols...", end ='')
+    return result
+  try:
+    function_lines = [
+      line for line in open(training_file + ".debugdump", "rt", errors='ignore').readlines() if
+      line.find("Function") != -1 and line.find("static") != -1
+      and line.find("crt") == -1 ]
+  except:
+    # No debugdump data found
+    print("Failed to load debug data.")
+    traceback.print_exc(file=sys.stdout)
+    return result
   for line in function_lines:
+    # The lines we wish to split are of the form:
+    # Function : static, [
     symbol = line[ find_nth(line, ", ", 3) + 2 :]
+    if line.find("[") == -1:
+      continue
     try:
       address = int(line.split("[")[1].split("]")[0], 16) + default_base
     except:
       print("Invalid line, failed to split - %s" % line)
+      traceback.print_exc(file=sys.stdout)
       continue
     # We still need to stem and encode the symbol.
     stemmed_symbol = subprocess.run(["../bin/stemsymbol"], stdout=PIPE,
@@ -165,7 +183,22 @@ def ObtainDisassembledFunctions(training_file_id):
   except:
     print("Could not open functions_%s.txt, returning empty list." % training_file_id)
     return []
-  data = [ int(line.split()[0].split(":")[1], 16) for line in inputdata ]
+  data = []
+  try:
+    # This used to be a single-line list comprehension, but had to be rewritten
+    # to make sure we are not throwing exceptions.
+    # data = [ int(line.split()[0].split(":")[1], 16) for line in inputdata ]
+    for line in inputdata:
+      token = line.split()
+      if len(token) >= 1:
+        token2 = token[0].split(":")
+        if len(token2) >= 2:
+          data.append(int(token2[1], 16))
+  except:
+    # Bizarre, this should not happen?
+    print("Exception when parsing functions_%s.txt?" % training_file_id)
+    print("Line that caused the exception is %s" % line)
+    traceback.print_exc(file=sys.stdout)
   data.sort()
   return data
 
@@ -192,7 +225,6 @@ def RunJSONDotgraphs(argument_tuple):
   except:
     print("Failure to run dotgraphs (%s:%s->%s)" % \
       (file_format, training_file, file_id))
-
 
   print("Done with dotgraphs. (%s:%s->%s)" % \
     (file_format, training_file, file_id))
@@ -248,29 +280,36 @@ def ProcessTrainingFiles(training_files, file_format):
     # Run objdump
     print("Obtaining function symbols from %s... " % training_file, end='')
     objdump_symbols = ObtainFunctionSymbols(training_file, file_format)
+    print("got %d symbols..." % len(objdump_symbols), end='')
     # Get the functions that our disassembly could find.
     print("Getting disassembled functions. ", end='')
     disassembled_functions = ObtainDisassembledFunctions(file_id)
+    print("got %d functions..." % len(disassembled_functions), end='')
     # Write the symbols for the functions that the disassembly found.
-    print("Opening and writing extracted_symbols_%s.txt. " % file_id, end='')
-    output_file = open( FLAGS.work_directory + "/" +
-      "extracted_symbols_%s.txt" % file_id, "wt" )
-    symbols_to_write = []
-    for function_address in disassembled_functions:
-      if function_address in objdump_symbols:
-        symbols_to_write.append((function_address,
-          objdump_symbols[function_address]))
-    print("Sorting...", end='')
-    symbols_to_write.sort(key=lambda a: a[1].lower())
-    # symbols_to_write contains only those functions that are both in the dis-
-    # assembly and that we have symbols for.
-    print("Writing...", end='')
-    for address, symbol in symbols_to_write:
-      output_string = "%s %s %16.16lx %s false\n" % (file_id, training_file,
-        address, symbol)
-      output_file.write(output_string)
-    print("Done")
-    output_file.close()
+    if len(objdump_symbols) > 0:
+      print("Opening and writing extracted_symbols_%s.txt. " % file_id, end='')
+      output_file = open( FLAGS.work_directory + "/" +
+        "extracted_symbols_%s.txt" % file_id, "wt" )
+      symbols_to_write = []
+      for function_address in disassembled_functions:
+        if function_address in objdump_symbols:
+          symbols_to_write.append((function_address,
+            objdump_symbols[function_address]))
+      print("Sorting...", end='')
+      symbols_to_write.sort(key=lambda a: a[1].lower())
+      # symbols_to_write contains only those functions that are both in the dis-
+      # assembly and that we have symbols for.
+      print("Writing...", end='')
+      count = 0
+      for address, symbol in symbols_to_write:
+        output_string = "%s %s %16.16lx %s false\n" % (file_id, training_file,
+          address, symbol)
+        output_file.write(output_string)
+        count = count + 1
+      print("Done (wrote %d symbols)" % count)
+      output_file.close()
+    else:
+      print("No symbols. Skipping.")
 
 def BuildSymbolToFileAddressMapping():
   """
@@ -280,7 +319,9 @@ def BuildSymbolToFileAddressMapping():
   result = defaultdict(list)
   # Iterate over all the extracted_symbols_*.txt files.
   for filename in os.listdir(FLAGS.work_directory):
+    print("Checking filename %s" % filename)
     if fnmatch.fnmatch(filename, "extracted_symbols_*.txt"):
+      print("Processing file %s" % filename)
       contents = open( FLAGS.work_directory + "/" + filename, "rt" ).readlines()
       for line in contents:
         file_id, filename, address, symbol, vuln = line.split()
@@ -373,7 +414,7 @@ def WriteAttractAndRepulseFromMap( input_map, output_directory,
   # Choose a random subset of number_of_pairs size of these pairs. We choose
   # indices first, and then generate the pairs thereafter.
   indices = set()
-  print("Requested %d pairs with %d available." % (number_of_pairs,
+  print("Attraction: Requested %d pairs with %d available." % (number_of_pairs,
     int(total_number_of_attraction_pairs)))
   if (total_number_of_attraction_pairs > 0x7FFFFFFFFFFFFFFF):
     # We cannot use numpy.choice on numbers that do not fit into int64, so

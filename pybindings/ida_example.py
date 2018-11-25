@@ -198,7 +198,7 @@ def print_results(executable_id, address, hashes, results, minimum=0):
         same_bits, result_exe_id, result_address, filename, functionname, odds))
   if print_separator:
     print("--------------------------------------")
- 
+
 def load_function(function_address = None, minimum=0, minsize=6):
   """
   Search for a function in the search index, and output the best matches to the
@@ -225,7 +225,7 @@ def match_all_functions():
   search_index
   sim_hasher
   for function in Functions(MinEA(), MaxEA()):
-    load_function(function_address=function, minimum=100)
+    load_function(function_address=function, minimum=105)
 
 def match_all_functions_require_consecutive_n(n = 2, minimum_score = 95):
   """
