@@ -36,6 +36,7 @@ cd ../..
 
 # Build PE-Parse.
 cd pe-parse
+sed -i -e 's/-Wno-strict-overflow/-Wno-strict-overflow -Wno-ignored-qualifiers/g' ./cmake/compilation_flags.cmake
 cmake ./CMakeLists.txt
 make -j
 cd ..
