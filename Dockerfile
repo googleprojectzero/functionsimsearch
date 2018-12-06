@@ -2,6 +2,8 @@ FROM ubuntu:bionic
 
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get install -y git wget cmake sudo gcc-7 g++-7 python3-pip zlib1g-dev googletest
+RUN apt-get install -y libgtest-dev libgflags-dev libz-dev libelf-dev g++ python3-pip libboost-system-dev libboost-thread-dev libboost-date-time-dev
+
 RUN mkdir /code
 
 # build functionsimsearch
