@@ -11,6 +11,7 @@ TEST(flowgraphwithinstructions, creategraph) {
   FlowgraphWithInstructions fg;
 
   // Get function 0x806C811 from ./testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os
+  //
   std::unique_ptr<FlowgraphWithInstructions> fg_dyninst(
     GetCFGWithInstructionsFromBinary(
         "ELF", "../testdata/ELF/unrar.5.5.3.builds/unrar.x86.Os.ELF",
@@ -84,8 +85,8 @@ TEST(flowgraphwithinstructions, creategraph) {
     uint64_t hash1 = hashes[0];
     uint64_t hash2 = hashes[1];
 
-    EXPECT_EQ(hash1, 0xACEB07449170DFCF);
-    EXPECT_EQ(hash2, 0x56df46c771e9a4df);
+    EXPECT_EQ(hash1, 7559014193710030671);
+    EXPECT_EQ(hash2, 14275076095163086233);
   }
 }
 
