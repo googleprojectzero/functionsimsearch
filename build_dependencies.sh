@@ -4,8 +4,8 @@ source_dir=$(pwd)
 echo "WARNING: You will need GCC 7 or newer, GCC 6 does not implement C++17 yet!"
 
 # Install gtest and gflags. It's a bit fidgety, but works:
-sudo apt-get install libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ python3-pip
-sudo apt-get install libboost-system-dev libboost-thread-dev libboost-date-time-dev
+sudo apt-get install -y wget cmake sudo libgtest-dev libgflags-dev libz-dev libelf-dev cmake g++ python3-pip
+sudo apt-get install -y libboost-system-dev libboost-thread-dev libboost-date-time-dev
 
 # Required for the training data generation python script.
 pip3 install numpy absl-py
