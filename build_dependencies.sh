@@ -50,7 +50,9 @@ cd ..
 # Build Dyninst
 cd dyninst-9.3.2
 cmake ./CMakeLists.txt
-make -j
+# Need to limit parallelism because 8-core DynInst builds exhaust 30 Gigs of
+# RAM on my test systems.
+make -j 4
 sudo make install
 sudo ldconfig
 cd ..
