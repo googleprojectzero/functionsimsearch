@@ -175,7 +175,7 @@ class Plugin:
       report = self.find_function_hash(bv, h1, h2, current_function.start, search_index, "")
       bn.interaction.show_markdown_report('Function Similarity Search Report', report)
     else:
-      bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(self.get_exec_id(bv.file.filename), function.start))
+      bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(self.get_exec_id(bv.file.filename), current_function.start))
 
   def find_all_hashes(self, bv, current_function):
     search_index = self.init_index(bv, current_function)
