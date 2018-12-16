@@ -31,8 +31,8 @@ class Plugin:
 
   def init_db(self):
     # Fetch location
-    location = bn.interaction.get_open_filename_input("Load SimHash database", ".simhash")
-    if not location:
+    location = bn.interaction.get_open_filename_input("Load SimHash database\n> ", ".simhash")
+    if not location or location == '':
       bn.log_info("[*] Using default location for SimHash database: {}".format(default_sim_hash_location))
       location = default_sim_hash_location
 
@@ -103,9 +103,11 @@ class Plugin:
     """
       Save the hash of a given function into a given search index.
     """
+
     # TODO: detect if we are opening database instead of binary
     exec_id = self.get_exec_id(bv.file.filename)
     h1, h2 = self.extract_flowgraph_hash(function)
+
     if h1 and h2:
       search_index.add_function(h1, h2, exec_id, function.start)
       bn.log_info('[+] Added function <{:x}:0x{:x} {:x}-{:x}> to search index.'.format(exec_id, function.start, h1, h2))
@@ -115,7 +117,7 @@ class Plugin:
     else:
       bn.log_info('[-] Did not add function <{:x}:0x{:x}> to search index.'.format(exec_id, function.start)) 
 
-  def init_index(self, bv, current_function):
+  def init_index(self, bv):
     if not self.sim_hash_location:
       self.init_db()
 
@@ -130,20 +132,21 @@ class Plugin:
       create_index = True
 
     search_index = fss.SimHashSearchIndex(self.sim_hash_location, create_index, 50)
+
     return search_index
  
   def save_hash(self, bv, current_function):
     """
       Save hash of current function into search index.
     """
-    search_index = self.init_index(bv, current_function)
+    search_index = self.init_index(bv)
     self.save_single_function_hash(bv, search_index, current_function)
  
   def save_all_functions(self, bv, current_function):
     """
       Walk through all functions and save them into the index.
     """
-    search_index = self.init_index(bv, current_function)
+    search_index = self.init_index(bv)
     for function in bv.functions:
       self.save_single_function_hash(bv, search_index, function, False)
     self.metadata.__save__()
@@ -169,23 +172,27 @@ class Plugin:
     """
       Find functions similar to the current one.
     """
-    search_index = self.init_index(bv, current_function)
+    search_index = self.init_index(bv)
     h1, h2 = self.extract_flowgraph_hash(current_function)
     if h1 and h2:
       report = self.find_function_hash(bv, h1, h2, current_function.start, search_index, "")
-      bn.interaction.show_markdown_report('Function Similarity Search Report', report)
+      bn.interaction.show_markdown_report('Function Similarity Search Report\n', report, plaintext=report) # I know it sucks
     else:
       bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(self.get_exec_id(bv.file.filename), current_function.start))
 
   def find_all_hashes(self, bv, current_function):
-    search_index = self.init_index(bv, current_function)
+    """
+     Run similarity search based for each function.
+    """
+    search_index = self.init_index(bv)
     report = ""
     for function in bv.functions:
       h1, h2 = self.extract_flowgraph_hash(function)
+
       if h1 and h2:
         report = self.find_function_hash(bv, h1, h2, function.start, search_index, report)
       else:
         bn.log_info('[-] Did not search for function 0x{:x}.'.format(function.start))
 
-    bn.interaction.show_markdown_report('Function Similarity Search Report', report)
+    bn.interaction.show_markdown_report('Function Similarity Search Report\n', report, plaintext=report) # I know it sucks
 
