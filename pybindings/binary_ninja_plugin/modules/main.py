@@ -142,7 +142,7 @@ class Plugin:
     search_index = self.init_index(bv)
     self.save_single_function_hash(bv, search_index, current_function)
  
-  def save_all_functions(self, bv, current_function):
+  def save_all_functions(self, bv, _):
     """
       Walk through all functions and save them into the index.
     """
@@ -180,7 +180,7 @@ class Plugin:
     else:
       bn.log_info('[-] Did not search for function <{:x}:0x{:x}> to search index.'.format(self.get_exec_id(bv.file.filename), current_function.start))
 
-  def find_all_hashes(self, bv, current_function):
+  def find_all_hashes(self, bv, _):
     """
      Run similarity search based for each function.
     """
