@@ -40,6 +40,19 @@ class Plugin:
     self.sim_hash_location = location
     self.metadata = Metadata(location+ '.meta')
 
+  @staticmethod
+  def parse_instruction(instruction):
+    tokens=[]
+
+    for token in instruction:
+      tokens.append(token.text)
+
+    s = ''.join(tokens)
+    mnemonic, op = s.split(' ', 1)
+    operands = tuple(op.lstrip().split(','))
+
+    return mnemonic, operands
+
   def extract_flowgraph_hash(self, function, minimum_size = 5):
     """
       Generates a flowgraph object that can be fed into FunctionSimSearch from a
@@ -56,10 +69,11 @@ class Plugin:
       position = block.start
 
       for instruction in block:
-        local_node.append(instruction[0][0].text)
+        mnemonic, operands = Plugin.parse_instruction(instruction[0])
+        local_node.append((mnemonic, operands))
         shift += instruction[1]
 
-        if instruction[0][0].text == 'call': # Split on call with assumption that we only care about x86/64 for now
+        if mnemonic == 'call': # Split on call with assumption that we only care about x86/64 for now
           nodes.append((position, local_node))
           local_node = []
           graph.append((position, block.start+shift))
@@ -79,7 +93,7 @@ class Plugin:
 
     for node in nodes:
       flowgraph.add_node(node[0])
-      flowgraph.add_instructions(node[0],tuple([((i), ()) for i in node[1]]))  # Format conversion
+      flowgraph.add_instructions(node[0],tuple(node[1]))  # Format conversion
 
     for edge in graph:
       flowgraph.add_edge(edge[0], edge[1])
