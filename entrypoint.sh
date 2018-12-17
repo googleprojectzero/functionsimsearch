@@ -40,8 +40,14 @@ case "$1" in
   matchfunctionsfromindex)
     /code/functionsimsearch/bin/matchfunctionsfromindex "${@:2}";
     ;;
+  queryindexforhash)
+    /code/functionsimsearch/bin/queryindexforhash "${@:2}";
+    ;;
   trainsimhashweights)
     /code/functionsimsearch/bin/trainsimhashweights "${@:2}";
+    ;;
+  visualizeflowgraphs)
+    /code/functionsimsearch/bin/visualizeflowgraphs "${@:2}";
     ;;
   *)
     echo "Unsupported command: $1";
