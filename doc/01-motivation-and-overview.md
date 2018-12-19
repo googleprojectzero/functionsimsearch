@@ -479,8 +479,8 @@ cd ../testdata
 
 We now have two HTML files that use d3.js to render the results:
 
- * [Unit Feature Weights Visualisation](./unit_features.html)
- * [Learnt Feature Weights Visualisation](./learnt_features.html)
+ * [Unit Feature Weights Visualisation](http://htmlpreview.github.io/?https://github.com/googleprojectzero/functionsimsearch/blob/master/doc/unit_features.html)
+ * [Learnt Feature Weights Visualisation](http://htmlpreview.github.io/?https://github.com/googleprojectzero/functionsimsearch/blob/master/doc/learnt_features.html)
 
 Mouse-over on a point will display the function symbol and file-of-origin.
 It is visible to the naked eye that our training had the effect of moving groups
