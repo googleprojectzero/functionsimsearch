@@ -43,7 +43,7 @@ algorithms such as
 [MACHOC](https://github.com/ANSSI-FR/polichombr/blob/dev/docs/MACHOC_HASH.md) -
 but with the downside of being not tolerant to
 structural changes and not allowing for any “learning” of distances. Recently at
-([SSTIC ‘18](https://github.com/ANSSI-FR/polichombr/blob/dev/docs/MACHOC_HASH.md))
+([SSTIC ‘18](https://www.sstic.org/2018/presentation/yadiff/))
 a neural-network based approach has been presented, with an announcement of
 making the code available in the next months.
 
