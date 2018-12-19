@@ -72,8 +72,8 @@ alter the CFG significantly, move code around, and even when they do not inline
 aggressively or unroll loops, decisions about code duplication, instruction
 movement and scheduling etc. lead to very different disassemblies:
 
-![UnpReadBuf.VS2015.vs.GCC.6.4](/images/unpreadbuf.vs.2015.optimized.gcc.6.4.O1.png)
-![StandardFilter.VS2015.vs.GCC.6.4](/images/standardfilter.vs.2015.optimized.gcc.6.4.O1.png)
+![UnpReadBuf.VS2015.vs.GCC.6.4](doc/images/unpreadbuf.vs.2015.optimized.gcc.6.4.O1.png)
+![StandardFilter.VS2015.vs.GCC.6.4](doc/images/standardfilter.vs.2015.optimized.gcc.6.4.O1.png)
 
 It is obvious that a good method to identify a function in the presence of
 changes is needed, and that both instruction-level and graph-level changes need
@@ -103,7 +103,7 @@ obtained by imagining what a minor change in the input set would do to the
 vector of floats: The values of these vectors will be approximately normally
 distributed with mean 0 and variance 1/4 times the number of features:
 
-![SimHash](/images/simhash.png)
+![SimHash](doc/images/simhash.png)
 
 Some of the floats will be close to zero, either negative or positive. By
 changing the sets slightly (adding or removing a few features), there is some
@@ -215,7 +215,7 @@ direction of "same sign".
 We start with a simple smoothed step function 
 ![Smoothed.Step](https://latex.codecogs.com/svg.latex?g%28x%2cy%29%3D%5Cfrac%7B-xy%7D%7B%5Csqrt%7Bx%5E2y%5E2%2B1%7D%7D%2B1)
 
-![PlotOfG](/images/g.gif)
+![PlotOfG](doc/images/g.gif)
 
 This function has high loss when the sign of x and y is different, and zero loss
 when it is the same. Unfortunately, it is also flat on most of the surface, and
@@ -223,7 +223,7 @@ we need to somehow skew the flat regions to point into the right direction.
 We multiply with
 ![Wedge](https://latex.codecogs.com/svg.latex?d%28x%2cy%29%3D%5Csqrt%7B%28x-y%29%5E%2B0%2E01%7D)
 
-![PlotOfD](/images/d.gif)
+![PlotOfD](doc/images/d.gif)
 
 This function satisfies our requirements: It provides a way to move parameters
 in the desired direction, punishes unequal signs, and has zero loss if x and y
@@ -356,7 +356,7 @@ detecting the split-off functions.
 
 The differences in how the training data is split is best illustrated as follows:
 
-![Splitting](/images/splitting.png)
+![Splitting](doc/images/splitting.png)
 
 
 ### Implementation issues of the training
@@ -413,7 +413,7 @@ distance between similar pairs and between dissimilar pairs in the validation
 data, and shows us the difference between the two. If our training works, the
 difference should go up.
 
-![Training Curve](/images/seen_training_curve.png)
+![Training Curve](doc/images/seen_training_curve.png)
 
 We can see that somewhere around 420 training steps we begin to over-train - our
 difference-of-means on the validation set starts inching down again - so it is a
@@ -552,7 +552,7 @@ gnuplot -c ./testdata/tpr_fpr_curve.gnuplot ./untrained_roc.txt ./trained_roc.tx
 
 So let's examine this plots for the untrained results first:
 
-![Plots](/images/tpr_fpr_irr_plots.png)
+![Plots](doc/images/tpr_fpr_irr_plots.png)
 
 The first diagram shows that if we want a TPR of more than 50%, we will have
 to incur about 20% of the returned results being irrelevant to our search; the
@@ -573,7 +573,7 @@ to improve the recall.
 
 How are these curves affected by the training process?
 
-![Plots](/images/tpr_fpr_irr_plots_trained_and_untrained.png)
+![Plots](doc/images/tpr_fpr_irr_plots_trained_and_untrained.png)
 
 So in the top-left curve, we can see that the rate of irrelevant results at 10
 bits distance has dropped significantly: Down to approximately 5% from about
@@ -602,7 +602,7 @@ learning about the *compilers* ?
 Plotting the difference-in-mean-distance that we plotted for question (1) also
 for question (2) yields the following image:
 
-![Training Curve](/images/difference_in_means_question_2.png)
+![Training Curve](doc/images/difference_in_means_question_2.png)
 
 The red curve implies that there is a faint but non-zero signal - after about 80
 training steps we have increased the mean-difference-in-means from 11.42 bits
@@ -660,23 +660,23 @@ Let's examine some of these results a bit more in-depth. The first result claims
 to have found a version of ```memcpy_s```, with a 125 out of 128 bits matching.
 This implies a very close match. Let's look at the corresponding disassemblies:
 
-![memcpy_s](/images/memcpy_s.png)
+![memcpy_s](doc/images/memcpy_s.png)
 
 Aside from a few minor changes on the instruction-level, the two functions are
 clearly the same - even the CFG structure stayed identical.
 
 The next result claims to have found a variant ```ppmii::ModelPPM::RestartModelRare``` with 108 of the 128 bits matching. 
 
-![restart_model_rare](/images/restart_model_rare.png)
-![restart_model_rare2](/images/restart_model_rare2.png)
+![restart_model_rare](images/restart_model_rare.png)
+![restart_model_rare2](images/restart_model_rare2.png)
 
 The disassembly (and all structure offsets in the code) seems to have changed
 quite a bit, but the overall CFG structure is mostly intact: The first large
 basic block was broken up by the compiler, so the graphs are not identical, but
 they are definitely still highly similar.
 
-![restart_model_rare](/images/restart_model_rare.png)
-![restart_model_rare2](/images/restart_model_rare2.png)
+![restart_model_rare](images/restart_model_rare.png)
+![restart_model_rare2](images/restart_model_rare2.png)
 
 The next example is a much larger function - the result claims to have
 identified ```RarVM::ExecuteCode``` with 106 of 128 bits of the hash matching.
