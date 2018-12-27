@@ -114,6 +114,7 @@ def ObtainELFFunctionSymbols(training_file):
       # Run the string through c++filt
       sym = subprocess.check_output([ "c++filt", tokens[5] ]).decode("utf-8")
       sym = sym.replace('\n', '')
+      sym = sym.split("(")[0]
       sym = SaneBase64(sym)
       result[address] = sym
   return result
@@ -171,7 +172,9 @@ def ObtainPEFunctionSymbols(training_file):
     stemmed_symbol = subprocess.run(["../bin/stemsymbol"], stdout=PIPE,
       input=bytes(symbol, encoding="utf-8")).stdout
     if len(stemmed_symbol) > 0:
-      result[address] = SaneBase64(stemmed_symbol.decode("utf-8"))
+      stemmed_symbol = stemmed_symbol.decode("utf-8")
+      stemmed_symbol = stemmed_symbol.split('(')[0]
+      result[address] = SaneBase64(stemmed_symbol)
   return result
 
 def ObtainDisassembledFunctions(training_file_id):
